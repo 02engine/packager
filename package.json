@@ -47,7 +47,7 @@
     "@turbowarp/scratch-svg-renderer": "^1.0.0-202401111326-62c0f26",
     "babel-jest": "^27.4.5",
     "babel-loader": "^8.2.3",
-    "copy-webpack-plugin": "^6.4.1",
+    "copy-webpack-plugin": "^13.0.0",
     "cross-env": "^7.0.3",
     "css-loader": "^5.2.7",
     "fastestsmallesttextencoderdecoder": "^1.0.22",
