@@ -22,7 +22,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies 📦
-        run: npm i  --loglevel=info
+        run: npm i --force --loglevel=info
 
       - name: Build 🏗️
         run: npm run build
