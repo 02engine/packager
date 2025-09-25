@@ -28,14 +28,15 @@ jobs:
       run: npm test
     - name: Build standalone
       run: npm run build-standalone-prod
-    - name: Upload standalone artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: standalone
-        path: dist/standalone.html
     - name: Deploy to cf-page branch
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
         publish_dir: ./dist
         publish_branch: cf-page
+    - name: Upload standalone.html
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./dist/standalone.html
+        publish_branch: standalone
