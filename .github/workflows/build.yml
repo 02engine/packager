@@ -28,6 +28,10 @@ jobs:
       run: npm test
     - name: Build standalone
       run: npm run build-standalone-prod
+    - name: Install tree
+      run: sudo apt-get install tree
+    - name: Print file tree
+      run: tree
     - name: Deploy to cf-page branch
       uses: peaceiris/actions-gh-pages@v4
       with:
