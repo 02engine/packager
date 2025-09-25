@@ -45,3 +45,8 @@ jobs:
       run: |
           mkdir -p standalone
           cp dist/standalone.html standalone/
+    - name: Upload artifacts to tag
+      uses: xresloader/upload-to-github-release@2bcae85344d41e21f7fc4c47fa2ed68223afdb49
+      with:
+        file: standalone/*
+        draft: false
