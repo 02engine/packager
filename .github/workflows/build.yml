@@ -20,12 +20,21 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 22
+        
     - name: Install dependencies
       run: npm i
+      
     - name: Build
       run: npm run build
     - name: Test
       run: npm test
+    - name: Deploy to cf-page branch
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./dist
+        publish_branch: cf-page
+        
     - name: Build standalone
       run: npm run build-standalone-prod
     - name: Install tree
@@ -36,15 +45,3 @@ jobs:
       run: |
           mkdir -p standalone
           cp dist/standalone.html standalone/
-    - name: Deploy to cf-page branch
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./dist
-        publish_branch: cf-page
-    - name: Upload standalone.html
-      uses: peaceiris/actions-gh-pages@v4
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./standalone
-        publish_branch: standalone
