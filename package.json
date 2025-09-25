@@ -44,7 +44,7 @@
     "@babel/core": "^7.16.5",
     "@babel/preset-env": "^7.16.5",
     "@turbowarp/scratch-storage": "^0.0.202505311821",
-    "@turbowarp/scratch-svg-renderer": "github:02engine/scratch-svg-renderer#main",
+    "@turbowarp/scratch-svg-renderer": "github:Deep-sea-lab/scratch-svg-renderer#main",
     "babel-jest": "^27.4.5",
     "babel-loader": "^8.2.3",
     "copy-webpack-plugin": "^6.4.1",
