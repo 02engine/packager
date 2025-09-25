@@ -20,10 +20,8 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 22
-    - name: Clean Cache
-      run: npm cache clean --force
     - name: Install dependencies
-      run: npm i
+      run: npm i --legacy-peer-deps
     - name: Build
       run: npm run build
     - name: Test
