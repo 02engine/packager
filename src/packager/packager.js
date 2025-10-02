@@ -971,6 +971,150 @@ cd "$(dirname "$0")"
     return zip;
   }
 
+  async addCordovaAndroid (projectZip) {
+    // Generate a basic Cordova project structure that can be used to build an APK
+    const zip = new (await getJSZip());
+    
+    // Create the Cordova project structure
+    const packageName = this.options.app.packageName || 'org.turbowarp.packaged';
+    const appName = this.options.app.windowTitle || 'Packaged Project';
+    
+    // Get the app icon if available
+    let iconPath = '';
+    if (this.options.app.icon) {
+      try {
+        const icon = await Adapter.getAppIcon(this.options.app.icon);
+        zip.file('icon.png', icon);
+        iconPath = 'icon.png';
+      } catch (e) {
+        console.warn('Failed to process app icon for Cordova Android', e);
+      }
+    }
+    
+    // Create a basic Cordova config.xml
+    let configXml = `<?xml version='1.0' encoding='utf-8'?>
+<widget id="${packageName}" version="${this.options.app.version}" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>${escapeXML(appName)}</name>
+    <description>
+        02Engine Packager
+    </description>
+    <content src="index.html" />
+    <access origin="*" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <allow-intent href="tel:*" />
+    <allow-intent href="sms:*" />
+    <allow-intent href="mailto:*" />
+    <allow-intent href="geo:*" />
+    <platform name="android">
+        <allow-intent href="market:*" />
+        <resource-file src="./cdv-gradle-config.json" target="cdv-gradle-config.json" />
+        <resource-file src="./gradle.properties" target="gradle.properties" />`;
+    
+    // Add icon definition if icon is available
+    if (iconPath) {
+      configXml += `
+        <icon density="ldpi" src="${iconPath}" />
+        <icon density="mdpi" src="${iconPath}" />
+        <icon density="hdpi" src="${iconPath}" />
+        <icon density="xhdpi" src="${iconPath}" />
+        <icon density="xxhdpi" src="${iconPath}" />
+        <icon density="xxxhdpi" src="${iconPath}" />`;
+    }
+    
+    configXml += `
+    </platform>
+    <engine name="android" />
+</widget>`;
+    
+    zip.file('config.xml', configXml);
+    
+    // Create package.json
+    const packageJson = {
+      name: packageName,
+      displayName: appName,
+      version: this.options.app.version,
+      description: 'A packaged Scratch project',
+      main: 'index.html',
+      author: '0.2Studio',
+      license: 'MIT',
+      dependencies: {
+        'cordova-android': '^10.1.1'
+      },
+      cordova: {
+        platforms: ['android']
+      },
+      scripts: {
+        "build": "cordova build android --verbose -- --no-build-cache",
+        "prepare": "cordova prepare android"
+      }
+    };
+    
+    zip.file('package.json', JSON.stringify(packageJson, null, 2));
+
+    // Create cdv-gradle-config.json
+    const cdvgradleconfig = {
+      "MIN_SDK_VERSION": 22,
+      "SDK_VERSION": 30,
+      "GRADLE_VERSION": "7.6.5",
+      "MIN_BUILD_TOOLS_VERSION": "30.0.3",
+      "AGP_VERSION": "4.2.2",
+      "KOTLIN_VERSION": "1.5.21",
+      "ANDROIDX_APP_COMPAT_VERSION": "1.3.1",
+      "ANDROIDX_WEBKIT_VERSION": "1.4.0",
+      "GRADLE_PLUGIN_GOOGLE_SERVICES_VERSION": "4.3.8",
+      "IS_GRADLE_PLUGIN_GOOGLE_SERVICES_ENABLED": false,
+      "IS_GRADLE_PLUGIN_KOTLIN_ENABLED": false
+    };
+
+    zip.file('cdv-gradle-config.json', JSON.stringify(cdvgradleconfig, null));
+
+    // Create gradle.properties
+    const gradlepro = `org.gradle.jvmargs=-Xmx2048m --add-opens java.base/java.io=ALL-UNNAMED
+android.useAndroidX=true
+android.enableJetifier=true`
+
+    zip.file('gradle.properties', gradlepro);
+
+    // Create README with instructions
+    const readme = `# Cordova Android Project
+
+This is a Cordova project that can be used to build an Android APK.
+
+## Setup Instructions
+
+1. Extract this zip file to a folder
+2. Install Node.js and npm if you haven't already
+3. Install project dependencies:
+   npm install
+4. Build the APK:
+   npm run build
+
+## Requirements
+
+- Node.js and npm
+- Android Studio or Android SDK
+- JAVA_HOME environment variable set to JDK path
+- ANDROID_HOME environment variable set to Android SDK path
+
+## Additional Notes
+
+You may need to install additional dependencies depending on your system.
+For detailed setup instructions, refer to the Cordova documentation.`;
+    
+    zip.file('README.txt', readme);
+    
+    // Create a text file with "hello" content
+    zip.file('hello.txt', 'hello');
+    
+    // Copy project files to www directory
+    for (const [path, data] of Object.entries(projectZip.files)) {
+      setFileFast(zip, `www/${path}`, data);
+    }
+    
+    return zip;
+  }
+
   makeWebSocketProvider () {
     // If using the default turbowarp.org server, we'll add a fallback for the turbowarp.xyz alias.
     // This helps work around web filters as turbowarp.org can be blocked for games and turbowarp.xyz uses
@@ -1703,6 +1847,8 @@ cd "$(dirname "$0")"
         zip = await this.addElectron(zip);
       } else if (this.options.target === 'webview-mac') {
         zip = await this.addWebViewMac(zip);
+      } else if (this.options.target === 'cordova-android') {
+        zip = await this.addCordovaAndroid(zip);
       }
 
       this.ensureNotAborted();
