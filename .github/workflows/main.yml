@@ -27,7 +27,7 @@ jobs:
 
     - name: Package project directory
       run: |
-        zip -r project-build.zip . -x "*.git*" "*.github*" "node_modules/*" || true
+        zip -r project-build.zip .
         # 可选：排除不必要的文件
         # 或者打包全部：zip -r project-build.zip .
 
