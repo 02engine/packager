@@ -11,21 +11,29 @@ jobs:
     permissions:
       contents: write
       id-token: write
-      
+
     steps:
     - uses: actions/checkout@v4
       with:
         persist-credentials: false
+
     - name: Install Node.js
       uses: actions/setup-node@v4
       with:
         node-version: 22
-        
+
     - name: Install dependencies
       run: npm i
 
-    - name: Upload artifacts to tag
-      uses: xresloader/upload-to-github-release@2bcae85344d41e21f7fc4c47fa2ed68223afdb49
+    - name: Package project directory
+      run: |
+        zip -r project-build.zip . -x "*.git*" "*.github*" "node_modules/*" || true
+        # 可选：排除不必要的文件
+        # 或者打包全部：zip -r project-build.zip .
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
       with:
-        file: ./*
-        draft: false
+        name: project-build
+        path: project-build.zip
+        retention-days: 7  # 保存7天，可调整
