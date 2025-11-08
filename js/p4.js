@@ -8365,7 +8365,7 @@ const isChromeOS = navigator.userAgent.includes('CrOS');
 
 const isStandalone = !!false;
 
-const version = "beta";
+const version = "v2.1.0";
 
 
 /***/ }),
