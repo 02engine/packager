@@ -16,7 +16,7 @@
   // 新增：标记是否为 Cordova Android 包（在 onMount 检测）
   let isCordovaAndroid = false;
 
-  // 当组件挂载且有 blob 时，检查是否为 Cordova Android zip 并在需要时创建 hello.txt
+  // 当组件挂载且有 blob 时，检查是否为 Cordova Android zip 
   onMount(async () => {
     if (blob && name && name.endsWith('.zip') && blob.type === 'application/zip') {
       try {
@@ -26,9 +26,6 @@
         // 检测 Cordova Android 项目（配置文件与 package.json 同时存在）
         if (zip.file('config.xml') && zip.file('package.json')) {
           isCordovaAndroid = true;
-          // Create a blob with "hello" content
-          const txtBlob = new Blob(['hello'], {type: 'text/plain'});
-          txtUrl = URL.createObjectURL(txtBlob);
         }
       } catch (e) {
         console.warn('Could not analyze zip file:', e);
@@ -77,13 +74,6 @@
           .replace('{filename}', name)}
       </a>
     </p>
-    {#if txtUrl}
-      <p>
-        <a href={txtUrl} download="hello.txt">
-          Download hello.txt
-        </a>
-      </p>
-    {/if}
 
     {#if isChromeOS && name.endsWith('.html')}
       <p class="alternative">
