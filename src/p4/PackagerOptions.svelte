@@ -211,7 +211,7 @@
   let oauthError = '';
   let oauthUserInfo = null;
   let oauthToken = '';
-  const CLIENT_ID = 'Ov23liq1TZT6IIyTFGF6';
+  const CLIENT_ID = 'Ov23liZ8xH1osNpfJWaF';
   const BACKEND_URL = 'https://02oauth-backend.netlify.app/.netlify/functions/token';
   const REDIRECT_URI = window.location.origin + window.location.pathname;
 
