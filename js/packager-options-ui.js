@@ -361,41 +361,11 @@ function add_css(target) {
 	Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append_styles"])(target, "svelte-qxfu1u", ".alternative.svelte-qxfu1u{font-size:smaller}");
 }
 
-// (80:4) {#if txtUrl}
-function create_if_block_1(ctx) {
-	let p;
-	let a;
-	let t;
-
-	return {
-		c() {
-			p = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("p");
-			a = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("a");
-			t = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])("Download hello.txt");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*txtUrl*/ ctx[4]);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "download", "hello.txt");
-		},
-		m(target, anchor) {
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, p, anchor);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(p, a);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(a, t);
-		},
-		p(ctx, dirty) {
-			if (dirty & /*txtUrl*/ 16) {
-				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*txtUrl*/ ctx[4]);
-			}
-		},
-		d(detaching) {
-			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(p);
-		}
-	};
-}
-
-// (88:4) {#if isChromeOS && name.endsWith('.html')}
+// (78:4) {#if isChromeOS && name.endsWith('.html')}
 function create_if_block(ctx) {
 	let p;
 	let button;
-	let t_value = /*$_*/ ctx[5]('downloads.useWorkaround') + "";
+	let t_value = /*$_*/ ctx[4]('downloads.useWorkaround') + "";
 	let t;
 	let mounted;
 	let dispose;
@@ -414,12 +384,12 @@ function create_if_block(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(button, t);
 
 			if (!mounted) {
-				dispose = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button, "click", /*useAlternativeDownloadToBypassChromeOSBugs*/ ctx[6]);
+				dispose = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button, "click", /*useAlternativeDownloadToBypassChromeOSBugs*/ ctx[5]);
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
-			if (dirty & /*$_*/ 32 && t_value !== (t_value = /*$_*/ ctx[5]('downloads.useWorkaround') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, t_value);
+			if (dirty & /*$_*/ 16 && t_value !== (t_value = /*$_*/ ctx[4]('downloads.useWorkaround') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, t_value);
 
 			if (dirty & /*workaroundInProgress*/ 8) {
 				button.disabled = /*workaroundInProgress*/ ctx[3];
@@ -433,18 +403,16 @@ function create_if_block(ctx) {
 	};
 }
 
-// (71:0) <Section center>
+// (68:0) <Section center>
 function create_default_slot(ctx) {
 	let div;
 	let p;
 	let a;
-	let t0_value = /*$_*/ ctx[5]('downloads.link').replace('{size}', `${(/*blob*/ ctx[2].size / 1000 / 1000).toFixed(2)}MB`).replace('{filename}', /*name*/ ctx[0]) + "";
+	let t0_value = /*$_*/ ctx[4]('downloads.link').replace('{size}', `${(/*blob*/ ctx[2].size / 1000 / 1000).toFixed(2)}MB`).replace('{filename}', /*name*/ ctx[0]) + "";
 	let t0;
 	let t1;
-	let t2;
 	let show_if = _environment__WEBPACK_IMPORTED_MODULE_5__["isChromeOS"] && /*name*/ ctx[0].endsWith('.html');
-	let if_block0 = /*txtUrl*/ ctx[4] && create_if_block_1(ctx);
-	let if_block1 = show_if && create_if_block(ctx);
+	let if_block = show_if && create_if_block(ctx);
 
 	return {
 		c() {
@@ -453,9 +421,7 @@ function create_default_slot(ctx) {
 			a = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("a");
 			t0 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t0_value);
 			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
-			if (if_block0) if_block0.c();
-			t2 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
-			if (if_block1) if_block1.c();
+			if (if_block) if_block.c();
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*url*/ ctx[1]);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "download", /*name*/ ctx[0]);
 		},
@@ -465,12 +431,10 @@ function create_default_slot(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(p, a);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(a, t0);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div, t1);
-			if (if_block0) if_block0.m(div, null);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div, t2);
-			if (if_block1) if_block1.m(div, null);
+			if (if_block) if_block.m(div, null);
 		},
 		p(ctx, dirty) {
-			if (dirty & /*$_, blob, name*/ 37 && t0_value !== (t0_value = /*$_*/ ctx[5]('downloads.link').replace('{size}', `${(/*blob*/ ctx[2].size / 1000 / 1000).toFixed(2)}MB`).replace('{filename}', /*name*/ ctx[0]) + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if (dirty & /*$_, blob, name*/ 21 && t0_value !== (t0_value = /*$_*/ ctx[4]('downloads.link').replace('{size}', `${(/*blob*/ ctx[2].size / 1000 / 1000).toFixed(2)}MB`).replace('{filename}', /*name*/ ctx[0]) + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
 
 			if (dirty & /*url*/ 2) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*url*/ ctx[1]);
@@ -480,38 +444,24 @@ function create_default_slot(ctx) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "download", /*name*/ ctx[0]);
 			}
 
-			if (/*txtUrl*/ ctx[4]) {
-				if (if_block0) {
-					if_block0.p(ctx, dirty);
-				} else {
-					if_block0 = create_if_block_1(ctx);
-					if_block0.c();
-					if_block0.m(div, t2);
-				}
-			} else if (if_block0) {
-				if_block0.d(1);
-				if_block0 = null;
-			}
-
 			if (dirty & /*name*/ 1) show_if = _environment__WEBPACK_IMPORTED_MODULE_5__["isChromeOS"] && /*name*/ ctx[0].endsWith('.html');
 
 			if (show_if) {
-				if (if_block1) {
-					if_block1.p(ctx, dirty);
+				if (if_block) {
+					if_block.p(ctx, dirty);
 				} else {
-					if_block1 = create_if_block(ctx);
-					if_block1.c();
-					if_block1.m(div, null);
+					if_block = create_if_block(ctx);
+					if_block.c();
+					if_block.m(div, null);
 				}
-			} else if (if_block1) {
-				if_block1.d(1);
-				if_block1 = null;
+			} else if (if_block) {
+				if_block.d(1);
+				if_block = null;
 			}
 		},
 		d(detaching) {
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(div);
-			if (if_block0) if_block0.d();
-			if (if_block1) if_block1.d();
+			if (if_block) if_block.d();
 		}
 	};
 }
@@ -539,7 +489,7 @@ function create_fragment(ctx) {
 		p(ctx, [dirty]) {
 			const section_changes = {};
 
-			if (dirty & /*$$scope, workaroundInProgress, $_, name, txtUrl, url, blob*/ 319) {
+			if (dirty & /*$$scope, workaroundInProgress, $_, name, url, blob*/ 159) {
 				section_changes.$$scope = { dirty, ctx };
 			}
 
@@ -560,19 +510,20 @@ function create_fragment(ctx) {
 	};
 }
 
+let txtUrl = null;
+
 function instance($$self, $$props, $$invalidate) {
 	let $_;
-	Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["component_subscribe"])($$self, _locales__WEBPACK_IMPORTED_MODULE_2__["_"], $$value => $$invalidate(5, $_ = $$value));
+	Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["component_subscribe"])($$self, _locales__WEBPACK_IMPORTED_MODULE_2__["_"], $$value => $$invalidate(4, $_ = $$value));
 	let { name } = $$props;
 	let { url } = $$props;
 	let { blob } = $$props;
 	let workaroundInProgress;
-	let txtUrl = null;
 
 	// 新增：标记是否为 Cordova Android 包（在 onMount 检测）
 	let isCordovaAndroid = false;
 
-	// 当组件挂载且有 blob 时，检查是否为 Cordova Android zip 并在需要时创建 hello.txt
+	// 当组件挂载且有 blob 时，检查是否为 Cordova Android zip 
 	Object(svelte__WEBPACK_IMPORTED_MODULE_6__["onMount"])(async () => {
 		if (blob && name && name.endsWith('.zip') && blob.type === 'application/zip') {
 			try {
@@ -582,11 +533,6 @@ function instance($$self, $$props, $$invalidate) {
 				// 检测 Cordova Android 项目（配置文件与 package.json 同时存在）
 				if (zip.file('config.xml') && zip.file('package.json')) {
 					isCordovaAndroid = true;
-
-					// Create a blob with "hello" content
-					const txtBlob = new Blob(['hello'], { type: 'text/plain' });
-
-					$$invalidate(4, txtUrl = URL.createObjectURL(txtBlob));
 				}
 			} catch(e) {
 				console.warn('Could not analyze zip file:', e);
@@ -624,7 +570,6 @@ function instance($$self, $$props, $$invalidate) {
 		url,
 		blob,
 		workaroundInProgress,
-		txtUrl,
 		$_,
 		useAlternativeDownloadToBypassChromeOSBugs
 	];
@@ -11643,9 +11588,6 @@ You may need to install additional dependencies depending on your system.
 For detailed setup instructions, refer to the Cordova documentation.`;
     
     zip.file('README.txt', readme);
-    
-    // Create a text file with "hello" content
-    zip.file('hello.txt', 'hello');
     
     // Copy project files to www directory
     for (const [path, data] of Object.entries(projectZip.files)) {
