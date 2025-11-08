@@ -7869,7 +7869,7 @@ function create_fragment(ctx) {
 }
 
 const ALMOST_INFINITY = 9999999999;
-const CLIENT_ID = 'Ov23liq1TZT6IIyTFGF6';
+const CLIENT_ID = 'Ov23liZ8xH1osNpfJWaF';
 const BACKEND_URL = 'https://02oauth-backend.netlify.app/.netlify/functions/token';
 const MAX_LOGS = 500;
 
