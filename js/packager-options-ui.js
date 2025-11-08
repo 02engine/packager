@@ -1198,7 +1198,7 @@ function get_each_context_1(ctx, list, i) {
 	return child_ctx;
 }
 
-// (689:4) {#if hasSettingsStoredInProject}
+// (698:4) {#if hasSettingsStoredInProject}
 function create_if_block_42(ctx) {
 	let div;
 	let t_value = /*$_*/ ctx[19]('options.storedWarning') + "";
@@ -1223,7 +1223,7 @@ function create_if_block_42(ctx) {
 	};
 }
 
-// (751:4) {#if $options.username !== defaultOptions.username && cloudVariables.length !== 0}
+// (760:4) {#if $options.username !== defaultOptions.username && cloudVariables.length !== 0}
 function create_if_block_41(ctx) {
 	let p;
 	let t_value = /*$_*/ ctx[19]('options.customUsernameWarning') + "";
@@ -1248,7 +1248,7 @@ function create_if_block_41(ctx) {
 	};
 }
 
-// (668:0) <Section   accent="#FFAB19"   reset={() => {     resetOptions([       'turbo',       'framerate',       'interpolation',       'highQualityPen',       'maxClones',       'fencing',       'miscLimits',       'stageWidth',       'stageHeight',       'resizeMode',       'username'     ]);   }} >
+// (677:0) <Section   accent="#FFAB19"   reset={() => {     resetOptions([       'turbo',       'framerate',       'interpolation',       'highQualityPen',       'maxClones',       'fencing',       'miscLimits',       'stageWidth',       'stageHeight',       'resizeMode',       'username'     ]);   }} >
 function create_default_slot_11(ctx) {
 	let div7;
 	let h2;
@@ -1826,7 +1826,7 @@ function create_default_slot_11(ctx) {
 	};
 }
 
-// (828:4) {#if $loadingScreenImage}
+// (837:4) {#if $loadingScreenImage}
 function create_if_block_40(ctx) {
 	let label0;
 	let input0;
@@ -1915,7 +1915,7 @@ function create_if_block_40(ctx) {
 	};
 }
 
-// (845:6) {#if $options.autoplay}
+// (854:6) {#if $options.autoplay}
 function create_if_block_39(ctx) {
 	let t_value = /*$_*/ ctx[19]('options.autoplayHint') + "";
 	let t;
@@ -1936,7 +1936,7 @@ function create_if_block_39(ctx) {
 	};
 }
 
-// (787:0) <Section   accent="#9966FF"   reset={() => {     $icon = null;     $loadingScreenImage = null;     resetOptions([       'app.windowTitle',       'loadingScreen',       'autoplay',       'controls',       'appearance',       'monitors',     ]);   }} >
+// (796:0) <Section   accent="#9966FF"   reset={() => {     $icon = null;     $loadingScreenImage = null;     resetOptions([       'app.windowTitle',       'loadingScreen',       'autoplay',       'controls',       'appearance',       'monitors',     ]);   }} >
 function create_default_slot_10(ctx) {
 	let div3;
 	let h2;
@@ -2643,7 +2643,7 @@ function create_default_slot_10(ctx) {
 	};
 }
 
-// (928:4) {#if $options.cursor.type === 'custom'}
+// (937:4) {#if $options.cursor.type === 'custom'}
 function create_if_block_38(ctx) {
 	let div;
 	let imageinput;
@@ -2794,7 +2794,7 @@ function create_if_block_38(ctx) {
 	};
 }
 
-// (902:0) <Section   accent="#4CBFE6"   reset={() => {     $customCursorIcon = null;     resetOptions([       'cursor',       'chunks',     ]);   }} >
+// (911:0) <Section   accent="#4CBFE6"   reset={() => {     $customCursorIcon = null;     resetOptions([       'cursor',       'chunks',     ]);   }} >
 function create_default_slot_9(ctx) {
 	let div3;
 	let h2;
@@ -3061,7 +3061,7 @@ function create_default_slot_9(ctx) {
 	};
 }
 
-// (1042:4) {:else}
+// (1051:4) {:else}
 function create_else_block_6(ctx) {
 	let p;
 	let t_value = /*$_*/ ctx[19]('options.noCloudVariables') + "";
@@ -3088,7 +3088,7 @@ function create_else_block_6(ctx) {
 	};
 }
 
-// (980:4) {#if cloudVariables.length > 0}
+// (989:4) {#if cloudVariables.length > 0}
 function create_if_block_34(ctx) {
 	let label0;
 	let t0_value = /*$_*/ ctx[19]('options.mode') + "";
@@ -3438,7 +3438,7 @@ function create_if_block_34(ctx) {
 	};
 }
 
-// (991:6) {#if $options.cloudVariables.mode === "custom"}
+// (1000:6) {#if $options.cloudVariables.mode === "custom"}
 function create_if_block_37(ctx) {
 	let div;
 	let div_transition;
@@ -3522,7 +3522,7 @@ function create_if_block_37(ctx) {
 	};
 }
 
-// (993:10) {#each cloudVariables as variable}
+// (1002:10) {#each cloudVariables as variable}
 function create_each_block_1(ctx) {
 	let label;
 	let select;
@@ -3605,7 +3605,7 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (1006:6) {#if $options.cloudVariables.mode === 'ws' || $options.cloudVariables.mode === 'custom'}
+// (1015:6) {#if $options.cloudVariables.mode === 'ws' || $options.cloudVariables.mode === 'custom'}
 function create_if_block_36(ctx) {
 	let div;
 	let label;
@@ -3681,7 +3681,7 @@ function create_if_block_36(ctx) {
 	};
 }
 
-// (1038:6) {#if $options.cloudVariables.unsafeCloudBehaviors}
+// (1047:6) {#if $options.cloudVariables.unsafeCloudBehaviors}
 function create_if_block_35(ctx) {
 	let p;
 	let t_value = /*$_*/ ctx[19]('options.unsafeCloudBehaviorsWarning') + "";
@@ -3706,7 +3706,7 @@ function create_if_block_35(ctx) {
 	};
 }
 
-// (969:0) <Section   accent="#FF8C1A"   reset={cloudVariables.length === 0 ? null : () => {     resetOptions([       'cloudVariables'     ]);   }} >
+// (978:0) <Section   accent="#FF8C1A"   reset={cloudVariables.length === 0 ? null : () => {     resetOptions([       'cloudVariables'     ]);   }} >
 function create_default_slot_8(ctx) {
 	let div;
 	let h2;
@@ -3763,7 +3763,7 @@ function create_default_slot_8(ctx) {
 	};
 }
 
-// (1048:0) <Section   accent="#FF6680"   reset={() => {     resetOptions([       'compiler',       'extensions',       'bakeExtensions',       'custom',       'projectId',       'maxTextureDimension'     ]);   }} >
+// (1057:0) <Section   accent="#FF6680"   reset={() => {     resetOptions([       'compiler',       'extensions',       'bakeExtensions',       'custom',       'projectId',       'maxTextureDimension'     ]);   }} >
 function create_default_slot_7(ctx) {
 	let div2;
 	let h2;
@@ -4147,7 +4147,7 @@ function create_default_slot_7(ctx) {
 	};
 }
 
-// (1126:0) <Section   accent="#0FBD8C"   reset={() => {     resetOptions([       'target'     ])   }} >
+// (1135:0) <Section   accent="#0FBD8C"   reset={() => {     resetOptions([       'target'     ])   }} >
 function create_default_slot_6(ctx) {
 	let div6;
 	let h2;
@@ -4714,7 +4714,7 @@ function create_default_slot_6(ctx) {
 	};
 }
 
-// (1223:0) {#if $options.target !== 'html'}
+// (1232:0) {#if $options.target !== 'html'}
 function create_if_block_5(ctx) {
 	let div;
 	let section;
@@ -4781,7 +4781,7 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (1239:8) {:else}
+// (1248:8) {:else}
 function create_else_block_1(ctx) {
 	let h2;
 	let t0_value = /*$_*/ ctx[19]('options.applicationSettings') + "";
@@ -5053,7 +5053,7 @@ function create_else_block_1(ctx) {
 	};
 }
 
-// (1236:8) {#if $options.target.startsWith('zip')}
+// (1245:8) {#if $options.target.startsWith('zip')}
 function create_if_block_6(ctx) {
 	let h2;
 	let t1;
@@ -5082,7 +5082,7 @@ function create_if_block_6(ctx) {
 	};
 }
 
-// (1248:10) {#if $options.target === 'cordova-android'}
+// (1257:10) {#if $options.target === 'cordova-android'}
 function create_if_block_19(ctx) {
 	let div8;
 	let div0;
@@ -5352,7 +5352,7 @@ function create_if_block_19(ctx) {
 	};
 }
 
-// (1281:14) {:else}
+// (1290:14) {:else}
 function create_else_block_5(ctx) {
 	let div4;
 	let h4;
@@ -5463,7 +5463,7 @@ function create_else_block_5(ctx) {
 	};
 }
 
-// (1255:14) {#if !oauthUserInfo}
+// (1264:14) {#if !oauthUserInfo}
 function create_if_block_30(ctx) {
 	let div;
 	let h4;
@@ -5576,7 +5576,7 @@ function create_if_block_30(ctx) {
 	};
 }
 
-// (1285:20) {#if oauthUserInfo.user.avatar_url}
+// (1294:20) {#if oauthUserInfo.user.avatar_url}
 function create_if_block_33(ctx) {
 	let img;
 	let img_src_value;
@@ -5604,7 +5604,7 @@ function create_if_block_33(ctx) {
 	};
 }
 
-// (1261:18) {#if oauthError}
+// (1270:18) {#if oauthError}
 function create_if_block_32(ctx) {
 	let div;
 	let t;
@@ -5633,7 +5633,7 @@ function create_if_block_32(ctx) {
 	};
 }
 
-// (1273:20) {:else}
+// (1282:20) {:else}
 function create_else_block_4(ctx) {
 	let svg;
 	let path;
@@ -5662,7 +5662,7 @@ function create_else_block_4(ctx) {
 	};
 }
 
-// (1271:20) {#if oauthInProgress}
+// (1280:20) {#if oauthInProgress}
 function create_if_block_31(ctx) {
 	let span;
 
@@ -5680,7 +5680,7 @@ function create_if_block_31(ctx) {
 	};
 }
 
-// (1304:48) {:else}
+// (1313:48) {:else}
 function create_else_block_3(ctx) {
 	let t;
 
@@ -5697,7 +5697,7 @@ function create_else_block_3(ctx) {
 	};
 }
 
-// (1304:18) {#if uploadInProgress}
+// (1313:18) {#if uploadInProgress}
 function create_if_block_29(ctx) {
 	let t;
 
@@ -5714,7 +5714,7 @@ function create_if_block_29(ctx) {
 	};
 }
 
-// (1308:16) {#if createdRepoUrl}
+// (1317:16) {#if createdRepoUrl}
 function create_if_block_28(ctx) {
 	let div;
 	let t0;
@@ -5750,7 +5750,7 @@ function create_if_block_28(ctx) {
 	};
 }
 
-// (1311:16) {#if releaseUrl}
+// (1320:16) {#if releaseUrl}
 function create_if_block_27(ctx) {
 	let div;
 	let t0;
@@ -5793,7 +5793,7 @@ function create_if_block_27(ctx) {
 	};
 }
 
-// (1314:16) {#if uploadError}
+// (1323:16) {#if uploadError}
 function create_if_block_26(ctx) {
 	let div;
 	let t0;
@@ -5820,7 +5820,7 @@ function create_if_block_26(ctx) {
 	};
 }
 
-// (1324:18) {:else}
+// (1333:18) {:else}
 function create_else_block_2(ctx) {
 	let each_1_anchor;
 	let each_value = /*logs*/ ctx[18];
@@ -5878,7 +5878,7 @@ function create_else_block_2(ctx) {
 	};
 }
 
-// (1322:18) {#if logs.length === 0}
+// (1331:18) {#if logs.length === 0}
 function create_if_block_25(ctx) {
 	let div;
 
@@ -5898,7 +5898,7 @@ function create_if_block_25(ctx) {
 	};
 }
 
-// (1325:20) {#each logs as l}
+// (1334:20) {#each logs as l}
 function create_each_block(ctx) {
 	let div;
 	let t0_value = /*l*/ ctx[145].time + "";
@@ -5944,7 +5944,7 @@ function create_each_block(ctx) {
 	};
 }
 
-// (1336:14) {#if showReleaseModal}
+// (1345:14) {#if showReleaseModal}
 function create_if_block_20(ctx) {
 	let div2;
 	let div0;
@@ -6093,7 +6093,7 @@ function create_if_block_20(ctx) {
 	};
 }
 
-// (1339:18) {#if assetName}
+// (1348:18) {#if assetName}
 function create_if_block_24(ctx) {
 	let div;
 	let t0;
@@ -6119,7 +6119,7 @@ function create_if_block_24(ctx) {
 	};
 }
 
-// (1342:18) {#if assetDownloadUrl}
+// (1351:18) {#if assetDownloadUrl}
 function create_if_block_23(ctx) {
 	let div;
 	let t0;
@@ -6155,7 +6155,7 @@ function create_if_block_23(ctx) {
 	};
 }
 
-// (1345:18) {#if releaseUrl}
+// (1354:18) {#if releaseUrl}
 function create_if_block_22(ctx) {
 	let div;
 	let t0;
@@ -6191,7 +6191,7 @@ function create_if_block_22(ctx) {
 	};
 }
 
-// (1353:18) {#if uploadError}
+// (1362:18) {#if uploadError}
 function create_if_block_21(ctx) {
 	let div;
 	let t0;
@@ -6218,7 +6218,7 @@ function create_if_block_21(ctx) {
 	};
 }
 
-// (1367:10) {#if $options.target.includes('electron')}
+// (1376:10) {#if $options.target.includes('electron')}
 function create_if_block_18(ctx) {
 	let label0;
 	let t0_value = /*$_*/ ctx[19]('options.initalWindowSize') + "";
@@ -6413,7 +6413,7 @@ function create_if_block_18(ctx) {
 	};
 }
 
-// (1422:54) 
+// (1431:54) 
 function create_if_block_17(ctx) {
 	let div;
 
@@ -6433,7 +6433,7 @@ function create_if_block_17(ctx) {
 	};
 }
 
-// (1413:52) 
+// (1422:52) 
 function create_if_block_16(ctx) {
 	let div;
 
@@ -6455,7 +6455,7 @@ function create_if_block_16(ctx) {
 	};
 }
 
-// (1407:10) {#if $options.target.includes('win')}
+// (1416:10) {#if $options.target.includes('win')}
 function create_if_block_15(ctx) {
 	let div;
 
@@ -6476,7 +6476,7 @@ function create_if_block_15(ctx) {
 	};
 }
 
-// (1454:60) 
+// (1463:60) 
 function create_if_block_14(ctx) {
 	let div;
 
@@ -6503,7 +6503,7 @@ function create_if_block_14(ctx) {
 	};
 }
 
-// (1444:53) 
+// (1453:53) 
 function create_if_block_12(ctx) {
 	let div;
 	let h2;
@@ -6572,7 +6572,7 @@ function create_if_block_12(ctx) {
 	};
 }
 
-// (1429:10) {#if $options.target.includes('electron')}
+// (1438:10) {#if $options.target.includes('electron')}
 function create_if_block_7(ctx) {
 	let div;
 	let h2;
@@ -6641,7 +6641,7 @@ function create_if_block_7(ctx) {
 	};
 }
 
-// (1450:14) {#if $options.target.includes('mac')}
+// (1459:14) {#if $options.target.includes('mac')}
 function create_if_block_13(ctx) {
 	let p;
 
@@ -6660,7 +6660,7 @@ function create_if_block_13(ctx) {
 	};
 }
 
-// (1440:58) 
+// (1449:58) 
 function create_if_block_11(ctx) {
 	let p;
 
@@ -6680,7 +6680,7 @@ function create_if_block_11(ctx) {
 	};
 }
 
-// (1438:56) 
+// (1447:56) 
 function create_if_block_10(ctx) {
 	let p;
 
@@ -6700,7 +6700,7 @@ function create_if_block_10(ctx) {
 	};
 }
 
-// (1434:14) {#if $options.target.includes('win')}
+// (1443:14) {#if $options.target.includes('win')}
 function create_if_block_8(ctx) {
 	let show_if = /*$options*/ ctx[1].target.includes('32');
 	let if_block_anchor;
@@ -6738,7 +6738,7 @@ function create_if_block_8(ctx) {
 	};
 }
 
-// (1435:16) {#if $options.target.includes('32')}
+// (1444:16) {#if $options.target.includes('32')}
 function create_if_block_9(ctx) {
 	let p;
 
@@ -6757,7 +6757,7 @@ function create_if_block_9(ctx) {
 	};
 }
 
-// (1225:4) <Section       accent="#FF661A"       reset={$options.target.startsWith('zip') ? null : () => {         resetOptions([           'app.packageName',           'app.windowMode',           'app.escapeBehavior'         ]);       }}     >
+// (1234:4) <Section       accent="#FF661A"       reset={$options.target.startsWith('zip') ? null : () => {         resetOptions([           'app.packageName',           'app.windowMode',           'app.escapeBehavior'         ]);       }}     >
 function create_default_slot_5(ctx) {
 	let div;
 	let show_if;
@@ -6801,7 +6801,7 @@ function create_default_slot_5(ctx) {
 	};
 }
 
-// (1474:0) {#if projectData.project.analysis.usesSteamworks}
+// (1483:0) {#if projectData.project.analysis.usesSteamworks}
 function create_if_block_2(ctx) {
 	let section;
 	let current;
@@ -6847,7 +6847,7 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (1504:4) {:else}
+// (1513:4) {:else}
 function create_else_block(ctx) {
 	let p;
 	let t0_value = /*$_*/ ctx[19]('options.steamworksUnavailable') + "";
@@ -6924,7 +6924,7 @@ function create_else_block(ctx) {
 	};
 }
 
-// (1484:4) {#if ['electron-win64', 'electron-linux64', 'electron-mac'].includes($options.target)}
+// (1493:4) {#if ['electron-win64', 'electron-linux64', 'electron-mac'].includes($options.target)}
 function create_if_block_3(ctx) {
 	let p;
 	let t0_value = /*$_*/ ctx[19]('options.steamworksAvailable').replace('{n}', '480') + "";
@@ -7072,7 +7072,7 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (1499:6) {#if $options.target === 'electron-mac'}
+// (1508:6) {#if $options.target === 'electron-mac'}
 function create_if_block_4(ctx) {
 	let p;
 	let t_value = /*$_*/ ctx[19]('options.steamworksMacWarning') + "";
@@ -7097,7 +7097,7 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (1475:2) <Section     accent="#136C9F"     reset={() => {       resetOptions([         'steamworks'       ]);     }}   >
+// (1484:2) <Section     accent="#136C9F"     reset={() => {       resetOptions([         'steamworks'       ]);     }}   >
 function create_default_slot_4(ctx) {
 	let h2;
 	let t0_value = /*$_*/ ctx[19]('options.steamworksExtension') + "";
@@ -7170,7 +7170,7 @@ function create_default_slot_4(ctx) {
 	};
 }
 
-// (1524:2) <DropArea on:drop={(e) => importOptionsFromDataTransfer(e.detail)}>
+// (1533:2) <DropArea on:drop={(e) => importOptionsFromDataTransfer(e.detail)}>
 function create_default_slot_3(ctx) {
 	let div3;
 	let div0;
@@ -7271,7 +7271,7 @@ function create_default_slot_3(ctx) {
 	};
 }
 
-// (1523:0) <Section>
+// (1532:0) <Section>
 function create_default_slot_2(ctx) {
 	let droparea;
 	let current;
@@ -7317,7 +7317,7 @@ function create_default_slot_2(ctx) {
 	};
 }
 
-// (1539:0) <Section>
+// (1548:0) <Section>
 function create_default_slot_1(ctx) {
 	let div2;
 	let div0;
@@ -7390,7 +7390,7 @@ function create_default_slot_1(ctx) {
 	};
 }
 
-// (1557:29) 
+// (1566:29) 
 function create_if_block_1(ctx) {
 	let section;
 	let current;
@@ -7435,7 +7435,7 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (1551:0) {#if result}
+// (1560:0) {#if result}
 function create_if_block(ctx) {
 	let downloads;
 	let current;
@@ -7478,7 +7478,7 @@ function create_if_block(ctx) {
 	};
 }
 
-// (1558:2) <Section caption>
+// (1567:2) <Section caption>
 function create_default_slot(ctx) {
 	let p;
 	let t_value = /*$_*/ ctx[19]('options.downloadsWillAppearHere') + "";
@@ -8174,8 +8174,9 @@ function instance($$self, $$props, $$invalidate) {
 			});
 
 			if (!resp.ok) {
-				const text = await resp.text();
-				throw new Error(text || '删除失败');
+				const errorData = await resp.json().catch(() => ({}));
+				const errorMsg = errorData.message || `HTTP ${resp.status}: ${resp.statusText}`;
+				throw new Error(errorMsg);
 			}
 
 			alert('仓库已删除');
@@ -8186,8 +8187,16 @@ function instance($$self, $$props, $$invalidate) {
 			$$invalidate(12, assetName = '');
 			$$invalidate(14, showReleaseModal = false);
 		} catch(e) {
-			$$invalidate(9, uploadError = e.message || '删除失败');
-			addLog('error', `删除仓库失败: ${uploadError}`);
+			const errorMsg = e.message || '删除失败';
+			$$invalidate(9, uploadError = `删除仓库失败: ${errorMsg}`);
+			addLog('error', uploadError);
+
+			// Provide helpful guidance for common errors
+			if (errorMsg.includes('admin rights') || errorMsg.includes('403')) {
+				alert(`删除失败: 您没有此仓库的管理员权限。\n\n请手动在GitHub上删除仓库: ${createdRepoUrl}`);
+			} else {
+				alert(`删除失败: ${errorMsg}\n\n请手动在GitHub上删除仓库: ${createdRepoUrl}`);
+			}
 		}
 	};
 
@@ -9696,12 +9705,21 @@ jobs:
 
   // Optionally delete the repo only if explicitly requested (default: false)
   if (autoDelete) {
-    const delResp = await fetch(`${apiBase}/repos/${githubUser}/${repoName}`, {
-      method: 'DELETE',
-      headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github+json' }
-    });
-    if (!delResp.ok) {
-      console.warn('删除临时仓库失败:', await delResp.text());
+    try {
+      const delResp = await fetch(`${apiBase}/repos/${githubUser}/${repoName}`, {
+        method: 'DELETE',
+        headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github+json' }
+      });
+      if (!delResp.ok) {
+        const errorData = await delResp.json().catch(() => ({}));
+        console.warn('删除临时仓库失败:', errorData.message || `HTTP ${delResp.status}`);
+        progress(`警告: 无法自动删除临时仓库，请手动删除: ${createdRepoUrl}`);
+      } else {
+        progress('临时仓库已自动删除');
+      }
+    } catch (e) {
+      console.warn('删除临时仓库时发生错误:', e);
+      progress(`警告: 无法自动删除临时仓库，请手动删除: ${createdRepoUrl}`);
     }
   }
 
