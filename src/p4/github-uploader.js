@@ -30,102 +30,160 @@ export async function uploadAndBuildFromTemplate(opts, progressCallback = null) 
       // ignore
     }
   };
-  // Try to generate repo from template. Some tokens/accounts may not be allowed to use template generation,
-  // so fall back to creating a fresh repo via POST /user/repos (auto_init: true) if generate fails.
-  progress('尝试使用模板生成临时仓库...');
-  const genResp = await fetch(genUrl, {
+  // First, check if the user is an organization or personal account
+  progress('正在检查用户类型...');
+  const userResp = await fetch(`${apiBase}/users/${githubUser}`, {
+    headers: {
+      Authorization: `token ${githubToken}`,
+      Accept: 'application/vnd.github+json'
+    }
+  });
+
+  if (!userResp.ok) {
+    throw new Error(`无法获取用户信息: ${userResp.status}`);
+  }
+
+  const userData = await userResp.json();
+  const isOrg = userData.type === 'Organization';
+
+  // Generate a new repo from the template
+  progress(`正在从模板仓库生成新仓库${isOrg ? ' (组织)' : ''}...`);
+
+  const generateResp = await fetch(genUrl, {
     method: 'POST',
     headers: {
       Authorization: `token ${githubToken}`,
       'Content-Type': 'application/json',
-      // older previews used "baptiste-preview" but generic json is usually accepted; include both as Accept
-      Accept: 'application/vnd.github.baptiste-preview+json, application/vnd.github+json'
+      Accept: 'application/vnd.github+json'
     },
-    body: JSON.stringify({ name: repoName, owner: githubUser, private: false })
+    body: JSON.stringify({
+      owner: githubUser,
+      name: repoName,
+      description: 'Temp repo created by packager from template',
+      private: false
+    })
   });
 
-  let createdRepoUrl;
-  if (genResp.ok) {
-    const genJson = await genResp.json();
-    createdRepoUrl = genJson.html_url || `https://github.com/${githubUser}/${repoName}`;
-    progress(`仓库已从模板生成: ${createdRepoUrl}`);
+  if (!generateResp.ok) {
+    const genErr = await generateResp.text();
+    throw new Error(`无法从模板生成仓库 (status: ${generateResp.status}). 错误: ${genErr}`);
+  }
+
+  const genJson = await generateResp.json();
+  const createdRepoUrl = genJson.html_url || `https://github.com/${githubUser}/${repoName}`;
+  progress(`仓库已从模板生成: ${createdRepoUrl}`);
+
+  // Add the GitHub Actions workflow file directly
+  progress('正在添加构建工作流...');
+  const workflowContent = `name: Cordova Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  # required to modify releases
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Check out the repository code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up Node.js
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Set up Java 17
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+
+      # Set up Android SDK and Build Tools
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          cmdline-tools-version: 'latest'
+
+      # Install Android Build Tools
+      - name: Install Android Build Tools
+        run: |
+          sdkmanager "build-tools;30.0.3" "platform-tools" "platforms;android-33"
+        env:
+          ANDROID_HOME: \${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: \${{ env.ANDROID_HOME }}
+
+      # Set up Gradle
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '7.6.5' # Specify a stable Gradle version compatible with Android builds
+
+      # Install Cordova globally
+      - name: Install Cordova
+        run: npm install -g cordova
+
+      # Find and unzip the project's zip file
+      - name: Unzip project
+        run: |
+          ZIP_FILE=\$(find . -maxdepth 1 -name "*.zip" -type f)
+          if [ -z "\$ZIP_FILE" ]; then
+            echo "No zip file found"
+            exit 1
+          fi
+          unzip "\$ZIP_FILE" -d project
+          rm "\$ZIP_FILE"
+
+      # Navigate to unzipped project directory and run npm install
+      - name: Install dependencies
+        run: |
+          cd project
+          npm install
+
+      # Run npm build
+      - name: Build project
+        run: |
+          cd project
+          npm run build
+        env:
+          ANDROID_HOME: \${{ env.ANDROID_HOME }}
+          ANDROID_SDK_ROOT: \${{ env.ANDROID_HOME }}
+
+      - name: Upload artifacts to tag
+        uses: xresloader/upload-to-github-release@2bcae85344d41e21f7fc4c47fa2ed68223afdb49
+        with:
+          file: ./project/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          draft: false
+          tag_name: "deep-sea-build"`;
+
+  const workflowResp = await fetch(`${apiBase}/repos/${githubUser}/${repoName}/contents/.github/workflows/${workflowId}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `token ${githubToken}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/vnd.github+json'
+    },
+    body: JSON.stringify({
+      message: 'Add Cordova build workflow',
+      content: btoa(workflowContent)
+    })
+  });
+  if (!workflowResp.ok) {
+    console.warn('添加工作流失败:', await workflowResp.text());
   } else {
-    // Fallback: create a repo under the authenticated user (POST /user/repos)
-    progress('模板生成失败，尝试在账户下创建临时仓库...');
-    const fallbackResp = await fetch(`${apiBase}/user/repos`, {
-      method: 'POST',
-      headers: {
-        Authorization: `token ${githubToken}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/vnd.github+json'
-      },
-      body: JSON.stringify({ name: repoName, private: false, auto_init: true, description: 'Temp repo created by packager' })
-    });
-    if (!fallbackResp.ok) {
-      const err = await genResp.text();
-      const fbErr = await fallbackResp.text();
-      throw new Error(`无法生成或创建仓库 (generate status: ${genResp.status} / fallback status: ${fallbackResp.status}). 生成错误: ${err}; 创建错误: ${fbErr}`);
-    }
-    const fbJson = await fallbackResp.json();
-    createdRepoUrl = fbJson.html_url || `https://github.com/${githubUser}/${repoName}`;
-    // If the source "template" repo isn't an actual GitHub template, copy its contents into the new repo
-    async function copyTemplateContents() {
-      const headers = { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github+json' };
-
-      // Determine default branch of template repo
-      let defaultBranch = 'main';
-      try {
-        const infoResp = await fetch(`${apiBase}/repos/${templateOwner}/${templateRepo}`, { headers });
-        if (infoResp.ok) {
-          const infoJson = await infoResp.json();
-          if (infoJson.default_branch) defaultBranch = infoJson.default_branch;
-        }
-      } catch (e) {
-        console.warn('无法获取模板仓库信息，使用默认分支 main', e);
-      }
-
-  // Get the tree of the template repo recursively
-      const treeResp = await fetch(`${apiBase}/repos/${templateOwner}/${templateRepo}/git/trees/${encodeURIComponent(defaultBranch)}?recursive=1`, { headers });
-      if (!treeResp.ok) {
-        console.warn('无法获取模板 tree，跳过复制:', await treeResp.text());
-        return;
-      }
-      const treeJson = await treeResp.json();
-      const blobs = (treeJson.tree || []).filter(i => i.type === 'blob');
-
-      for (const b of blobs) {
-        try {
-          const blobResp = await fetch(`${apiBase}/repos/${templateOwner}/${templateRepo}/git/blobs/${b.sha}`, { headers });
-          if (!blobResp.ok) {
-            console.warn(`无法获取 blob ${b.path}:`, await blobResp.text());
-            continue;
-          }
-          const blobJson = await blobResp.json();
-          let contentBase64 = blobJson.content || '';
-          // blob content may contain newlines
-          contentBase64 = contentBase64.replace(/\n/g, '');
-
-          // Upload to target repo via contents API
-          const putResp = await fetch(`${apiBase}/repos/${githubUser}/${repoName}/contents/${encodeURIComponent(b.path)}`, {
-            method: 'PUT',
-            headers: { Authorization: `token ${githubToken}`, 'Content-Type': 'application/json', Accept: 'application/vnd.github+json' },
-            body: JSON.stringify({ message: `Add template file ${b.path}`, content: contentBase64 })
-          });
-          if (!putResp.ok) {
-            console.warn(`上传模板文件失败 ${b.path}:`, await putResp.text());
-          }
-        } catch (err) {
-          console.warn('复制模板文件出错:', err);
-        }
-      }
-    }
-
-    try {
-      await copyTemplateContents();
-      progress('模板内容已复制到新仓库');
-    } catch (e) {
-      console.warn('复制模板内容失败:', e);
-    }
+    progress('构建工作流已添加');
   }
 
   // 2) Upload the packed file to the repo via contents API

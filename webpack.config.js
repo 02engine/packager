@@ -26,7 +26,7 @@ const getVersion = () => {
     const version = packageJSON.version;
     return `Standalone v${version} (${dateString})`;
   }*/
-  return 'beta';
+  return 'v2.1.0';
 };
 const version = getVersion();
 
