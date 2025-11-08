@@ -292,12 +292,21 @@ jobs:
 
   // Optionally delete the repo only if explicitly requested (default: false)
   if (autoDelete) {
-    const delResp = await fetch(`${apiBase}/repos/${githubUser}/${repoName}`, {
-      method: 'DELETE',
-      headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github+json' }
-    });
-    if (!delResp.ok) {
-      console.warn('删除临时仓库失败:', await delResp.text());
+    try {
+      const delResp = await fetch(`${apiBase}/repos/${githubUser}/${repoName}`, {
+        method: 'DELETE',
+        headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github+json' }
+      });
+      if (!delResp.ok) {
+        const errorData = await delResp.json().catch(() => ({}));
+        console.warn('删除临时仓库失败:', errorData.message || `HTTP ${delResp.status}`);
+        progress(`警告: 无法自动删除临时仓库，请手动删除: ${createdRepoUrl}`);
+      } else {
+        progress('临时仓库已自动删除');
+      }
+    } catch (e) {
+      console.warn('删除临时仓库时发生错误:', e);
+      progress(`警告: 无法自动删除临时仓库，请手动删除: ${createdRepoUrl}`);
     }
   }
 

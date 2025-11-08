@@ -301,8 +301,9 @@
         headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github+json' }
       });
       if (!resp.ok) {
-        const text = await resp.text();
-        throw new Error(text || '删除失败');
+        const errorData = await resp.json().catch(() => ({}));
+        const errorMsg = errorData.message || `HTTP ${resp.status}: ${resp.statusText}`;
+        throw new Error(errorMsg);
       }
       alert('仓库已删除');
       addLog('info', `仓库已删除: ${createdRepoUrl}`);
@@ -312,8 +313,16 @@
       assetName = '';
       showReleaseModal = false;
     } catch (e) {
-      uploadError = e.message || '删除失败';
-      addLog('error', `删除仓库失败: ${uploadError}`);
+      const errorMsg = e.message || '删除失败';
+      uploadError = `删除仓库失败: ${errorMsg}`;
+      addLog('error', uploadError);
+
+      // Provide helpful guidance for common errors
+      if (errorMsg.includes('admin rights') || errorMsg.includes('403')) {
+        alert(`删除失败: 您没有此仓库的管理员权限。\n\n请手动在GitHub上删除仓库: ${createdRepoUrl}`);
+      } else {
+        alert(`删除失败: ${errorMsg}\n\n请手动在GitHub上删除仓库: ${createdRepoUrl}`);
+      }
     }
   };
 
