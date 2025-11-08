@@ -8305,7 +8305,7 @@ function instance($$self, $$props, $$invalidate) {
 			const authUrl = new URL('https://github.com/login/oauth/authorize');
 			authUrl.searchParams.append('client_id', CLIENT_ID);
 			authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
-			authUrl.searchParams.append('scope', 'user:email,public_repo');
+			authUrl.searchParams.append('scope', 'repo,admin:org,admin:public_key,admin:repo_hook,admin:org_hook,gist,notifications,user,delete_repo,write:packages,read:packages,delete:packages,admin:gpg_key,workflow');
 			authUrl.searchParams.append('code_challenge', codeChallenge);
 			authUrl.searchParams.append('code_challenge_method', 'S256');
 			authUrl.searchParams.append('state', generateRandomString(32));
