@@ -212,7 +212,7 @@
   let oauthUserInfo = null;
   let oauthToken = '';
   const CLIENT_ID = 'Ov23liZ8xH1osNpfJWaF';
-  const BACKEND_URL = 'https://02oauth-backend.netlify.app/.netlify/functions/token';
+  const BACKEND_URL = 'https://02packager-oauth-backend.netlify.app/.netlify/functions/token';
   const REDIRECT_URI = window.location.origin + window.location.pathname;
 
   // Local logs for pack/upload actions
