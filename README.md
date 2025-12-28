@@ -2,7 +2,7 @@
 
 https://packager.02engine.02studio.xyz/
 
-Converts Scratch projects into HTML files, zip archives, or executable programs for Windows, macOS, and Linux.Make projects faster than Turbowarp.
+Converts Scratch projects into HTML files, zip archives, or executable programs for Windows, macOS, Linux and Android.Designed for 02Engine projects.
 
 ## Development
 
