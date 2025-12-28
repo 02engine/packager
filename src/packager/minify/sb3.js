@@ -134,12 +134,21 @@ const optimizeSb3Json = (projectData) => {
       }
       delete block.x;
       delete block.y;
-      delete block.comment;
+      if (block.comments) {
+        for (const [commentId, comment] of Object.entries(block.comments)) {
+          const text = comment.text;
+          const isSpecial = text.includes('#code');
+          if (!isSpecial) {
+            newComments[commentId] = comment;
+          }
+        }
+      }
     }
+    
     if (target.comments) {
       for (const [commentId, comment] of Object.entries(target.comments)) {
         const text = comment.text;
-        const isSpecial = text.includes(' // _twconfig_') || text.includes(' // _gamepad_');
+        const isSpecial = text.includes(' // _twconfig_') || text.includes(' // _gamepad_') || text.includes('#code');
         if (isSpecial) {
           newComments[commentId] = comment;
         }
