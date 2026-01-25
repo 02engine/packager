@@ -21314,6 +21314,44 @@ module.exports = function lookupClosestLocale (locale/*: string | string[] | voi
 
 /***/ }),
 
+/***/ "./node_modules/node-fetch/browser.js":
+/*!********************************************!*\
+  !*** ./node_modules/node-fetch/browser.js ***!
+  \********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(global) {
+
+// ref: https://github.com/tc39/proposal-global
+var getGlobal = function () {
+	// the only reliable means to get the global object is
+	// `Function('return this')()`
+	// However, this causes CSP violations in Chrome apps.
+	if (typeof self !== 'undefined') { return self; }
+	if (typeof window !== 'undefined') { return window; }
+	if (typeof global !== 'undefined') { return global; }
+	throw new Error('unable to locate global object');
+}
+
+var globalObject = getGlobal();
+
+module.exports = exports = globalObject.fetch;
+
+// Needed for TypeScript and Webpack.
+if (globalObject.fetch) {
+	exports.default = globalObject.fetch.bind(globalObject);
+}
+
+exports.Headers = globalObject.Headers;
+exports.Request = globalObject.Request;
+exports.Response = globalObject.Response;
+
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
+
+/***/ }),
+
 /***/ "./node_modules/process/browser.js":
 /*!*****************************************!*\
   !*** ./node_modules/process/browser.js ***!
@@ -33045,6 +33083,17 @@ assert.validate = function (test, message) {
   if (!test) throw new ValidationError(message);
 };
 
+
+/***/ }),
+
+/***/ "./node_modules/scratch-vm/node_modules/jsdom/lib/api.js":
+/*!***************************************************************!*\
+  !*** ./node_modules/scratch-vm/node_modules/jsdom/lib/api.js ***!
+  \***************************************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+throw new Error("Module parse failed: Unexpected token (140:46)\nYou may need an appropriate loader to handle this file type, currently no loaders are configured to process this file. See https://webpack.js.org/concepts#loaders\n|           url: req.href + originalHash,\n|           contentType: res.headers[\"content-type\"],\n>           referrer: req.getHeader(\"referer\") ?? undefined\n|         });\n| ");
 
 /***/ }),
 
@@ -51204,6 +51253,17 @@ const AsyncLimiter = __webpack_require__(/*! ../util/async-limiter */ "./node_mo
 const createTranslate = __webpack_require__(/*! ./tw-l10n */ "./node_modules/scratch-vm/src/extension-support/tw-l10n.js");
 const staticFetch = __webpack_require__(/*! ../util/tw-static-fetch */ "./node_modules/scratch-vm/src/util/tw-static-fetch.js");
 
+// 尝试导入Node.js环境的依赖
+let JSDOM, nodeFetch;
+try {
+  // 动态导入，避免在浏览器环境中出错
+  JSDOM = __webpack_require__(/*! jsdom */ "./node_modules/scratch-vm/node_modules/jsdom/lib/api.js").JSDOM;
+  nodeFetch = __webpack_require__(/*! node-fetch */ "./node_modules/node-fetch/browser.js");
+} catch (error) {
+  // 在浏览器环境中这些模块可能不可用
+  console.debug('Node.js modules not available, running in browser environment');
+}
+
 /* eslint-disable require-await */
 
 /**
@@ -51353,12 +51413,12 @@ const teardownUnsandboxedExtensionAPI = () => {
 };
 
 /**
- * Load an unsandboxed extension from an arbitrary URL. This is dangerous.
+ * 浏览器环境的加载函数
  * @param {string} extensionURL
- * @param {Virtualmachine} vm
- * @returns {Promise<object[]>} Resolves with a list of extension objects if the extension was loaded successfully.
+ * @param {VirtualMachine} vm
+ * @returns {Promise<object[]>}
  */
-const loadUnsandboxedExtension = (extensionURL, vm) => new Promise((resolve, reject) => {
+const loadUnsandboxedExtensionBrowser = (extensionURL, vm) => new Promise((resolve, reject) => {
   setupUnsandboxedExtensionAPI(vm).then(resolve);
   const script = document.createElement('script');
   script.onerror = () => {
@@ -51370,6 +51430,71 @@ const loadUnsandboxedExtension = (extensionURL, vm) => new Promise((resolve, rej
   teardownUnsandboxedExtensionAPI();
   return objects;
 });
+
+/**
+ * Node.js环境的加载函数
+ * @param {string} extensionURL
+ * @param {VirtualMachine} vm
+ * @returns {Promise<object[]>}
+ */
+const loadUnsandboxedExtensionNode = async (extensionURL, vm) => {
+  // 检查是否已设置全局document对象
+  if (!global.document && JSDOM) {
+    // 模拟浏览器环境核心对象
+    const dom = new JSDOM('<!DOCTYPE html><body></body>');
+    global.document = dom.window.document;
+    global.window = dom.window;
+    global.location = dom.window.location;
+    global.fetch = nodeFetch; // 使用node-fetch替换浏览器fetch
+  } else if (!global.document) {
+    throw new Error('Document object not available. Running in Node.js environment requires jsdom package.');
+  }
+
+  // 初始化扩展API并等待注册回调
+  const extensionObjectsPromise = setupUnsandboxedExtensionAPI(vm);
+  try {
+    // 用node-fetch下载扩展脚本
+    const response = await fetch(extensionURL);
+    if (!response.ok) {
+      throw new Error("HTTP error! status: ".concat(response.status));
+    }
+    const scriptCode = await response.text();
+
+    // 在模拟的window环境中执行脚本
+    // 使用eval或vm.runInContext取决于安全性要求
+    // 这里使用window.eval确保在正确的上下文中执行
+    if (global.window && global.window.eval) {
+      global.window.eval(scriptCode);
+    } else {
+      // 降级方案
+      eval(scriptCode); // eslint-disable-line no-eval
+    }
+  } catch (err) {
+    throw new Error("Error loading unsandboxed extension ".concat(extensionURL, ": ").concat(err.message));
+  }
+
+  // 获取注册的扩展对象并清理
+  const objects = await extensionObjectsPromise;
+  teardownUnsandboxedExtensionAPI();
+  return objects;
+};
+
+/**
+ * 自动检测环境并选择合适的加载方法
+ * Load an unsandboxed extension from an arbitrary URL. This is dangerous.
+ * @param {string} extensionURL
+ * @param {VirtualMachine} vm
+ * @returns {Promise<object[]>} Resolves with a list of extension objects if the extension was loaded successfully.
+ */
+const loadUnsandboxedExtension = (extensionURL, vm) => {
+  // 检测环境：如果存在document对象且具有createElement方法，则使用浏览器方法
+  if (typeof document !== 'undefined' && document.createElement) {
+    return loadUnsandboxedExtensionBrowser(extensionURL, vm);
+  }
+
+  // 否则使用Node.js方法
+  return loadUnsandboxedExtensionNode(extensionURL, vm);
+};
 
 // Because loading unsandboxed extensions requires messing with global state (global.Scratch),
 // only let one extension load at a time.
@@ -63787,7 +63912,7 @@ const loadCostume = function loadCostume(md5ext, costume, runtime, optVersion) {
 
   // Need to load the costume from storage. The server should have a reference to this md5.
   if (!runtime.storage) {
-    log.warn('No storage module present; cannot load costume asset: ', md5ext);
+    //log.warn('No storage module present; cannot load costume asset: ', md5ext);
     return Promise.resolve(costume);
   }
   if (!runtime.storage.defaultAssetId) {
@@ -65391,7 +65516,7 @@ const deserializeCostume = function deserializeCostume(costume, runtime, zip, as
   const assetId = costume.assetId;
   const fileName = assetFileName ? assetFileName : "".concat(assetId, ".").concat(costume.dataFormat);
   if (!storage) {
-    log.warn('No storage module present; cannot load costume asset: ', fileName);
+    //log.warn('No storage module present; cannot load costume asset: ', fileName);
     return Promise.resolve(null);
   }
   if (costume.asset) {
@@ -69687,20 +69812,16 @@ const deserialize = async function deserialize(json, runtime, zip, isSingleSprit
 
   // Restore platform data from meta.platform, including git information
   if (json.meta && json.meta.platform) {
-    console.log('[Git] Restoring platform data from SB3 meta:', json.meta.platform);
     // eslint-disable-next-line require-atomic-updates
     runtime.platform = Object.assign({}, runtime.platform, json.meta.platform);
-    console.log('[Git] Updated runtime.platform:', runtime.platform);
   } else {
     // If no platform data in meta, reset git data to defaults
-    console.log('[Git] No platform data in SB3 meta, resetting git data to defaults');
     // eslint-disable-next-line require-atomic-updates
     runtime.platform.git = {
       repository: null,
       lastCommit: null,
       lastFetch: null
     };
-    console.log('[Git] Reset runtime.platform.git to defaults:', runtime.platform.git);
   }
 
   // Extract custom extension IDs, if they exist.
@@ -73738,13 +73859,11 @@ class VirtualMachine extends EventEmitter {
 
     // Clear Git data when loading new project to prevent data from previous project
     if (this.runtime && this.runtime.platform && this.runtime.platform.git) {
-      console.log('[Git] Clearing platform.git data before loading new project');
       this.runtime.platform.git = {
         repository: null,
         lastCommit: null,
         lastFetch: null
       };
-      console.log('[Git] Platform.git data cleared:', this.runtime.platform.git);
     }
     if (typeof performance !== 'undefined') {
       performance.mark('scratch-vm-deserialize-start');

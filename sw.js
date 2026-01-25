@@ -1,6 +1,6 @@
 // These will be replaced at build-time by generate-service-worker-plugin.js
-const ASSETS = ["","assets/reset.80a6e1615fc013684ad8047dba5ce064.svg","assets/default-icon.290e09e569a1cab8e61ba93b0d23863f.png","js/downloader.js","js/icns.js","js/jszip.js","js/p4.js","js/packager-options-ui.js","js/sha256.js","js/vendors~downloader~icns~jszip.js","js/vendors~downloader~icns~jszip~sha256.js","js/vendors~icns~sha256.js"];
-const CACHE_NAME = "p4-62cd08144846694db4356456f4d2f944b4e9272addd75e32fb5ec8a25a32880c";
+const ASSETS = ["","assets/reset.80a6e1615fc013684ad8047dba5ce064.svg","assets/default-icon.290e09e569a1cab8e61ba93b0d23863f.png","js/downloader.js","js/icns.js","js/jszip.js","js/p4.js","js/packager-options-ui.js","js/sha256.js","js/vendors~downloader~icns~jszip.js","js/vendors~downloader~packager-options-ui.js","js/vendors~icns~sha256.js"];
+const CACHE_NAME = "p4-1a78ece2ff600f58f012a309c0d8803269a1a8a2cfd0041386b79c6f8cf523a0";
 const IS_PRODUCTION = false;
 
 const base = location.pathname.substr(0, location.pathname.indexOf('sw.js'));
