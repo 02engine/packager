@@ -97,7 +97,10 @@
     'zip',
     'electron-win32',
     'webview-mac',
-    'electron-linux64'
+    'electron-linux64',
+    'node-cli-win64',
+    'node-cli-mac',
+    'node-cli-linux64'
   ].includes($options.target);
 
   const advancedOptionsInitiallyOpen = (
@@ -1225,6 +1228,21 @@
           {$_('options.application-linux64').replace('{type}', 'NW.js')}
         </label>
       </div>
+
+      <div class="group">
+        <label class="option">
+          <input type="radio" name="environment" bind:group={$options.target} value="node-cli-win64">
+          Node.js CLI (Windows 64-bit)
+        </label>
+        <label class="option">
+          <input type="radio" name="environment" bind:group={$options.target} value="node-cli-mac">
+          Node.js CLI (macOS)
+        </label>
+        <label class="option">
+          <input type="radio" name="environment" bind:group={$options.target} value="node-cli-linux64">
+          Node.js CLI (Linux 64-bit)
+        </label>
+      </div>
     </details>
   </div>
 </Section>
@@ -1472,6 +1490,65 @@
                 <li>Extremely large projects might not work properly.</li>
               </ul>
               <p>Use the "Electron macOS Application" (inside Other environments) or "Plain HTML" environments instead if you encounter these issues.</p>
+            </div>
+          {:else if $options.target.includes('node-cli')}
+            <div>
+              <h2>Node.js CLI</h2>
+              <p>Node.js CLI runs your Scratch project directly in Node.js environment using scratch-vm. This is intended for server-side execution, automated testing, or batch processing tasks.</p>
+              <p><strong>Advantages:</strong></p>
+              <ul>
+                <li>Small file size (~20-30MB vs ~100MB for Electron)</li>
+                <li>Fast startup (no browser overhead)</li>
+                <li>No cache or GPU issues</li>
+                <li>Direct event monitoring</li>
+                <li>Stable and reliable</li>
+              </ul>
+              <p><strong>Command Line Arguments:</strong></p>
+              <p>You can pass arguments to your application like this:</p>
+              <pre><code>app.exe your-project.sb3 --arg1 value1 --arg2 value2 --flag</code></pre>
+              <p><strong>CLI API Available:</strong></p>
+              <p>In CLI mode, you can use the following JavaScript functions in your Scratch project:</p>
+              <ul>
+                <li><code>cli.log(message)</code> - Output text to console</li>
+                <li><code>cli.error(message)</code> - Output error to console</li>
+                <li><code>cli.warn(message)</code> - Output warning to console</li>
+                <li><code>cli.info(message)</code> - Output info to console</li>
+                <li><code>cli.exit(code)</code> - Exit the application (0 = success, non-zero = error)</li>
+                <li><code>cli.getArgs()</code> - Get all command line arguments as an object</li>
+                <li><code>cli.getArg(key)</code> - Get a specific command line argument by key</li>
+              </ul>
+              <p><strong>Example Usage:</strong></p>
+              <pre><code>// Get command line arguments
+const args = cli.getArgs();
+cli.log('Arguments:', args);
+
+// Get specific argument
+const mode = cli.getArg('mode');
+if (mode === 'test') &#123;
+  cli.log('Running in test mode');
+&#125;
+
+// Exit with success code
+cli.exit(0);</code></pre>
+              <p><strong>Packaging Instructions:</strong></p>
+              <p>After downloading the package:</p>
+              <ol>
+                <li>Extract the ZIP file to a folder</li>
+                <li>Install <a href="https://nodejs.org/" target="_blank">Node.js</a> (version 18 or higher)</li>
+                <li>Open a terminal/command prompt in the extracted folder</li>
+                <li>Run <code>npm install</code> to install dependencies</li>
+                <li>Run <code>npm run build</code> to create the executable</li>
+                <li>The executable will be created in the same folder</li>
+                <li><strong>Simply run the executable - no external SB3 file needed!</strong></li>
+              </ol>
+              <p><strong>Important:</strong> Node.js CLI mode:</p>
+              <ul>
+                <li>No graphical output - project runs in headless mode</li>
+                <li>Mouse and keyboard interactions will not work</li>
+                <li>Audio playback may be limited</li>
+                <li>Some extensions may not be compatible</li>
+                <li>Perfect for automated testing, server-side execution, or background tasks</li>
+              </ul>
             </div>
           {/if}
         {/if}

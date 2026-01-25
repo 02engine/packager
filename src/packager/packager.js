@@ -910,6 +910,189 @@ cd "$(dirname "$0")"
     return zip;
   }
 
+  async addNodeCLI (projectZip) {
+    const packageName = this.options.app.packageName;
+    validatePackageName(packageName);
+
+    const zip = new (await getJSZip());
+
+    // Get the SB3 file from the original project array buffer
+    const sb3Buffer = this.project.arrayBuffer;
+
+    // Convert SB3 buffer to base64
+    const sb3Base64 = Buffer.from(sb3Buffer).toString('base64');
+
+    // Determine pkg target based on user selection
+    let pkgTarget;
+    if (this.options.target === 'node-cli-win64') {
+      pkgTarget = 'node18-win-x64';
+    } else if (this.options.target === 'node-cli-mac') {
+      pkgTarget = 'node18-macos-x64';
+    } else if (this.options.target === 'node-cli-linux64') {
+      pkgTarget = 'node18-linux-x64';
+    }
+
+    // Create package.json
+    const packageJson = {
+      name: packageName,
+      version: this.options.app.version,
+      description: `${packageName} - Scratch CLI Application`,
+      main: 'main.js',
+      bin: {
+        [packageName]: 'main.js'
+      },
+      scripts: {
+        'build': 'pkg .'
+      },
+      dependencies: {
+        'scratch-vm': 'github:02engine/scratch-vm#main',
+        '@turbowarp/scratch-storage': '^0.0.202505311821',
+        'jsdom': '^24.0.0',
+        'pkg': '^5.8.1'
+      },
+      pkg: {
+        targets: [pkgTarget]
+      }
+    };
+    zip.file('package.json', JSON.stringify(packageJson, null, 2));
+
+    // Create main.js with CLI API and scratch-vm integration
+    const mainJS = `#!/usr/bin/env node
+const fs = require('fs');
+const path = require('path');
+const VirtualMachine = require('scratch-vm');
+
+// Parse command line arguments
+const parseArgs = () => {
+  const args = process.argv.slice(2);
+  const parsed = {};
+  for (let i = 0; i < args.length; i++) {
+    if (args[i].startsWith('--')) {
+      const key = args[i].slice(2);
+      if (i + 1 < args.length && !args[i + 1].startsWith('--')) {
+        parsed[key] = args[i + 1];
+        i++;
+      } else {
+        parsed[key] = true;
+      }
+    }
+  }
+  return parsed;
+};
+
+const commandLineArgs = parseArgs();
+
+// CLI API
+const cli = {
+  log: (...args) => {
+    console.log(...args);
+  },
+  error: (...args) => {
+    console.error('[CLI ERROR]', ...args);
+  },
+  warn: (...args) => {
+    console.warn('[CLI WARNING]', ...args);
+  },
+  info: (...args) => {
+    console.info('[CLI INFO]', ...args);
+  },
+  exit: (code) => {
+    console.log('[CLI] Exiting with code:', code || 0);
+    process.exit(code || 0);
+  },
+  getArgs: () => {
+    return commandLineArgs;
+  },
+  getArg: (key) => {
+    return commandLineArgs[key];
+  }
+};
+
+// Expose CLI API globally for Scratch projects
+global.cli = cli;
+
+// Wait for all threads to complete
+const waitForCompletion = (vm) => {
+  return new Promise((resolve) => {
+    const checkInterval = setInterval(() => {
+      const activeThreads = vm.runtime.threads.filter(thread => !thread.updateMonitor);
+      if (activeThreads.length === 0) {
+        clearInterval(checkInterval);
+        vm.stopAll();
+        vm.quit();
+        resolve();
+      }
+    }, 100);
+  });
+};
+
+async function runSB3(base64Data) {
+  // Decode base64 to buffer
+  const buffer = Buffer.from(base64Data, 'base64');
+
+  // Initialize VM
+  const vm = new VirtualMachine();
+
+  // Listen to Scratch events
+  vm.runtime.on('SAY', (target, type, text) => {
+    cli.log(\`\${text}\`);
+  });
+
+  // Load project
+  await vm.loadProject(buffer);
+
+  // Start VM and trigger green flag
+  vm.start();
+  vm.greenFlag();
+
+  // Wait for all threads to complete
+  await waitForCompletion(vm);
+}
+
+// Embedded SB3 project (base64 encoded)
+const embeddedProject = '${sb3Base64}';
+
+// Run the embedded project
+runSB3(embeddedProject).catch(err => {
+  cli.error('Execution failed:', err);
+  cli.exit(1);
+});
+`;
+
+    zip.file('main.js', mainJS);
+
+    // Add README
+    const readme = `${packageName} - Scratch CLI Application
+
+Usage:
+  ${packageName} [options]
+
+Options:
+  --arg value    Pass arguments to the application
+  --flag         Enable a flag
+
+CLI API:
+  cli.log(message)        - Output text to console
+  cli.error(message)      - Output error to console
+  cli.warn(message)       - Output warning to console
+  cli.info(message)       - Output info to console
+  cli.exit(code)          - Exit the application
+  cli.getArgs()            - Get all command line arguments
+  cli.getArg(key)         - Get specific command line argument
+
+Example:
+  ${packageName} --mode test --verbose
+
+Important Notes:
+- The SB3 project is embedded in the executable, no external files needed
+- After running 'npm run build', the executable will be created in the same folder
+- Simply run the executable to start your project
+`;
+    zip.file('README.txt', readme);
+
+    return zip;
+  }
+
   async addWebViewMac (projectZip) {
     validatePackageName(this.options.app.packageName);
 
@@ -1846,6 +2029,8 @@ For detailed setup instructions, refer to the Cordova documentation.`;
         zip = await this.addWebViewMac(zip);
       } else if (this.options.target === 'cordova-android') {
         zip = await this.addCordovaAndroid(zip);
+      } else if (this.options.target.startsWith('node-cli-')) {
+        zip = await this.addNodeCLI(zip);
       }
 
       this.ensureNotAborted();
@@ -1991,6 +2176,9 @@ Packager.DEFAULT_OPTIONS = () => ({
     appId: '480',
     // 'ignore' (no alert), 'warning' (alert and continue), or 'error' (alert and exit)
     onError: 'warning'
+  },
+  nodeCli: {
+    exposeSystemAPIs: false
   },
   extensions: [],
   bakeExtensions: true,

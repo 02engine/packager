@@ -100,5 +100,10 @@ export default {
     src: relativeScaffolding('addons.js'),
     estimatedSize: 19931,
     useBuildId: true
+  },
+  'scratch-vm': {
+    src: 'https://registry.npmjs.org/scratch-vm/-/scratch-vm-16.0.0.tgz',
+    sha256: 'placeholder',
+    estimatedSize: 5000000
   }
 };
