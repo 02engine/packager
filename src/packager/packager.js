@@ -960,7 +960,14 @@ cd "$(dirname "$0")"
     const mainJS = `#!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
 const VirtualMachine = require('scratch-vm');
+
+// Create readline interface for user input
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
 
 // Parse command line arguments
 const parseArgs = () => {
@@ -998,6 +1005,7 @@ const cli = {
   },
   exit: (code) => {
     console.log('[CLI] Exiting with code:', code || 0);
+    rl.close();
     process.exit(code || 0);
   },
   getArgs: () => {
@@ -1020,6 +1028,7 @@ const waitForCompletion = (vm) => {
         clearInterval(checkInterval);
         vm.stopAll();
         vm.quit();
+        rl.close();
         resolve();
       }
     }, 100);
@@ -1036,6 +1045,12 @@ async function runSB3(base64Data) {
   // Listen to Scratch events
   vm.runtime.on('SAY', (target, type, text) => {
     cli.log(\`\${text}\`);
+  });
+
+  vm.runtime.on('QUESTION', () => {
+    rl.question('', (answer) => {
+      vm.runtime.emit('ANSWER', answer);
+    });
   });
 
   // Load project
@@ -1055,6 +1070,7 @@ const embeddedProject = '${sb3Base64}';
 // Run the embedded project
 runSB3(embeddedProject).catch(err => {
   cli.error('Execution failed:', err);
+  rl.close();
   cli.exit(1);
 });
 `;
