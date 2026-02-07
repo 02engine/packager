@@ -43,7 +43,7 @@
 /******/
 /******/ 	// script path function
 /******/ 	function jsonpScriptSrc(chunkId) {
-/******/ 		return __webpack_require__.p + "js/" + ({"vendors~downloader~icns~jszip":"vendors~downloader~icns~jszip","vendors~downloader~packager-options-ui":"vendors~downloader~packager-options-ui","downloader":"downloader","packager-options-ui":"packager-options-ui","jszip":"jszip","vendors~icns~sha256":"vendors~icns~sha256","icns":"icns","sha256":"sha256"}[chunkId]||chunkId) + ".js"
+/******/ 		return __webpack_require__.p + "js/" + ({"vendors~downloader~packager-options-ui":"vendors~downloader~packager-options-ui","downloader":"downloader","packager-options-ui":"packager-options-ui","jszip":"jszip","vendors~icns~sha256":"vendors~icns~sha256","icns":"icns","sha256":"sha256"}[chunkId]||chunkId) + ".js"
 /******/ 	}
 /******/
 /******/ 	// The require function
@@ -9053,7 +9053,7 @@ __webpack_require__.r(__webpack_exports__);
 
 const downloadProject = async (buffer, progressCallback) => {
   const controller = typeof AbortController === 'function' && new AbortController();
-  const downloadProject = await Promise.all(/*! import() | downloader */[__webpack_require__.e("vendors~downloader~icns~jszip"), __webpack_require__.e("vendors~downloader~packager-options-ui"), __webpack_require__.e("downloader")]).then(__webpack_require__.bind(null, /*! ./download-project.js */ "./src/packager/download-project.js"));
+  const downloadProject = await Promise.all(/*! import() | downloader */[__webpack_require__.e("vendors~downloader~packager-options-ui"), __webpack_require__.e("downloader")]).then(__webpack_require__.bind(null, /*! ./download-project.js */ "./src/packager/download-project.js"));
   let reject;
   return {
     promise: new Promise((_resolve, _reject) => {

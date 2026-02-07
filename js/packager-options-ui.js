@@ -1,5 +1,54 @@
 (window["webpackJsonp"] = window["webpackJsonp"] || []).push([["packager-options-ui"],{
 
+/***/ "./node_modules/jsdom/lib/api.js":
+/*!***************************************!*\
+  !*** ./node_modules/jsdom/lib/api.js ***!
+  \***************************************/
+/*! no static exports found */
+/***/ (function(module, exports) {
+
+throw new Error("Module parse failed: Unexpected token (140:46)\nYou may need an appropriate loader to handle this file type, currently no loaders are configured to process this file. See https://webpack.js.org/concepts#loaders\n|           url: req.href + originalHash,\n|           contentType: res.headers[\"content-type\"],\n>           referrer: req.getHeader(\"referer\") ?? undefined\n|         });\n| ");
+
+/***/ }),
+
+/***/ "./node_modules/node-fetch/browser.js":
+/*!********************************************!*\
+  !*** ./node_modules/node-fetch/browser.js ***!
+  \********************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+/* WEBPACK VAR INJECTION */(function(global) {
+
+// ref: https://github.com/tc39/proposal-global
+var getGlobal = function () {
+	// the only reliable means to get the global object is
+	// `Function('return this')()`
+	// However, this causes CSP violations in Chrome apps.
+	if (typeof self !== 'undefined') { return self; }
+	if (typeof window !== 'undefined') { return window; }
+	if (typeof global !== 'undefined') { return global; }
+	throw new Error('unable to locate global object');
+}
+
+var globalObject = getGlobal();
+
+module.exports = exports = globalObject.fetch;
+
+// Needed for TypeScript and Webpack.
+if (globalObject.fetch) {
+	exports.default = globalObject.fetch.bind(globalObject);
+}
+
+exports.Headers = globalObject.Headers;
+exports.Request = globalObject.Request;
+exports.Response = globalObject.Response;
+
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
+
+/***/ }),
+
 /***/ "./src/common/escape-xml.js":
 /*!**********************************!*\
   !*** ./src/common/escape-xml.js ***!
@@ -10410,6 +10459,194 @@ const encodeBigString = (strings, ...values) => {
 
 /***/ }),
 
+/***/ "./src/packager/extension-loader.js":
+/*!******************************************!*\
+  !*** ./src/packager/extension-loader.js ***!
+  \******************************************/
+/*! no static exports found */
+/***/ (function(module, exports, __webpack_require__) {
+
+/* WEBPACK VAR INJECTION */(function(process, global) {// Extension Loader for 02Engine CLI
+// 支持Web、Node.js和P4三种环境
+// 迁移自scratch-vm的extension loader，完全独立不依赖scratch-vm
+
+// 尝试导入Node.js环境的依赖
+let JSDOM, nodeFetch;
+try {
+    // 动态导入，避免在浏览器环境中出错
+    JSDOM = __webpack_require__(/*! jsdom */ "./node_modules/jsdom/lib/api.js").JSDOM;
+    nodeFetch = __webpack_require__(/*! node-fetch */ "./node_modules/node-fetch/browser.js");
+} catch (error) {
+    // 在浏览器环境中这些模块可能不可用
+    console.debug('Node.js modules not available, running in browser environment');
+}
+
+/**
+ * 检测当前运行环境
+ * @returns {string} 'browser' | 'node' | 'standalone'
+ */
+const detectEnvironment = () => {
+    if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+        // 检测是否为standalone环境
+        if (false) {}
+        return 'node';
+    }
+    return 'browser';
+};
+
+/**
+ * 浏览器环境的扩展加载器
+ * @param {string} extensionURL - 扩展URL
+ * @returns {Promise<string>} 扩展源代码
+ */
+const loadExtensionBrowser = (extensionURL) => new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.onload = () => {
+        script.remove();
+        resolve(extensionURL);
+    };
+    script.onerror = () => {
+        script.remove();
+        reject(new Error(`Failed to load extension: ${extensionURL}`));
+    };
+    script.src = extensionURL;
+    document.head.appendChild(script);
+});
+
+/**
+ * Node.js环境的扩展加载器
+ * @param {string} extensionURL - 扩展URL
+ * @returns {Promise<string>} 扩展源代码
+ */
+const loadExtensionNode = async (extensionURL) => {
+    // 检查是否已设置全局document对象
+    if (!global.document && JSDOM) {
+        // 模拟浏览器环境核心对象
+        const dom = new JSDOM('<!DOCTYPE html><body></body>');
+        global.document = dom.window.document;
+        global.window = dom.window;
+        global.location = dom.window.location;
+        global.fetch = nodeFetch; // 使用node-fetch替换浏览器fetch
+    } else if (!global.document) {
+        throw new Error('Document object not available. Running in Node.js environment requires jsdom package.');
+    }
+
+    try {
+        // 用node-fetch下载扩展脚本
+        const response = await fetch(extensionURL);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const scriptCode = await response.text();
+
+        // 在模拟的window环境中执行脚本
+        // 使用eval或vm.runInContext取决于安全性要求
+        // 这里使用window.eval确保在正确的上下文中执行
+        if (global.window && global.window.eval) {
+            global.window.eval(scriptCode);
+        } else {
+            // 降级方案
+            eval(scriptCode); // eslint-disable-line no-eval
+        }
+
+        return extensionURL;
+    } catch (err) {
+        throw new Error(`Error loading extension ${extensionURL}: ${err.message}`);
+    }
+};
+
+/**
+ * Standalone环境（Electron等）的扩展加载器
+ * 继承Node环境的逻辑但可能有特殊的处理
+ * @param {string} extensionURL - 扩展URL
+ * @returns {Promise<string>} 扩展源代码
+ */
+const loadExtensionStandalone = async (extensionURL) => {
+    // Standalone环境中，如果可以访问浏览器的fetch，则使用浏览器逻辑
+    if (typeof fetch !== 'undefined' && typeof document !== 'undefined') {
+        return loadExtensionBrowser(extensionURL);
+    }
+    // 否则降级到Node.js逻辑
+    return loadExtensionNode(extensionURL);
+};
+
+/**
+ * 自动检测环境并选择合适的加载方法
+ * Load an extension from an arbitrary URL.
+ * @param {string} extensionURL
+ * @returns {Promise<string>} Resolves with extension URL if loaded successfully.
+ */
+const loadExtension = (extensionURL) => {
+    const environment = detectEnvironment();
+    
+    switch (environment) {
+        case 'browser':
+            return loadExtensionBrowser(extensionURL);
+        case 'node':
+            return loadExtensionNode(extensionURL);
+        case 'standalone':
+            return loadExtensionStandalone(extensionURL);
+        default:
+            throw new Error(`Unsupported environment: ${environment}`);
+    }
+};
+
+/**
+ * 获取扩展源代码（用于打包到项目中）
+ * @param {string} extensionURL
+ * @returns {Promise<string>} 扩展源代码文本
+ */
+const fetchExtensionSource = async (extensionURL) => {
+    const environment = detectEnvironment();
+    
+    if (environment === 'browser' || environment === 'standalone') {
+        // 浏览器和standalone环境优先使用原生fetch
+        if (typeof fetch !== 'undefined') {
+            const response = await fetch(extensionURL);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text();
+        }
+    }
+    
+    // Node.js环境或standalone环境的降级方案
+    const fetchImpl = nodeFetch || (global && global.fetch);
+    if (!fetchImpl) {
+        throw new Error('Fetch not available in this environment');
+    }
+    const response = await fetchImpl(extensionURL);
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.text();
+};
+
+/**
+ * 包装扩展源代码，使其在非沙盒环境中更安全
+ * @param {string} source - 扩展源代码
+ * @returns {string} 包装后的源代码
+ */
+const wrapExtensionSource = (source) => {
+    // Wrap the extension in an IIFE so that extensions written for the sandbox are less
+    // likely to cause issues in an unsandboxed environment due to global pollution or
+    // overriding Scratch.*
+    return `(function(Scratch) { ${source} })(Scratch);`;
+};
+
+module.exports = {
+    loadExtension,
+    fetchExtensionSource,
+    wrapExtensionSource,
+    detectEnvironment,
+    loadExtensionBrowser,
+    loadExtensionNode,
+    loadExtensionStandalone
+};
+/* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../node_modules/process/browser.js */ "./node_modules/process/browser.js"), __webpack_require__(/*! ./../../node_modules/webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
+
+/***/ }),
+
 /***/ "./src/packager/icns.js":
 /*!******************************!*\
   !*** ./src/packager/icns.js ***!
@@ -10443,7 +10680,7 @@ const pngToAppleICNS = async (pngData) => {
   const {
     Icns,
     Buffer
-  } = await Promise.all(/*! import() | icns */[__webpack_require__.e("vendors~downloader~icns~jszip"), __webpack_require__.e("vendors~icns~sha256"), __webpack_require__.e("icns")]).then(__webpack_require__.bind(null, /*! ./icns-bundle */ "./src/packager/icns-bundle.js"));
+  } = await Promise.all(/*! import() | icns */[__webpack_require__.e("vendors~icns~sha256"), __webpack_require__.e("icns")]).then(__webpack_require__.bind(null, /*! ./icns-bundle */ "./src/packager/icns-bundle.js"));
 
   const FORMATS = [
     { type: 'ic04', size: 16 },
@@ -10703,7 +10940,7 @@ const removeUnnecessaryEmptyLines = (string) => string.split('\n')
   })
   .join('\n');
 
-const getJSZip = async () => (await Promise.all(/*! import() | jszip */[__webpack_require__.e("vendors~downloader~icns~jszip"), __webpack_require__.e("jszip")]).then(__webpack_require__.t.bind(null, /*! @turbowarp/jszip */ "./node_modules/@turbowarp/jszip/dist/jszip.min.js", 7))).default;
+const getJSZip = async () => (await __webpack_require__.e(/*! import() | jszip */ "jszip").then(__webpack_require__.t.bind(null, /*! @turbowarp/jszip */ "./node_modules/@turbowarp/jszip/dist/jszip.min.js", 7))).default;
 
 const setFileFast = (zip, path, data) => {
   zip.files[path] = data;
@@ -12214,11 +12451,7 @@ For detailed setup instructions, refer to the Cordova documentation.`;
         dispatchProgress(i / urlsToFetch.length);
         const url = urlsToFetch[i];
         try {
-          const source = await _adapter__WEBPACK_IMPORTED_MODULE_12__["Adapter"].fetchExtensionScript(url);
-          // Wrap the extension in an IIFE so that extensions written for the sandbox are less
-          // likely to cause issues in an unsandboxed environment due to global pollution or
-          // overriding Scratch.*
-          const wrappedSource = `(function(Scratch) { ${source} })(Scratch);`
+          const wrappedSource = await _adapter__WEBPACK_IMPORTED_MODULE_12__["Adapter"].fetchExtensionScript(url);
           const dataURI = `data:text/javascript;,${encodeURIComponent(wrappedSource)}`;
           finalURLs.push(dataURI);
         } catch (e) {
@@ -13064,6 +13297,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _common_request__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../../common/request */ "./src/common/request.js");
 /* harmony import */ var _common_readers__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../../common/readers */ "./src/common/readers.js");
 /* harmony import */ var _images_default_icon_png__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../images/default-icon.png */ "./src/packager/images/default-icon.png");
+/* harmony import */ var _extension_loader__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../extension-loader */ "./src/packager/extension-loader.js");
+/* harmony import */ var _extension_loader__WEBPACK_IMPORTED_MODULE_4___default = /*#__PURE__*/__webpack_require__.n(_extension_loader__WEBPACK_IMPORTED_MODULE_4__);
+
 
 
 
@@ -13125,11 +13361,17 @@ class WebAdapter {
       });
   }
 
-  fetchExtensionScript (url) {
-    return Object(_common_request__WEBPACK_IMPORTED_MODULE_1__["default"])({
-      type: 'text',
-      url: url
-    });
+  async fetchExtensionScript (url) {
+    try {
+      const source = await Object(_extension_loader__WEBPACK_IMPORTED_MODULE_4__["fetchExtensionSource"])(url);
+      return Object(_extension_loader__WEBPACK_IMPORTED_MODULE_4__["wrapExtensionSource"])(source);
+    } catch (error) {
+      // 降级到原来的实现
+      return Object(_common_request__WEBPACK_IMPORTED_MODULE_1__["default"])({
+        type: 'text',
+        url: url
+      });
+    }
   }
 }
 
