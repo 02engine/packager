@@ -38,6 +38,9 @@
     "@turbowarp/sbdl": "^5.0.1",
     "all": "^0.0.0",
     "cross-fetch": "^4.1.0",
+    "jsdom": "^22.0.0",
+    "node-fetch": "^2.6.7",
+    "scratch-render-fonts": "github:02engine/scratch-render-fonts#main",
     "sha.js": "^2.4.11"
   },
   "devDependencies": {

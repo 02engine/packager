@@ -1549,11 +1549,7 @@ For detailed setup instructions, refer to the Cordova documentation.`;
         dispatchProgress(i / urlsToFetch.length);
         const url = urlsToFetch[i];
         try {
-          const source = await Adapter.fetchExtensionScript(url);
-          // Wrap the extension in an IIFE so that extensions written for the sandbox are less
-          // likely to cause issues in an unsandboxed environment due to global pollution or
-          // overriding Scratch.*
-          const wrappedSource = `(function(Scratch) { ${source} })(Scratch);`
+          const wrappedSource = await Adapter.fetchExtensionScript(url);
           const dataURI = `data:text/javascript;,${encodeURIComponent(wrappedSource)}`;
           finalURLs.push(dataURI);
         } catch (e) {

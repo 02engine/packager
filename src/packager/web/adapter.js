@@ -2,6 +2,7 @@ import assetCache from './cache';
 import request from '../../common/request';
 import {readAsURL, readAsArrayBuffer} from '../../common/readers';
 import defaultIcon from '../images/default-icon.png';
+import {fetchExtensionSource, wrapExtensionSource} from '../extension-loader';
 
 class WebAdapter {
   getCachedAsset (asset) {
@@ -59,11 +60,17 @@ class WebAdapter {
       });
   }
 
-  fetchExtensionScript (url) {
-    return request({
-      type: 'text',
-      url: url
-    });
+  async fetchExtensionScript (url) {
+    try {
+      const source = await fetchExtensionSource(url);
+      return wrapExtensionSource(source);
+    } catch (error) {
+      // 降级到原来的实现
+      return request({
+        type: 'text',
+        url: url
+      });
+    }
   }
 }
 

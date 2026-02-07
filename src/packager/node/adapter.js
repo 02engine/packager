@@ -5,6 +5,7 @@ import fetch from 'cross-fetch';
 import {name} from '../../../package.json';
 import defaultIcon from '../images/default-icon.png';
 import Image from './image';
+import {fetchExtensionSource, wrapExtensionSource} from '../extension-loader';
 
 const readFile = promisify(fs.readFile);
 const writeFile = promisify(fs.writeFile);
@@ -95,14 +96,20 @@ class NodeAdapter {
     return file.readAsURL();
   }
 
-  fetchExtensionScript (url) {
-    return fetch(url)
-      .then(res => {
-        if (res.ok) {
-          return res.text();
-        }
-        throw new Error(`Unexpected status code: ${res.status}`);
-      });
+  async fetchExtensionScript (url) {
+    try {
+      const source = await fetchExtensionSource(url);
+      return wrapExtensionSource(source);
+    } catch (error) {
+      // 降级到原来的实现
+      return fetch(url)
+        .then(res => {
+          if (res.ok) {
+            return res.text();
+          }
+          throw new Error(`Unexpected status code: ${res.status}`);
+        });
+    }
   }
 }
 
