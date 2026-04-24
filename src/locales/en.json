@@ -415,6 +415,18 @@
     "warpTimer": {
       "string": "Warp Timer"
     },
+    "compiledProject": {
+      "string": "Precompile scripts into package (experimental)"
+    },
+    "newIn300Title": {
+      "string": "New in v3.0.0"
+    },
+    "newIn300Description": {
+      "string": "02Engine Packager now includes the experimental precompiled packaging mode, which can compile scripts into the package and strip normal block source from packaged output."
+    },
+    "jumpToCompiledProject": {
+      "string": "Jump to this option"
+    },
     "projectId": {
       "string": "Project ID"
     },

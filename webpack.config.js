@@ -26,8 +26,8 @@ const getVersion = () => {
     const version = packageJSON.version;
     return `Standalone v${version} (${dateString})`;
   }*/
-  return 'v2.1.0';
-};
+    return `v${require('./package.json').version}`;
+  };
 const version = getVersion();
 
 const makeScaffolding = ({full}) => ({
@@ -154,7 +154,20 @@ const makeWebsite = () => ({
   module: {
     rules: [
       {
-        test: /\.png|\.svg$/i,
+        test: /\.jsx?$/,
+        loader: 'babel-loader',
+        include: [
+          path.resolve(__dirname, 'src'),
+          /node_modules[\\/]scratch-[^\\/]+[\\/]src/,
+          /node_modules[\\/]@turbowarp[\\/]scratch-[^\\/]+[\\/](src|dist)/
+        ],
+        options: {
+          babelrc: false,
+          presets: ['@babel/preset-env']
+        }
+      },
+      {
+        test: /\.(png|svg|mp3|wav)$/i,
         use: isStandalone ? {
           loader: 'url-loader'
         } : {

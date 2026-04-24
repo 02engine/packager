@@ -82,6 +82,10 @@
         "turbo": "加速模式",
         "username": "用戶名稱（以「#」代表一個隨機數）",
         "warpTimer": "防卡死",
+        "compiledProject": "將腳本預編譯進作品包（實驗性）",
+        "newIn300Title": "v3.0.0 新功能",
+        "newIn300Description": "02Engine Packager 現在加入了實驗性的預編譯打包模式，可以在打包時預編譯腳本，並從打包產物中移除一般積木原始碼。",
+        "jumpToCompiledProject": "跳轉到此選項",
         "zip": "Zip（用於網站的最佳選擇）",
         "zip-one-asset": "Zip，封裝所有素材（不推薦）"
     },

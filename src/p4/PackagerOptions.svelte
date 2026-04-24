@@ -5,7 +5,7 @@
      - Updated OAuth scope to include public_repo permissions
      - Added comprehensive logging and error handling -->
 <script>
-  import {onDestroy} from 'svelte';
+  import {onDestroy, tick} from 'svelte';
   import {_} from '../locales/';
   import {slide, fade} from 'svelte/transition';
   import Section from './Section.svelte';
@@ -106,6 +106,7 @@
   const advancedOptionsInitiallyOpen = (
     $options.compiler.enabled !== defaultOptions.compiler.enabled ||
     $options.compiler.warpTimer !== defaultOptions.compiler.warpTimer ||
+    $options.compiler.compiledProject !== defaultOptions.compiler.compiledProject ||
     $options.extensions.length !== 0 ||
     $options.bakeExtensions !== defaultOptions.bakeExtensions ||
     $options.custom.css !== '' ||
@@ -114,6 +115,19 @@
     $options.packagedRuntime !== defaultOptions.packagedRuntime ||
     $options.maxTextureDimension !== defaultOptions.maxTextureDimension
   );
+  let advancedOptionsOpen = advancedOptionsInitiallyOpen;
+
+  const scrollToCompiledProjectOption = async () => {
+    advancedOptionsOpen = true;
+    await tick();
+    const option = document.getElementById('compiled-project-option');
+    if (option) {
+      option.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    }
+  };
 
   const automaticallyCenterCursor = () => {
     const icon = $customCursorIcon;
@@ -675,7 +689,34 @@
   .log-entry.info { color: #222; }
   .log-entry.warn { color: #b65a00; }
   .log-entry.error { color: #b00000; font-weight: bold; }
+  .feature-notice {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .feature-notice-copy {
+    flex: 1 1 auto;
+  }
+  .feature-notice h2 {
+    margin: 0 0 6px 0;
+  }
+  .feature-notice p {
+    margin: 0;
+  }
 </style>
+
+<Section accent="#4C97FF">
+  <div class="feature-notice">
+    <div class="feature-notice-copy">
+      <h2>{$_('options.newIn300Title')}</h2>
+      <p>{$_('options.newIn300Description')}</p>
+    </div>
+    <div>
+      <Button on:click={scrollToCompiledProjectOption} secondary text={$_('options.jumpToCompiledProject')} />
+    </div>
+  </div>
+</Section>
 
 <Section
   accent="#FFAB19"
@@ -1069,10 +1110,10 @@
       'maxTextureDimension'
     ]);
   }}
->
-  <div>
-    <h2>{$_('options.advancedOptions')}</h2>
-    <details open={advancedOptionsInitiallyOpen}>
+  >
+    <div>
+      <h2>{$_('options.advancedOptions')}</h2>
+    <details bind:open={advancedOptionsOpen}>
       <summary>{$_('options.advancedSummary')}</summary>
 
       <div class="option">
@@ -1088,6 +1129,20 @@
           {$_('options.warpTimer')}
         </label>
         <LearnMore slug="warp-timer" />
+      </div>
+        <div class="option" id="compiled-project-option">
+          <label>
+            <input
+              type="checkbox"
+            bind:checked={$options.compiler.compiledProject}
+            on:change={() => {
+              if ($options.compiler.compiledProject) {
+                $options.compiler.enabled = true;
+              }
+            }}
+          >
+          {$_('options.compiledProject')}
+        </label>
       </div>
 
       <!-- Ignore because CustomExtensions will have a <textarea> inside it -->

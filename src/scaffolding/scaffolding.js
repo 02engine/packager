@@ -461,6 +461,36 @@ class Scaffolding extends EventTarget {
       });
   }
 
+  loadCompiledProject (data) {
+    let projectData = data;
+    let assetArchive = null;
+
+    if (
+      data &&
+      typeof data === 'object' &&
+      !Array.isArray(data) &&
+      data.projectData &&
+      data.projectData.format === '02engine-compiled-project'
+    ) {
+      projectData = data.projectData;
+      assetArchive = data.assetArchive || null;
+    }
+
+    return this.vm.loadCompiledProject(projectData, assetArchive)
+      .then(() => {
+        this.vm.setCloudProvider(this.cloudManager);
+        this.cloudManager.projectReady();
+        this.renderer.draw();
+        setTimeout(() => {
+          this.renderer.draw();
+        });
+
+        if (this.shouldConnectPeripherals) {
+          this._connectPeripherals();
+        }
+      });
+  }
+
   setUsername (username) {
     this._username = username;
     this.vm.postIOData('userData', {

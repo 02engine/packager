@@ -141,6 +141,10 @@
         "version": "版本",
         "versionHelp": "更新作品版本是完全可选的，不会影响作品的。根据环境的不同，它可能会出现在关于页面等地方。格式应该像 X.Y.Z 这样",
         "warpTimer": "循环计时器",
+        "compiledProject": "将脚本预编译进作品包（实验性）",
+        "newIn300Title": "v3.0.0 新功能",
+        "newIn300Description": "02Engine Packager 现已加入实验性的预编译打包模式，可以在打包时预编译脚本，并从打包产物中移除普通积木源码。",
+        "jumpToCompiledProject": "跳转到此选项",
         "windowControls": "窗口控制栏",
         "zip": "Zip 压缩包（适合嵌入网站）",
         "zip-one-asset": "Zip 压缩包，把所有素材打包在一个文件中（不推荐）"

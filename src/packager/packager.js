@@ -193,6 +193,10 @@ class Packager extends EventTarget {
     this.options = Packager.DEFAULT_OPTIONS();
     this.aborted = false;
     this.used = false;
+    this._projectArchivePromise = null;
+    this._projectJSONPromise = null;
+    this._compiledProjectPromise = null;
+    this._compiledProjectArchivePromise = null;
   }
 
   abort () {
@@ -1349,12 +1353,305 @@ For detailed setup instructions, refer to the Cordova documentation.`;
     return `${this.options.app.windowTitle}.${extension}`;
   }
 
+  async getProjectArchive () {
+    if (!this._projectArchivePromise) {
+      this._projectArchivePromise = getJSZip().then(JSZip => JSZip.loadAsync(this.project.arrayBuffer));
+    }
+    return this._projectArchivePromise;
+  }
+
+  async getProjectJSON () {
+    if (!this._projectJSONPromise) {
+      this._projectJSONPromise = (async () => {
+        const zip = await this.getProjectArchive();
+        const projectFile = zip.file('project.json') || zip.file(/^([^/]*\/)?project\.json$/)[0];
+        if (!projectFile) {
+          throw new Error('project.json is not in zip');
+        }
+        return JSON.parse(await projectFile.async('text'));
+      })();
+    }
+    return this._projectJSONPromise;
+  }
+
+  async getCompiledProjectData () {
+    if (!this._compiledProjectPromise) {
+      this._compiledProjectPromise = (async () => {
+        const [projectJSON, projectArchive, scratchLibrariesModule] = await Promise.all([
+          this.getProjectJSON(),
+          this.getProjectArchive(),
+          import(/* webpackChunkName: "scratch-vm-compiler" */ '../scaffolding/scratch-libraries')
+        ]);
+
+        const scratchLibraries = scratchLibrariesModule.default || scratchLibrariesModule;
+        const VM = scratchLibraries.VM || (scratchLibraries.default && scratchLibraries.default.VM) || scratchLibraries;
+        const ScratchStorage = scratchLibraries.ScratchStorage || (scratchLibraries.default && scratchLibraries.default.ScratchStorage);
+        const Renderer = scratchLibraries.Renderer || (scratchLibraries.default && scratchLibraries.default.Renderer);
+        const BitmapAdapter = scratchLibraries.BitmapAdapter || (scratchLibraries.default && scratchLibraries.default.BitmapAdapter);
+        const AudioEngine = scratchLibraries.AudioEngine || (scratchLibraries.default && scratchLibraries.default.AudioEngine);
+
+        class CompileTimeVideoProvider {
+          enableVideo () {
+            return Promise.resolve(this);
+          }
+          disableVideo () {}
+          getFrame () {
+            return null;
+          }
+        }
+
+        const vm = new VM();
+        let renderer = null;
+        let audioEngine = null;
+        let videoProvider = null;
+        let compileCanvas = null;
+
+        try {
+          if (typeof vm.attachStorage === 'function') {
+            vm.attachStorage(new ScratchStorage());
+          }
+          if (typeof document !== 'undefined' && typeof vm.attachRenderer === 'function' && Renderer) {
+            compileCanvas = document.createElement('canvas');
+            compileCanvas.width = 480;
+            compileCanvas.height = 360;
+            compileCanvas.style.display = 'none';
+            renderer = new Renderer(compileCanvas, -240, 240, -180, 180);
+            vm.attachRenderer(renderer);
+          }
+          if (typeof vm.attachAudioEngine === 'function' && AudioEngine && (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined')) {
+            audioEngine = new AudioEngine();
+            vm.attachAudioEngine(audioEngine);
+          }
+          if (BitmapAdapter && typeof vm.attachV2BitmapAdapter === 'function') {
+            vm.attachV2BitmapAdapter(new BitmapAdapter());
+          }
+          if (typeof vm.setVideoProvider === 'function') {
+            videoProvider = new CompileTimeVideoProvider();
+            vm.setVideoProvider(videoProvider);
+          }
+          if (vm.securityManager) {
+            vm.securityManager.getSandboxMode = () => 'unsandboxed';
+            vm.securityManager.canLoadExtensionFromProject = () => true;
+          }
+
+          vm.setCompilerOptions({
+            enabled: true,
+            warpTimer: this.options.compiler.warpTimer
+          });
+
+          return await vm.compileProjectFromJSON(projectJSON, projectArchive);
+        } finally {
+          if (videoProvider && typeof videoProvider.disableVideo === 'function') {
+            videoProvider.disableVideo();
+          }
+          if (audioEngine && typeof audioEngine.dispose === 'function') {
+            audioEngine.dispose();
+          }
+          if (renderer && typeof renderer.destroy === 'function') {
+            renderer.destroy();
+          }
+          if (compileCanvas && typeof compileCanvas.remove === 'function') {
+            compileCanvas.remove();
+          }
+          if (typeof vm.quit === 'function') {
+            vm.quit();
+          }
+        }
+      })();
+    }
+
+    return this._compiledProjectPromise;
+  }
+
+  async getCompiledProjectArchiveData () {
+    if (!this._compiledProjectArchivePromise) {
+      this._compiledProjectArchivePromise = (async () => {
+        const [JSZip, compiledProject, projectJSON] = await Promise.all([
+          getJSZip(),
+          this.getCompiledProjectData(),
+          this.getProjectJSON()
+        ]);
+        const zip = await JSZip.loadAsync(this.project.arrayBuffer);
+        const projectFile = zip.file('project.json') || zip.file(/^([^/]*\/)?project\.json$/)[0];
+        if (!projectFile) {
+          throw new Error('project.json is not in zip');
+        }
+
+        const strippedProjectJSON = JSON.parse(JSON.stringify(projectJSON));
+        strippedProjectJSON.targets = JSON.parse(JSON.stringify(compiledProject.targets || []));
+        strippedProjectJSON.monitors = JSON.parse(JSON.stringify(compiledProject.monitors || []));
+        strippedProjectJSON.meta = JSON.parse(JSON.stringify(compiledProject.meta || strippedProjectJSON.meta || {}));
+        strippedProjectJSON.extensionURLs = Object.assign({}, compiledProject.extensionURLs || strippedProjectJSON.extensionURLs || {});
+
+        if (compiledProject.customFonts) {
+          strippedProjectJSON.customFonts = JSON.parse(JSON.stringify(compiledProject.customFonts));
+        } else {
+          delete strippedProjectJSON.customFonts;
+        }
+
+        if (compiledProject.extensionStorage) {
+          strippedProjectJSON.extensionStorage = JSON.parse(JSON.stringify(compiledProject.extensionStorage));
+        } else {
+          delete strippedProjectJSON.extensionStorage;
+        }
+
+        zip.file(projectFile.name, JSON.stringify(strippedProjectJSON));
+        return zip.generateAsync({
+          type: 'uint8array',
+          compression: 'DEFLATE'
+        });
+      })();
+    }
+
+    return this._compiledProjectArchivePromise;
+  }
+
   async generateGetProjectData () {
     const result = [];
     let getProjectDataFunction = '';
     let isZip = false;
     let storageProgressStart;
     let storageProgressEnd;
+
+    if (this.options.compiler.compiledProject) {
+      const compiledProject = await this.getCompiledProjectData();
+      const compiledProjectArchive = await this.getCompiledProjectArchiveData();
+      const compiledProjectString = JSON.stringify(compiledProject);
+
+      isZip = true;
+      storageProgressStart = PROGRESS_FETCHED_COMPRESSED;
+      storageProgressEnd = PROGRESS_EXTRACTED_COMPRESSED;
+
+      if (this.options.target === 'html') {
+        const projectData = new Uint8Array(compiledProjectArchive);
+
+        result.push(`
+        <script>
+        const getBase85DecodeValue = (code) => {
+          if (code === 0x28) code = 0x3c;
+          if (code === 0x29) code = 0x3e;
+          return code - 0x2a;
+        };
+        const base85decode = (str, outBuffer, outOffset) => {
+          const view = new DataView(outBuffer, outOffset, Math.floor(str.length / 5 * 4));
+          for (let i = 0, j = 0; i < str.length; i += 5, j += 4) {
+            view.setUint32(j, (
+              getBase85DecodeValue(str.charCodeAt(i + 4)) * 85 * 85 * 85 * 85 +
+              getBase85DecodeValue(str.charCodeAt(i + 3)) * 85 * 85 * 85 +
+              getBase85DecodeValue(str.charCodeAt(i + 2)) * 85 * 85 +
+              getBase85DecodeValue(str.charCodeAt(i + 1)) * 85 +
+              getBase85DecodeValue(str.charCodeAt(i))
+            ), true);
+          }
+        };
+        let projectDecodeBuffer = new ArrayBuffer(${Math.ceil(projectData.length / 4) * 4});
+        let projectDecodeIndex = 0;
+        const decodeChunk = (size) => {
+          try {
+            if (document.currentScript.tagName.toUpperCase() !== 'SCRIPT') throw new Error('document.currentScript is not a script');
+            base85decode(document.currentScript.getAttribute("data"), projectDecodeBuffer, projectDecodeIndex);
+            document.currentScript.remove();
+            projectDecodeIndex += size;
+            setProgress(interpolate(${PROGRESS_LOADED_SCRIPTS}, ${PROGRESS_FETCHED_COMPRESSED}, projectDecodeIndex / ${projectData.length}));
+          } catch (e) {
+            handleError(e);
+          }
+        };
+        </script>`);
+
+        const CHUNK_SIZE = 1024 * 64;
+        for (let i = 0; i < projectData.length; i += CHUNK_SIZE) {
+          const projectChunk = projectData.subarray(i, i + CHUNK_SIZE);
+          const base85 = encode(projectChunk);
+          result.push(`<script data="${base85}">/*Generated By 02Engine Packager*/decodeChunk(/*Generated By 02Engine Packager*/${projectChunk.length}/*Generated By 02Engine Packager*/)</script>\n`);
+        }
+
+        getProjectDataFunction = `() => {
+          const buffer = projectDecodeBuffer;
+          projectDecodeBuffer = null;
+          return Promise.resolve({
+            projectData: JSON.parse(decodeURIComponent("${encodeURIComponent(compiledProjectString)}")),
+            projectArchive: new Uint8Array(buffer, 0, ${projectData.length})
+          });
+        }`;
+      } else {
+        getProjectDataFunction = `() => Promise.all([
+          new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.onload = () => {
+              resolve(JSON.parse(xhr.responseText));
+            };
+            xhr.onerror = () => {
+              reject(new Error('Request to load compiled project data failed.'));
+            };
+            xhr.responseType = 'text';
+            xhr.open('GET', './compiled-project.json');
+            xhr.send();
+          }),
+          new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.onload = () => {
+              resolve(new Uint8Array(xhr.response));
+            };
+            xhr.onerror = () => {
+              if (location.protocol === 'file:') {
+                reject(new Error('Zip environment must be used on a website, not on a local file. To fix this error, use the "Plain HTML" environment instead.'));
+              } else {
+                reject(new Error('Request to load project archive failed.'));
+              }
+            };
+            xhr.onprogress = (e) => {
+              if (e.lengthComputable) {
+                setProgress(interpolate(${PROGRESS_LOADED_SCRIPTS}, ${PROGRESS_FETCHED_COMPRESSED}, e.loaded / e.total));
+              }
+            };
+            xhr.responseType = 'arraybuffer';
+            xhr.open('GET', './project.zip');
+            xhr.send();
+          })
+        ]).then(([projectData, projectArchive]) => ({projectData, projectArchive}))`;
+      }
+
+      result.push(`
+      <script>
+        const getProjectData = (function() {
+          const storage = scaffolding.storage;
+          storage.onprogress = (total, loaded) => {
+            setProgress(interpolate(${storageProgressStart}, ${storageProgressEnd}, loaded / total));
+          };
+
+          let zip;
+          vm.runtime.on('PROJECT_LOADED', () => (zip = null));
+          const findFileInZip = (path) => zip.file(path) || zip.file(new RegExp("^([^/]*/)?" + path + "$"))[0];
+
+          storage.addHelper({
+            load: (assetType, assetId, dataFormat) => {
+              if (!zip) {
+                throw new Error('Zip is not loaded or has been closed');
+              }
+              const path = assetId + '.' + dataFormat;
+              const file = findFileInZip(path);
+              if (!file) {
+                throw new Error('Asset is not in zip: ' + path);
+              }
+              return file
+                .async('uint8array')
+                .then((data) => storage.createAsset(assetType, dataFormat, data, assetId));
+            }
+          });
+
+          return () => (${getProjectDataFunction})().then(async ({projectData, projectArchive}) => {
+            zip = await Scaffolding.JSZip.loadAsync(projectArchive);
+            return {
+              projectData,
+              assetArchive: zip
+            };
+          });
+        })();
+      </script>`);
+
+      return result;
+    }
 
     if (this.options.target === 'html') {
       isZip = this.project.type !== 'blob';
@@ -1994,7 +2291,7 @@ For detailed setup instructions, refer to the Cordova documentation.`;
   <script>
     const run = async () => {
       const projectData = await getProjectData();
-      await scaffolding.loadProject(projectData);
+      await scaffolding.${this.options.compiler.compiledProject ? 'loadCompiledProject' : 'loadProject'}(projectData);
       setProgress(1);
       loadingScreen.hidden = true;
       if (${this.options.autoplay}) {
@@ -2018,9 +2315,13 @@ For detailed setup instructions, refer to the Cordova documentation.`;
     this.ensureNotAborted();
 
 
-    if (this.options.target !== 'html') {
+      if (this.options.target !== 'html') {
       let zip;
-      if (this.project.type === 'sb3' && this.options.target !== 'zip-one-asset') {
+      if (this.options.compiler.compiledProject) {
+        zip = new (await getJSZip())();
+        zip.file('project.zip', await this.getCompiledProjectArchiveData());
+        zip.file('compiled-project.json', JSON.stringify(await this.getCompiledProjectData()));
+      } else if (this.project.type === 'sb3' && this.options.target !== 'zip-one-asset') {
         zip = await (await getJSZip()).loadAsync(this.project.arrayBuffer);
         for (const file of Object.keys(zip.files)) {
           zip.files[`assets/${file}`] = zip.files[file];
@@ -2151,7 +2452,8 @@ Packager.DEFAULT_OPTIONS = () => ({
   },
   compiler: {
     enabled: true,
-    warpTimer: false
+    warpTimer: false,
+    compiledProject: false
   },
   packagedRuntime: true,
   target: 'html',
