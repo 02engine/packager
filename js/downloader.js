@@ -2416,7 +2416,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _minify_sb3__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./minify/sb3 */ "./src/packager/minify/sb3.js");
 /* harmony import */ var _turbowarp_sbdl__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @turbowarp/sbdl */ "./node_modules/@turbowarp/sbdl/lib/bundle-web.cjs");
 /* harmony import */ var _turbowarp_sbdl__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(_turbowarp_sbdl__WEBPACK_IMPORTED_MODULE_1__);
-
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
 
 
 const unknownAnalysis = () => ({
@@ -2426,54 +2430,53 @@ const unknownAnalysis = () => ({
   usesSteamworks: false,
   extensions: []
 });
-
-const analyzeScratch2 = (projectData) => {
-  const stageVariables = (projectData.variables || [])
-    .map(({name, isPersistent}) => ({
+const analyzeScratch2 = projectData => {
+  const stageVariables = (projectData.variables || []).map(_ref => {
+    let {
+      name,
+      isPersistent
+    } = _ref;
+    return {
       name,
       isCloud: isPersistent
-    }));
+    };
+  });
   // This may have some false positives, but that's okay.
   const stringified = JSON.stringify(projectData);
-  const usesMusic = stringified.includes('drum:duration:elapsed:from:') ||
-    stringified.includes('playDrum') ||
-    stringified.includes('noteOn:duration:elapsed:from:');
-  return {
-    ...unknownAnalysis(),
+  const usesMusic = stringified.includes('drum:duration:elapsed:from:') || stringified.includes('playDrum') || stringified.includes('noteOn:duration:elapsed:from:');
+  return _objectSpread(_objectSpread({}, unknownAnalysis()), {}, {
     stageVariables,
     usesMusic
-  };
+  });
 };
-
-const analyzeScratch3 = (projectData) => {
+const analyzeScratch3 = projectData => {
   const stage = projectData.targets[0];
   if (!stage || !stage.isStage) {
     throw new Error('Project does not have stage');
   }
-  const stageVariables = Object.values(stage.variables)
-    .map(([name, _value, cloud]) => ({
+  const stageVariables = Object.values(stage.variables).map(_ref2 => {
+    let [name, _value, cloud] = _ref2;
+    return {
       name,
       isCloud: !!cloud
-    }));
-  const stageComments = Object.values(stage.comments)
-    .map((i) => i.text);
+    };
+  });
+  const stageComments = Object.values(stage.comments).map(i => i.text);
   // TODO: usesMusic has possible false negatives
   const usesMusic = projectData.extensions.includes('music');
   const usesSteamworks = projectData.extensions.includes('steamworks');
   const extensions = projectData.extensionURLs ? Object.values(projectData.extensionURLs) : [];
-  return {
-    ...unknownAnalysis(),
+  return _objectSpread(_objectSpread({}, unknownAnalysis()), {}, {
     stageVariables,
     stageComments,
     usesMusic,
     usesSteamworks,
     extensions
-  };
+  });
 };
-
-const mutateScratch3InPlace = (projectData) => {
-  const makeImpliedCloudVariables = (projectData) => {
-    const stage = projectData.targets.find((i) => i.isStage);
+const mutateScratch3InPlace = projectData => {
+  const makeImpliedCloudVariables = projectData => {
+    const stage = projectData.targets.find(i => i.isStage);
     if (stage) {
       for (const variable of Object.values(stage.variables)) {
         const name = variable[0];
@@ -2483,21 +2486,19 @@ const mutateScratch3InPlace = (projectData) => {
       }
     }
   };
-
-  const disableNonsenseCloudVariables = (projectData) => {
+  const disableNonsenseCloudVariables = projectData => {
     const DISABLE_CLOUD_VARIABLES = [
-      // The "original" Sprunki project includes a cloud variable presumably used to detect who
-      // clicked on the report button. That seems like a Scratch community guidelines violation but
-      // that's not our job to enforce. This affects us because these games are very popular and
-      // create thousands of unnecessary concurrent cloud variable connections for a feature that
-      // can't work because there is no report button to click on.
-      '☁ potential reporters'
-    ];
+    // The "original" Sprunki project includes a cloud variable presumably used to detect who
+    // clicked on the report button. That seems like a Scratch community guidelines violation but
+    // that's not our job to enforce. This affects us because these games are very popular and
+    // create thousands of unnecessary concurrent cloud variable connections for a feature that
+    // can't work because there is no report button to click on.
+    '☁ potential reporters'];
 
     // I want a more general solution here that automatically disables all unused cloud variables,
     // but making that work in the presence of various unknown extensions seems non-trivial.
 
-    const stage = projectData.targets.find((i) => i.isStage);
+    const stage = projectData.targets.find(i => i.isStage);
     if (stage) {
       for (const variable of Object.values(stage.variables)) {
         // variable is [name, value, isCloud]
@@ -2513,17 +2514,15 @@ const mutateScratch3InPlace = (projectData) => {
   disableNonsenseCloudVariables(projectData);
   Object(_minify_sb3__WEBPACK_IMPORTED_MODULE_0__["default"])(projectData);
 };
-
-const downloadProject = async (projectData, progressCallback = () => {}, signal) => {
+const downloadProject = async function downloadProject(projectData) {
+  let progressCallback = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : () => {};
+  let signal = arguments.length > 2 ? arguments[2] : undefined;
   let analysis = unknownAnalysis();
-
   const options = {
     signal,
-
     onProgress(type, loaded, total) {
       progressCallback(type, loaded, total);
     },
-
     processJSON(type, projectData) {
       if (type === 'sb3') {
         mutateScratch3InPlace(projectData);
@@ -2535,7 +2534,6 @@ const downloadProject = async (projectData, progressCallback = () => {}, signal)
       }
     }
   };
-
   const project = await Object(_turbowarp_sbdl__WEBPACK_IMPORTED_MODULE_1__["downloadProjectFromBuffer"])(projectData, options);
   if (project.type !== 'sb3') {
     project.type = 'blob';
@@ -2543,7 +2541,6 @@ const downloadProject = async (projectData, progressCallback = () => {}, signal)
   project.analysis = analysis;
   return project;
 };
-
 
 /***/ }),
 
@@ -2570,7 +2567,6 @@ const generateId = i => {
   }
   return str;
 };
-
 class Pool {
   constructor() {
     this.generatedIds = new Map();
@@ -2580,7 +2576,7 @@ class Pool {
     // We don't bother listing many here because most would take more than ten million items to be used
     this.skippedIds.add('of');
   }
-  skip (id) {
+  skip(id) {
     this.skippedIds.add(id);
   }
   addReference(id) {
@@ -2591,17 +2587,14 @@ class Pool {
     const entries = Array.from(this.references.entries());
     // The most used original IDs should get the shortest new IDs.
     entries.sort((a, b) => b[1] - a[1]);
-
     let i = 0;
     for (const entry of entries) {
       const oldId = entry[0];
-
       let newId = generateId(i);
       while (this.skippedIds.has(newId)) {
         i++;
         newId = generateId(i);
       }
-
       this.generatedIds.set(oldId, newId);
       i++;
     }
@@ -2613,27 +2606,23 @@ class Pool {
     return originalId;
   }
 }
-
-const optimizeSb3Json = (projectData) => {
+const optimizeSb3Json = projectData => {
   // Note: we modify projectData in-place
 
   // Scan global attributes of the project so we can generate optimal IDs later
   const blockPool = new Pool();
-
   for (const target of projectData.targets) {
     for (const [blockId, block] of Object.entries(target.blocks)) {
       blockPool.addReference(blockId);
       if (Array.isArray(block)) {
         continue;
       }
-
       if (block.parent) {
         blockPool.addReference(block.parent);
       }
       if (block.next) {
         blockPool.addReference(block.next);
       }
-
       if (block.inputs) {
         for (const input of Object.values(block.inputs)) {
           for (let i = 1; i < input.length; i++) {
@@ -2646,9 +2635,7 @@ const optimizeSb3Json = (projectData) => {
       }
     }
   }
-
   blockPool.generateNewIds();
-
   if (projectData.monitors) {
     for (const monitor of projectData.monitors) {
       // Remove redundant monitor values
@@ -2660,20 +2647,17 @@ const optimizeSb3Json = (projectData) => {
   for (const target of projectData.targets) {
     const newBlocks = {};
     const newComments = {};
-
     for (const [blockId, block] of Object.entries(target.blocks)) {
       newBlocks[blockPool.getNewId(blockId)] = block;
       if (Array.isArray(block)) {
         continue;
       }
-
       if (block.parent) {
         block.parent = blockPool.getNewId(block.parent);
       }
       if (block.next) {
         block.next = blockPool.getNewId(block.next);
       }
-
       if (block.inputs) {
         for (const input of Object.values(block.inputs)) {
           for (let i = 1; i < input.length; i++) {
@@ -2702,7 +2686,6 @@ const optimizeSb3Json = (projectData) => {
         }
       }
     }
-    
     if (target.comments) {
       for (const [commentId, comment] of Object.entries(target.comments)) {
         const text = comment.text;
@@ -2712,7 +2695,6 @@ const optimizeSb3Json = (projectData) => {
         }
       }
     }
-
     target.blocks = newBlocks;
     target.comments = newComments;
   }
@@ -2722,12 +2704,9 @@ const optimizeSb3Json = (projectData) => {
     delete projectData.meta.agent;
     delete projectData.meta.vm;
   }
-
   return projectData;
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (optimizeSb3Json);
-
 
 /***/ })
 

@@ -58,18 +58,21 @@ exports.Response = globalObject.Response;
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-const escapeXML = (v) => v.replace(/["'<>&]/g, (i) => {
+const escapeXML = v => v.replace(/["'<>&]/g, i => {
   switch (i) {
-    case '"': return '&quot;';
-    case '\'': return '&apos;';
-    case '<': return '&lt;';
-    case '>': return '&gt;';
-    case '&': return '&amp;';
+    case '"':
+      return '&quot;';
+    case '\'':
+      return '&apos;';
+    case '<':
+      return '&lt;';
+    case '>':
+      return '&gt;';
+    case '&':
+      return '&amp;';
   }
 });
-
 /* harmony default export */ __webpack_exports__["default"] = (escapeXML);
-
 
 /***/ }),
 
@@ -86,26 +89,20 @@ const TRANSACTION_TIMEOUT_MS = 10 * 1000;
 
 // https://github.com/jakearchibald/safari-14-idb-fix/blob/582bbdc7230891113bfb5743391550cbf29d21f2/src/index.ts
 const idbReady = () => {
-  const isSafari =
-    !navigator.userAgentData &&
-    /Safari\//.test(navigator.userAgent) &&
-    !/Chrom(e|ium)\//.test(navigator.userAgent);
+  const isSafari = !navigator.userAgentData && /Safari\//.test(navigator.userAgent) && !/Chrom(e|ium)\//.test(navigator.userAgent);
 
   // No point putting other browsers or older versions of Safari through this mess.
   if (!isSafari || !indexedDB.databases) return Promise.resolve();
-
   let intervalId;
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const tryIdb = () => indexedDB.databases().finally(resolve);
     intervalId = setInterval(tryIdb, 100);
     tryIdb();
   }).finally(() => clearInterval(intervalId));
 };
-
 const allDatabases = [];
-
 class Database {
-  constructor (name, version, storeName) {
+  constructor(name, version, storeName) {
     this.name = name;
     this.version = version;
     this.storeName = storeName;
@@ -117,7 +114,7 @@ class Database {
   /**
    * @returns {IDBDatabase|Promise<IDBDatabase>}
    */
-  open () {
+  open() {
     if (this.db) {
       return this.db;
     }
@@ -127,51 +124,44 @@ class Database {
     if (typeof indexedDB === 'undefined') {
       throw new Error('indexedDB is not supported');
     }
-
-    this.dbPromise = idbReady()
-      .then(() => new Promise((resolve, reject) => {
-        const request = indexedDB.open(this.name, this.version);
-        request.onupgradeneeded = (e) => {
-          const db = e.target.result;
-          db.createObjectStore(this.storeName, {
-            keyPath: 'id'
-          });
-        };
-        request.onsuccess = (e) => {
-          const db = e.target.result;
-          resolve(db);
-        };
-        request.onerror = (e) => {
-          reject(new Error(`IDB Error ${e.target.error}`));
-        };
-      }))
-      .then((db) => {
-        this.dbPromise = null;
-        this.db = db;
-        return db;
-      })
-      .catch((err) => {
-        this.dbPromise = null;
-        throw err;
-      });
-
+    this.dbPromise = idbReady().then(() => new Promise((resolve, reject) => {
+      const request = indexedDB.open(this.name, this.version);
+      request.onupgradeneeded = e => {
+        const db = e.target.result;
+        db.createObjectStore(this.storeName, {
+          keyPath: 'id'
+        });
+      };
+      request.onsuccess = e => {
+        const db = e.target.result;
+        resolve(db);
+      };
+      request.onerror = e => {
+        reject(new Error("IDB Error ".concat(e.target.error)));
+      };
+    })).then(db => {
+      this.dbPromise = null;
+      this.db = db;
+      return db;
+    }).catch(err => {
+      this.dbPromise = null;
+      throw err;
+    });
     return this.dbPromise;
   }
-
-  close () {
+  close() {
     if (this.db) {
       this.db.close();
       this.db = null;
     }
     if (this.dbPromise) {
-      this.dbPromise.then((db) => {
+      this.dbPromise.then(db => {
         db.close();
       });
       this.dbPromise = null;
     }
   }
-
-  async createTransaction (readwrite) {
+  async createTransaction(readwrite) {
     const db = await this.open();
     const transaction = db.transaction(this.storeName, readwrite);
     const store = transaction.objectStore(this.storeName);
@@ -181,9 +171,11 @@ class Database {
       store
     };
   }
-
-  async deleteEverything () {
-    const {transaction, store} = await this.createTransaction('readwrite');
+  async deleteEverything() {
+    const {
+      transaction,
+      store
+    } = await this.createTransaction('readwrite');
     return new Promise((resolve, reject) => {
       Database.setTransactionErrorHandler(transaction, reject);
       const request = store.clear();
@@ -203,20 +195,18 @@ Database.setTransactionErrorHandler = (transaction, reject) => {
     reject(new Error('Transaction timed out'));
     transaction.abort();
   }, TRANSACTION_TIMEOUT_MS);
-
   transaction.oncomplete = () => {
     clearTimeout(timeoutId);
   };
-  transaction.onerror = (e) => {
+  transaction.onerror = e => {
     clearTimeout(timeoutId);
-    reject(new Error(`Transaction error: ${e.target.error}`))
+    reject(new Error("Transaction error: ".concat(e.target.error)));
   };
   transaction.onabort = () => {
     clearTimeout(timeoutId);
     reject(new Error('Transaction aborted'));
   };
 };
-
 const closeAllDatabases = () => {
   for (const database of allDatabases) {
     database.close();
@@ -224,9 +214,7 @@ const closeAllDatabases = () => {
 };
 // Closing databases makes us more likely to be put in the browser's back/forward cache
 window.addEventListener('pagehide', closeAllDatabases);
-
 /* harmony default export */ __webpack_exports__["default"] = (Database);
-
 
 /***/ }),
 
@@ -1175,41 +1163,119 @@ __webpack_require__.r(__webpack_exports__);
 
 
 function add_css(target) {
-	Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append_styles"])(target, "svelte-gmiihq", ".option.svelte-gmiihq.svelte-gmiihq{display:block;margin:4px 0}.group.svelte-gmiihq.svelte-gmiihq{margin:12px 0}p.svelte-gmiihq.svelte-gmiihq{margin:8px 0}.group.svelte-gmiihq.svelte-gmiihq:last-child,.option.svelte-gmiihq.svelte-gmiihq:last-child,p.svelte-gmiihq.svelte-gmiihq:last-child{margin-bottom:0}textarea.svelte-gmiihq.svelte-gmiihq{box-sizing:border-box;width:100%;min-width:100%;height:150px}input[type=\"text\"].svelte-gmiihq.svelte-gmiihq{width:200px}input[type=\"text\"].shorter.svelte-gmiihq.svelte-gmiihq{width:150px}input[type=\"number\"].svelte-gmiihq.svelte-gmiihq{width:50px}input.svelte-gmiihq.svelte-gmiihq:invalid,.version.svelte-gmiihq.svelte-gmiihq:placeholder-shown{outline:2px solid red}.warning.svelte-gmiihq.svelte-gmiihq{font-weight:bold;background:yellow;color:black;padding:10px;border-radius:10px}.buttons.svelte-gmiihq.svelte-gmiihq{display:flex}.button.svelte-gmiihq.svelte-gmiihq{margin-right:4px}.side-buttons.svelte-gmiihq.svelte-gmiihq{display:flex;margin-left:auto}.github-uploader.svelte-gmiihq.svelte-gmiihq{margin-top:0.5rem;border:1px dashed #ccc;padding:0.5rem;border-radius:4px}.github-uploader.svelte-gmiihq button.svelte-gmiihq{margin-top:0.25rem}.upload-status.svelte-gmiihq.svelte-gmiihq{margin-top:0.5rem;font-size:0.9rem}.log-panel.svelte-gmiihq.svelte-gmiihq{margin-top:0.5rem;border:1px solid #ddd;background:#f8f8f8;padding:0.5rem;border-radius:6px;font-family:monospace;font-size:12px;max-height:180px;display:flex;flex-direction:column}.log-entries.svelte-gmiihq.svelte-gmiihq{overflow:auto;flex:1 1 auto;padding:4px;background:#fff;border:1px solid #eee;border-radius:4px}.log-controls.svelte-gmiihq.svelte-gmiihq{display:flex;gap:8px;margin-top:6px}.log-entry.svelte-gmiihq.svelte-gmiihq{padding:2px 4px}.log-entry.info.svelte-gmiihq.svelte-gmiihq{color:#222}.log-entry.warn.svelte-gmiihq.svelte-gmiihq{color:#b65a00}.log-entry.error.svelte-gmiihq.svelte-gmiihq{color:#b00000;font-weight:bold}");
+	Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append_styles"])(target, "svelte-p1bfed", ".option.svelte-p1bfed.svelte-p1bfed{display:block;margin:4px 0}.group.svelte-p1bfed.svelte-p1bfed{margin:12px 0}p.svelte-p1bfed.svelte-p1bfed{margin:8px 0}.group.svelte-p1bfed.svelte-p1bfed:last-child,.option.svelte-p1bfed.svelte-p1bfed:last-child,p.svelte-p1bfed.svelte-p1bfed:last-child{margin-bottom:0}textarea.svelte-p1bfed.svelte-p1bfed{box-sizing:border-box;width:100%;min-width:100%;height:150px}input[type=\"text\"].svelte-p1bfed.svelte-p1bfed{width:200px}input[type=\"text\"].shorter.svelte-p1bfed.svelte-p1bfed{width:150px}input[type=\"number\"].svelte-p1bfed.svelte-p1bfed{width:50px}input.svelte-p1bfed.svelte-p1bfed:invalid,.version.svelte-p1bfed.svelte-p1bfed:placeholder-shown{outline:2px solid red}.warning.svelte-p1bfed.svelte-p1bfed{font-weight:bold;background:yellow;color:black;padding:10px;border-radius:10px}.buttons.svelte-p1bfed.svelte-p1bfed{display:flex}.button.svelte-p1bfed.svelte-p1bfed{margin-right:4px}.side-buttons.svelte-p1bfed.svelte-p1bfed{display:flex;margin-left:auto}.github-uploader.svelte-p1bfed.svelte-p1bfed{margin-top:0.5rem;border:1px dashed #ccc;padding:0.5rem;border-radius:4px}.github-uploader.svelte-p1bfed button.svelte-p1bfed{margin-top:0.25rem}.upload-status.svelte-p1bfed.svelte-p1bfed{margin-top:0.5rem;font-size:0.9rem}.log-panel.svelte-p1bfed.svelte-p1bfed{margin-top:0.5rem;border:1px solid #ddd;background:#f8f8f8;padding:0.5rem;border-radius:6px;font-family:monospace;font-size:12px;max-height:180px;display:flex;flex-direction:column}.log-entries.svelte-p1bfed.svelte-p1bfed{overflow:auto;flex:1 1 auto;padding:4px;background:#fff;border:1px solid #eee;border-radius:4px}.log-controls.svelte-p1bfed.svelte-p1bfed{display:flex;gap:8px;margin-top:6px}.log-entry.svelte-p1bfed.svelte-p1bfed{padding:2px 4px}.log-entry.info.svelte-p1bfed.svelte-p1bfed{color:#222}.log-entry.warn.svelte-p1bfed.svelte-p1bfed{color:#b65a00}.log-entry.error.svelte-p1bfed.svelte-p1bfed{color:#b00000;font-weight:bold}.feature-notice.svelte-p1bfed.svelte-p1bfed{display:flex;align-items:center;justify-content:space-between;gap:16px}.feature-notice-copy.svelte-p1bfed.svelte-p1bfed{flex:1 1 auto}.feature-notice.svelte-p1bfed h2.svelte-p1bfed{margin:0 0 6px 0}.feature-notice.svelte-p1bfed p.svelte-p1bfed{margin:0}");
 }
 
 function get_each_context(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[148] = list[i];
+	child_ctx[153] = list[i];
 	return child_ctx;
 }
 
 function get_each_context_1(ctx, list, i) {
 	const child_ctx = ctx.slice();
-	child_ctx[151] = list[i];
-	child_ctx[152] = list;
-	child_ctx[153] = i;
+	child_ctx[156] = list[i];
+	child_ctx[157] = list;
+	child_ctx[158] = i;
 	return child_ctx;
 }
 
-// (701:4) {#if hasSettingsStoredInProject}
+// (709:0) <Section accent="#4C97FF">
+function create_default_slot_12(ctx) {
+	let div2;
+	let div0;
+	let h2;
+	let t0_value = /*$_*/ ctx[20]('options.newIn300Title') + "";
+	let t0;
+	let t1;
+	let p;
+	let t2_value = /*$_*/ ctx[20]('options.newIn300Description') + "";
+	let t2;
+	let t3;
+	let div1;
+	let button;
+	let current;
+
+	button = new _p4_Button_svelte__WEBPACK_IMPORTED_MODULE_5__["default"]({
+			props: {
+				secondary: true,
+				text: /*$_*/ ctx[20]('options.jumpToCompiledProject')
+			}
+		});
+
+	button.$on("click", /*scrollToCompiledProjectOption*/ ctx[28]);
+
+	return {
+		c() {
+			div2 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
+			div0 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
+			h2 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("h2");
+			t0 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t0_value);
+			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
+			p = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("p");
+			t2 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t2_value);
+			t3 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
+			div1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["create_component"])(button.$$.fragment);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(h2, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "feature-notice-copy svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "feature-notice svelte-p1bfed");
+		},
+		m(target, anchor) {
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div2, anchor);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div2, div0);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div0, h2);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(h2, t0);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div0, t1);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div0, p);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(p, t2);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div2, t3);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div2, div1);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["mount_component"])(button, div1, null);
+			current = true;
+		},
+		p(ctx, dirty) {
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t0_value !== (t0_value = /*$_*/ ctx[20]('options.newIn300Title') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t2_value !== (t2_value = /*$_*/ ctx[20]('options.newIn300Description') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
+			const button_changes = {};
+			if (dirty[0] & /*$_*/ 1048576) button_changes.text = /*$_*/ ctx[20]('options.jumpToCompiledProject');
+			button.$set(button_changes);
+		},
+		i(local) {
+			if (current) return;
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_in"])(button.$$.fragment, local);
+			current = true;
+		},
+		o(local) {
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_out"])(button.$$.fragment, local);
+			current = false;
+		},
+		d(detaching) {
+			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(div2);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["destroy_component"])(button);
+		}
+	};
+}
+
+// (742:4) {#if hasSettingsStoredInProject}
 function create_if_block_43(ctx) {
 	let div;
-	let t_value = /*$_*/ ctx[19]('options.storedWarning') + "";
+	let t_value = /*$_*/ ctx[20]('options.storedWarning') + "";
 	let t;
 
 	return {
 		c() {
 			div = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 			t = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t_value);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div, "class", "group svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div, "class", "group svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div, anchor);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div, t);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*$_*/ 524288 && t_value !== (t_value = /*$_*/ ctx[19]('options.storedWarning') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, t_value);
+			if (dirty[0] & /*$_*/ 1048576 && t_value !== (t_value = /*$_*/ ctx[20]('options.storedWarning') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, t_value);
 		},
 		d(detaching) {
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(div);
@@ -1217,24 +1283,24 @@ function create_if_block_43(ctx) {
 	};
 }
 
-// (763:4) {#if $options.username !== defaultOptions.username && cloudVariables.length !== 0}
+// (804:4) {#if $options.username !== defaultOptions.username && cloudVariables.length !== 0}
 function create_if_block_42(ctx) {
 	let p;
-	let t_value = /*$_*/ ctx[19]('options.customUsernameWarning') + "";
+	let t_value = /*$_*/ ctx[20]('options.customUsernameWarning') + "";
 	let t;
 
 	return {
 		c() {
 			p = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("p");
 			t = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t_value);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "warning svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "warning svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, p, anchor);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(p, t);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*$_*/ 524288 && t_value !== (t_value = /*$_*/ ctx[19]('options.customUsernameWarning') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, t_value);
+			if (dirty[0] & /*$_*/ 1048576 && t_value !== (t_value = /*$_*/ ctx[20]('options.customUsernameWarning') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, t_value);
 		},
 		d(detaching) {
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(p);
@@ -1242,23 +1308,23 @@ function create_if_block_42(ctx) {
 	};
 }
 
-// (680:0) <Section   accent="#FFAB19"   reset={() => {     resetOptions([       'turbo',       'framerate',       'interpolation',       'highQualityPen',       'maxClones',       'fencing',       'miscLimits',       'stageWidth',       'stageHeight',       'resizeMode',       'username'     ]);   }} >
+// (721:0) <Section   accent="#FFAB19"   reset={() => {     resetOptions([       'turbo',       'framerate',       'interpolation',       'highQualityPen',       'maxClones',       'fencing',       'miscLimits',       'stageWidth',       'stageHeight',       'resizeMode',       'username'     ]);   }} >
 function create_default_slot_11(ctx) {
 	let div7;
 	let h2;
-	let t0_value = /*$_*/ ctx[19]('options.runtimeOptions') + "";
+	let t0_value = /*$_*/ ctx[20]('options.runtimeOptions') + "";
 	let t0;
 	let t1;
 	let t2;
 	let label0;
 	let input0;
 	let t3;
-	let t4_value = /*$_*/ ctx[19]('options.turbo') + "";
+	let t4_value = /*$_*/ ctx[20]('options.turbo') + "";
 	let t4;
 	let t5;
 	let div0;
 	let label1;
-	let t6_value = /*$_*/ ctx[19]('options.framerate') + "";
+	let t6_value = /*$_*/ ctx[20]('options.framerate') + "";
 	let t6;
 	let t7;
 	let input1;
@@ -1269,7 +1335,7 @@ function create_default_slot_11(ctx) {
 	let label2;
 	let input2;
 	let t10;
-	let t11_value = /*$_*/ ctx[19]('options.interpolation') + "";
+	let t11_value = /*$_*/ ctx[20]('options.interpolation') + "";
 	let t11;
 	let t12;
 	let learnmore1;
@@ -1278,7 +1344,7 @@ function create_default_slot_11(ctx) {
 	let label3;
 	let input3;
 	let t14;
-	let t15_value = /*$_*/ ctx[19]('options.highQualityPen') + "";
+	let t15_value = /*$_*/ ctx[20]('options.highQualityPen') + "";
 	let t15;
 	let t16;
 	let learnmore2;
@@ -1288,7 +1354,7 @@ function create_default_slot_11(ctx) {
 	let input4;
 	let input4_checked_value;
 	let t18;
-	let t19_value = /*$_*/ ctx[19]('options.infiniteClones') + "";
+	let t19_value = /*$_*/ ctx[20]('options.infiniteClones') + "";
 	let t19;
 	let t20;
 	let learnmore3;
@@ -1298,7 +1364,7 @@ function create_default_slot_11(ctx) {
 	let input5;
 	let input5_checked_value;
 	let t22;
-	let t23_value = /*$_*/ ctx[19]('options.removeFencing') + "";
+	let t23_value = /*$_*/ ctx[20]('options.removeFencing') + "";
 	let t23;
 	let t24;
 	let learnmore4;
@@ -1308,13 +1374,13 @@ function create_default_slot_11(ctx) {
 	let input6;
 	let input6_checked_value;
 	let t26;
-	let t27_value = /*$_*/ ctx[19]('options.removeMiscLimits') + "";
+	let t27_value = /*$_*/ ctx[20]('options.removeMiscLimits') + "";
 	let t27;
 	let t28;
 	let learnmore5;
 	let t29;
 	let label7;
-	let t30_value = /*$_*/ ctx[19]('options.username') + "";
+	let t30_value = /*$_*/ ctx[20]('options.username') + "";
 	let t30;
 	let t31;
 	let input7;
@@ -1323,15 +1389,15 @@ function create_default_slot_11(ctx) {
 	let label8;
 	let input8;
 	let t34;
-	let t35_value = /*$_*/ ctx[19]('options.closeWhenStopped') + "";
+	let t35_value = /*$_*/ ctx[20]('options.closeWhenStopped') + "";
 	let t35;
 	let t36;
 	let h3;
-	let t37_value = /*$_*/ ctx[19]('options.stage') + "";
+	let t37_value = /*$_*/ ctx[20]('options.stage') + "";
 	let t37;
 	let t38;
 	let label9;
-	let t39_value = /*$_*/ ctx[19]('options.stageSize') + "";
+	let t39_value = /*$_*/ ctx[20]('options.stageSize') + "";
 	let t39;
 	let t40;
 	let input9;
@@ -1344,19 +1410,19 @@ function create_default_slot_11(ctx) {
 	let label10;
 	let input11;
 	let t44;
-	let t45_value = /*$_*/ ctx[19]('options.preserveRatio') + "";
+	let t45_value = /*$_*/ ctx[20]('options.preserveRatio') + "";
 	let t45;
 	let t46;
 	let label11;
 	let input12;
 	let t47;
-	let t48_value = /*$_*/ ctx[19]('options.stretch') + "";
+	let t48_value = /*$_*/ ctx[20]('options.stretch') + "";
 	let t48;
 	let t49;
 	let label12;
 	let input13;
 	let t50;
-	let t51_value = /*$_*/ ctx[19]('options.dynamicResize') + "";
+	let t51_value = /*$_*/ ctx[20]('options.dynamicResize') + "";
 	let t51;
 	let t52;
 	let learnmore7;
@@ -1364,21 +1430,21 @@ function create_default_slot_11(ctx) {
 	let binding_group;
 	let mounted;
 	let dispose;
-	let if_block0 = /*hasSettingsStoredInProject*/ ctx[22] && create_if_block_43(ctx);
+	let if_block0 = /*hasSettingsStoredInProject*/ ctx[23] && create_if_block_43(ctx);
 	learnmore0 = new _LearnMore_svelte__WEBPACK_IMPORTED_MODULE_8__["default"]({ props: { slug: "custom-fps" } });
 	learnmore1 = new _LearnMore_svelte__WEBPACK_IMPORTED_MODULE_8__["default"]({ props: { slug: "interpolation" } });
 	learnmore2 = new _LearnMore_svelte__WEBPACK_IMPORTED_MODULE_8__["default"]({ props: { slug: "high-quality-pen" } });
 	learnmore3 = new _LearnMore_svelte__WEBPACK_IMPORTED_MODULE_8__["default"]({ props: { slug: "infinite-clones" } });
 	learnmore4 = new _LearnMore_svelte__WEBPACK_IMPORTED_MODULE_8__["default"]({ props: { slug: "remove-fencing" } });
 	learnmore5 = new _LearnMore_svelte__WEBPACK_IMPORTED_MODULE_8__["default"]({ props: { slug: "remove-misc-limits" } });
-	let if_block1 = /*$options*/ ctx[1].username !== /*defaultOptions*/ ctx[6].username && /*cloudVariables*/ ctx[20].length !== 0 && create_if_block_42(ctx);
+	let if_block1 = /*$options*/ ctx[1].username !== /*defaultOptions*/ ctx[6].username && /*cloudVariables*/ ctx[21].length !== 0 && create_if_block_42(ctx);
 	learnmore6 = new _LearnMore_svelte__WEBPACK_IMPORTED_MODULE_8__["default"]({ props: { slug: "custom-stage-size" } });
 
 	learnmore7 = new _LearnMore_svelte__WEBPACK_IMPORTED_MODULE_8__["default"]({
 			props: { slug: "packager/dynamic-stage-resize" }
 		});
 
-	binding_group = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["init_binding_group"])(/*$$binding_groups*/ ctx[55][3]);
+	binding_group = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["init_binding_group"])(/*$$binding_groups*/ ctx[56][3]);
 
 	return {
 		c() {
@@ -1483,67 +1549,67 @@ function create_default_slot_11(ctx) {
 			t52 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["create_component"])(learnmore7.$$.fragment);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "type", "number");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "min", "0");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "max", "240");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div1, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div1, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "type", "checkbox");
 			input4.checked = input4_checked_value = /*$options*/ ctx[1].maxClones === ALMOST_INFINITY;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div3, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div3, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input5, "type", "checkbox");
 			input5.checked = input5_checked_value = !/*$options*/ ctx[1].fencing;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input5, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div4, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input5, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div4, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input6, "type", "checkbox");
 			input6.checked = input6_checked_value = !/*$options*/ ctx[1].miscLimits;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input6, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div5, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input6, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div5, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input7, "type", "text");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input7, "class", "shorter svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label7, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input7, "class", "shorter svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label7, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input8, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input8, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label8, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input8, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label8, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input9, "type", "number");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input9, "min", "1");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input9, "max", "4096");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input9, "step", "1");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input9, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input9, "class", "svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input10, "type", "number");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input10, "min", "1");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input10, "max", "4096");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input10, "step", "1");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input10, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label9, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input10, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label9, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input11, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input11, "name", "resize-mode");
 			input11.__value = "preserve-ratio";
 			input11.value = input11.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input11, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label10, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input11, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label10, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input12, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input12, "name", "resize-mode");
 			input12.__value = "stretch";
 			input12.value = input12.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input12, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label11, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input12, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label11, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input13, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input13, "name", "resize-mode");
 			input13.__value = "dynamic-resize";
 			input13.value = input13.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input13, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label12, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div6, "class", "group svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input13, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label12, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div6, "class", "group svelte-p1bfed");
 			binding_group.p(input11, input12, input13);
 		},
 		m(target, anchor) {
@@ -1662,35 +1728,35 @@ function create_default_slot_11(ctx) {
 
 			if (!mounted) {
 				dispose = [
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "change", /*input0_change_handler*/ ctx[43]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "input", /*input1_input_handler*/ ctx[44]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input2, "change", /*input2_change_handler*/ ctx[45]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input3, "change", /*input3_change_handler*/ ctx[46]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input4, "change", /*change_handler*/ ctx[47]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input5, "change", /*change_handler_1*/ ctx[48]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input6, "change", /*change_handler_2*/ ctx[49]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input7, "input", /*input7_input_handler*/ ctx[50]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input8, "change", /*input8_change_handler*/ ctx[51]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input9, "input", /*input9_input_handler*/ ctx[52]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input10, "input", /*input10_input_handler*/ ctx[53]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input11, "change", /*input11_change_handler*/ ctx[54]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input12, "change", /*input12_change_handler*/ ctx[56]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input13, "change", /*input13_change_handler*/ ctx[57])
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "change", /*input0_change_handler*/ ctx[44]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "input", /*input1_input_handler*/ ctx[45]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input2, "change", /*input2_change_handler*/ ctx[46]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input3, "change", /*input3_change_handler*/ ctx[47]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input4, "change", /*change_handler*/ ctx[48]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input5, "change", /*change_handler_1*/ ctx[49]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input6, "change", /*change_handler_2*/ ctx[50]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input7, "input", /*input7_input_handler*/ ctx[51]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input8, "change", /*input8_change_handler*/ ctx[52]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input9, "input", /*input9_input_handler*/ ctx[53]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input10, "input", /*input10_input_handler*/ ctx[54]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input11, "change", /*input11_change_handler*/ ctx[55]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input12, "change", /*input12_change_handler*/ ctx[57]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input13, "change", /*input13_change_handler*/ ctx[58])
 				];
 
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
-			if ((!current || dirty[0] & /*$_*/ 524288) && t0_value !== (t0_value = /*$_*/ ctx[19]('options.runtimeOptions') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
-			if (/*hasSettingsStoredInProject*/ ctx[22]) if_block0.p(ctx, dirty);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t0_value !== (t0_value = /*$_*/ ctx[20]('options.runtimeOptions') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if (/*hasSettingsStoredInProject*/ ctx[23]) if_block0.p(ctx, dirty);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input0.checked = /*$options*/ ctx[1].turbo;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t4_value !== (t4_value = /*$_*/ ctx[19]('options.turbo') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t4, t4_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t6_value !== (t6_value = /*$_*/ ctx[19]('options.framerate') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t6, t6_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t4_value !== (t4_value = /*$_*/ ctx[20]('options.turbo') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t4, t4_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t6_value !== (t6_value = /*$_*/ ctx[20]('options.framerate') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t6, t6_value);
 
 			if (dirty[0] & /*$options*/ 2 && Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["to_number"])(input1.value) !== /*$options*/ ctx[1].framerate) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(input1, /*$options*/ ctx[1].framerate);
@@ -1700,38 +1766,38 @@ function create_default_slot_11(ctx) {
 				input2.checked = /*$options*/ ctx[1].interpolation;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t11_value !== (t11_value = /*$_*/ ctx[19]('options.interpolation') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t11, t11_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t11_value !== (t11_value = /*$_*/ ctx[20]('options.interpolation') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t11, t11_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input3.checked = /*$options*/ ctx[1].highQualityPen;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t15_value !== (t15_value = /*$_*/ ctx[19]('options.highQualityPen') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t15, t15_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t15_value !== (t15_value = /*$_*/ ctx[20]('options.highQualityPen') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t15, t15_value);
 
 			if (!current || dirty[0] & /*$options*/ 2 && input4_checked_value !== (input4_checked_value = /*$options*/ ctx[1].maxClones === ALMOST_INFINITY)) {
 				input4.checked = input4_checked_value;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t19_value !== (t19_value = /*$_*/ ctx[19]('options.infiniteClones') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t19, t19_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t19_value !== (t19_value = /*$_*/ ctx[20]('options.infiniteClones') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t19, t19_value);
 
 			if (!current || dirty[0] & /*$options*/ 2 && input5_checked_value !== (input5_checked_value = !/*$options*/ ctx[1].fencing)) {
 				input5.checked = input5_checked_value;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t23_value !== (t23_value = /*$_*/ ctx[19]('options.removeFencing') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t23, t23_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t23_value !== (t23_value = /*$_*/ ctx[20]('options.removeFencing') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t23, t23_value);
 
 			if (!current || dirty[0] & /*$options*/ 2 && input6_checked_value !== (input6_checked_value = !/*$options*/ ctx[1].miscLimits)) {
 				input6.checked = input6_checked_value;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t27_value !== (t27_value = /*$_*/ ctx[19]('options.removeMiscLimits') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t27, t27_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t30_value !== (t30_value = /*$_*/ ctx[19]('options.username') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t30, t30_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t27_value !== (t27_value = /*$_*/ ctx[20]('options.removeMiscLimits') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t27, t27_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t30_value !== (t30_value = /*$_*/ ctx[20]('options.username') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t30, t30_value);
 
 			if (dirty[0] & /*$options*/ 2 && input7.value !== /*$options*/ ctx[1].username) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(input7, /*$options*/ ctx[1].username);
 			}
 
-			if (/*$options*/ ctx[1].username !== /*defaultOptions*/ ctx[6].username && /*cloudVariables*/ ctx[20].length !== 0) {
+			if (/*$options*/ ctx[1].username !== /*defaultOptions*/ ctx[6].username && /*cloudVariables*/ ctx[21].length !== 0) {
 				if (if_block1) {
 					if_block1.p(ctx, dirty);
 				} else {
@@ -1748,9 +1814,9 @@ function create_default_slot_11(ctx) {
 				input8.checked = /*$options*/ ctx[1].closeWhenStopped;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t35_value !== (t35_value = /*$_*/ ctx[19]('options.closeWhenStopped') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t35, t35_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t37_value !== (t37_value = /*$_*/ ctx[19]('options.stage') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t37, t37_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t39_value !== (t39_value = /*$_*/ ctx[19]('options.stageSize') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t39, t39_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t35_value !== (t35_value = /*$_*/ ctx[20]('options.closeWhenStopped') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t35, t35_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t37_value !== (t37_value = /*$_*/ ctx[20]('options.stage') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t37, t37_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t39_value !== (t39_value = /*$_*/ ctx[20]('options.stageSize') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t39, t39_value);
 
 			if (dirty[0] & /*$options*/ 2 && Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["to_number"])(input9.value) !== /*$options*/ ctx[1].stageWidth) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(input9, /*$options*/ ctx[1].stageWidth);
@@ -1764,19 +1830,19 @@ function create_default_slot_11(ctx) {
 				input11.checked = input11.__value === /*$options*/ ctx[1].resizeMode;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t45_value !== (t45_value = /*$_*/ ctx[19]('options.preserveRatio') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t45, t45_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t45_value !== (t45_value = /*$_*/ ctx[20]('options.preserveRatio') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t45, t45_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input12.checked = input12.__value === /*$options*/ ctx[1].resizeMode;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t48_value !== (t48_value = /*$_*/ ctx[19]('options.stretch') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t48, t48_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t48_value !== (t48_value = /*$_*/ ctx[20]('options.stretch') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t48, t48_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input13.checked = input13.__value === /*$options*/ ctx[1].resizeMode;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t51_value !== (t51_value = /*$_*/ ctx[19]('options.dynamicResize') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t51, t51_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t51_value !== (t51_value = /*$_*/ ctx[20]('options.dynamicResize') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t51, t51_value);
 		},
 		i(local) {
 			if (current) return;
@@ -1820,23 +1886,23 @@ function create_default_slot_11(ctx) {
 	};
 }
 
-// (840:4) {#if $loadingScreenImage}
+// (881:4) {#if $loadingScreenImage}
 function create_if_block_41(ctx) {
 	let label0;
 	let input0;
 	let t0;
-	let t1_value = /*$_*/ ctx[19]('options.sizeNormal') + "";
+	let t1_value = /*$_*/ ctx[20]('options.sizeNormal') + "";
 	let t1;
 	let t2;
 	let label1;
 	let input1;
 	let t3;
-	let t4_value = /*$_*/ ctx[19]('options.sizeStretch') + "";
+	let t4_value = /*$_*/ ctx[20]('options.sizeStretch') + "";
 	let t4;
 	let binding_group;
 	let mounted;
 	let dispose;
-	binding_group = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["init_binding_group"])(/*$$binding_groups*/ ctx[55][2]);
+	binding_group = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["init_binding_group"])(/*$$binding_groups*/ ctx[56][2]);
 
 	return {
 		c() {
@@ -1853,14 +1919,14 @@ function create_if_block_41(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "name", "loading-screen-mode");
 			input0.__value = "normal";
 			input0.value = input0.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "name", "loading-screen-mode");
 			input1.__value = "stretch";
 			input1.value = input1.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label1, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label1, "class", "option svelte-p1bfed");
 			binding_group.p(input0, input1);
 		},
 		m(target, anchor) {
@@ -1878,8 +1944,8 @@ function create_if_block_41(ctx) {
 
 			if (!mounted) {
 				dispose = [
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "change", /*input0_change_handler_1*/ ctx[64]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "change", /*input1_change_handler_1*/ ctx[65])
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "change", /*input0_change_handler_1*/ ctx[65]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "change", /*input1_change_handler_1*/ ctx[66])
 				];
 
 				mounted = true;
@@ -1890,13 +1956,13 @@ function create_if_block_41(ctx) {
 				input0.checked = input0.__value === /*$options*/ ctx[1].loadingScreen.imageMode;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t1_value !== (t1_value = /*$_*/ ctx[19]('options.sizeNormal') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, t1_value);
+			if (dirty[0] & /*$_*/ 1048576 && t1_value !== (t1_value = /*$_*/ ctx[20]('options.sizeNormal') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, t1_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input1.checked = input1.__value === /*$options*/ ctx[1].loadingScreen.imageMode;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t4_value !== (t4_value = /*$_*/ ctx[19]('options.sizeStretch') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t4, t4_value);
+			if (dirty[0] & /*$_*/ 1048576 && t4_value !== (t4_value = /*$_*/ ctx[20]('options.sizeStretch') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t4, t4_value);
 		},
 		d(detaching) {
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(label0);
@@ -1909,9 +1975,9 @@ function create_if_block_41(ctx) {
 	};
 }
 
-// (857:6) {#if $options.autoplay}
+// (898:6) {#if $options.autoplay}
 function create_if_block_40(ctx) {
-	let t_value = /*$_*/ ctx[19]('options.autoplayHint') + "";
+	let t_value = /*$_*/ ctx[20]('options.autoplayHint') + "";
 	let t;
 
 	return {
@@ -1922,7 +1988,7 @@ function create_if_block_40(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, t, anchor);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*$_*/ 524288 && t_value !== (t_value = /*$_*/ ctx[19]('options.autoplayHint') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, t_value);
+			if (dirty[0] & /*$_*/ 1048576 && t_value !== (t_value = /*$_*/ ctx[20]('options.autoplayHint') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, t_value);
 		},
 		d(detaching) {
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(t);
@@ -1930,45 +1996,45 @@ function create_if_block_40(ctx) {
 	};
 }
 
-// (799:0) <Section   accent="#9966FF"   reset={() => {     $icon = null;     $loadingScreenImage = null;     resetOptions([       'app.windowTitle',       'loadingScreen',       'autoplay',       'controls',       'appearance',       'monitors',     ]);   }} >
+// (840:0) <Section   accent="#9966FF"   reset={() => {     $icon = null;     $loadingScreenImage = null;     resetOptions([       'app.windowTitle',       'loadingScreen',       'autoplay',       'controls',       'appearance',       'monitors',     ]);   }} >
 function create_default_slot_10(ctx) {
 	let div3;
 	let h2;
-	let t0_value = /*$_*/ ctx[19]('options.playerOptions') + "";
+	let t0_value = /*$_*/ ctx[20]('options.playerOptions') + "";
 	let t0;
 	let t1;
 	let label0;
-	let t2_value = /*$_*/ ctx[19]('options.pageTitle') + "";
+	let t2_value = /*$_*/ ctx[20]('options.pageTitle') + "";
 	let t2;
 	let t3;
 	let input0;
 	let t4;
 	let div0;
-	let t5_value = /*$_*/ ctx[19]('options.icon') + "";
+	let t5_value = /*$_*/ ctx[20]('options.icon') + "";
 	let t5;
 	let t6;
 	let imageinput0;
 	let updating_file;
 	let t7;
 	let h30;
-	let t8_value = /*$_*/ ctx[19]('options.loadingScreen') + "";
+	let t8_value = /*$_*/ ctx[20]('options.loadingScreen') + "";
 	let t8;
 	let t9;
 	let label1;
 	let input1;
 	let t10;
-	let t11_value = /*$_*/ ctx[19]('options.showProgressBar') + "";
+	let t11_value = /*$_*/ ctx[20]('options.showProgressBar') + "";
 	let t11;
 	let t12;
 	let label2;
-	let t13_value = /*$_*/ ctx[19]('options.loadingScreenText') + "";
+	let t13_value = /*$_*/ ctx[20]('options.loadingScreenText') + "";
 	let t13;
 	let t14;
 	let input2;
 	let input2_placeholder_value;
 	let t15;
 	let div1;
-	let t16_value = /*$_*/ ctx[19]('options.loadingScreenImage') + "";
+	let t16_value = /*$_*/ ctx[20]('options.loadingScreenImage') + "";
 	let t16;
 	let t17;
 	let imageinput1;
@@ -1976,99 +2042,99 @@ function create_default_slot_10(ctx) {
 	let t18;
 	let t19;
 	let h31;
-	let t20_value = /*$_*/ ctx[19]('options.controls') + "";
+	let t20_value = /*$_*/ ctx[20]('options.controls') + "";
 	let t20;
 	let t21;
 	let div2;
 	let label3;
 	let input3;
 	let t22;
-	let t23_value = /*$_*/ ctx[19]('options.autoplay') + "";
+	let t23_value = /*$_*/ ctx[20]('options.autoplay') + "";
 	let t23;
 	let t24;
 	let t25;
 	let label4;
 	let input4;
 	let t26;
-	let t27_value = /*$_*/ ctx[19]('options.showFlag') + "";
+	let t27_value = /*$_*/ ctx[20]('options.showFlag') + "";
 	let t27;
 	let t28;
 	let label5;
 	let input5;
 	let t29;
-	let t30_value = /*$_*/ ctx[19]('options.showStop') + "";
+	let t30_value = /*$_*/ ctx[20]('options.showStop') + "";
 	let t30;
 	let t31;
 	let label6;
 	let input6;
 	let t32;
-	let t33_value = /*$_*/ ctx[19]('options.showPause') + "";
+	let t33_value = /*$_*/ ctx[20]('options.showPause') + "";
 	let t33;
 	let t34;
 	let label7;
 	let input7;
 	let t35;
-	let t36_value = /*$_*/ ctx[19]('options.showFullscreen') + "";
+	let t36_value = /*$_*/ ctx[20]('options.showFullscreen') + "";
 	let t36;
 	let t37;
 	let p;
-	let t38_value = /*$_*/ ctx[19]('options.controlsHelp') + "";
+	let t38_value = /*$_*/ ctx[20]('options.controlsHelp') + "";
 	let t38;
 	let t39;
 	let h32;
-	let t40_value = /*$_*/ ctx[19]('options.colors') + "";
+	let t40_value = /*$_*/ ctx[20]('options.colors') + "";
 	let t40;
 	let t41;
 	let label8;
 	let colorpicker0;
 	let updating_value;
 	let t42;
-	let t43_value = /*$_*/ ctx[19]('options.backgroundColor') + "";
+	let t43_value = /*$_*/ ctx[20]('options.backgroundColor') + "";
 	let t43;
 	let t44;
 	let label9;
 	let colorpicker1;
 	let updating_value_1;
 	let t45;
-	let t46_value = /*$_*/ ctx[19]('options.foregroundColor') + "";
+	let t46_value = /*$_*/ ctx[20]('options.foregroundColor') + "";
 	let t46;
 	let t47;
 	let label10;
 	let colorpicker2;
 	let updating_value_2;
 	let t48;
-	let t49_value = /*$_*/ ctx[19]('options.accentColor') + "";
+	let t49_value = /*$_*/ ctx[20]('options.accentColor') + "";
 	let t49;
 	let t50;
 	let h33;
-	let t51_value = /*$_*/ ctx[19]('options.monitors') + "";
+	let t51_value = /*$_*/ ctx[20]('options.monitors') + "";
 	let t51;
 	let t52;
 	let label11;
 	let input8;
 	let t53;
-	let t54_value = /*$_*/ ctx[19]('options.editableLists') + "";
+	let t54_value = /*$_*/ ctx[20]('options.editableLists') + "";
 	let t54;
 	let t55;
 	let label12;
 	let colorpicker3;
 	let updating_value_3;
 	let t56;
-	let t57_value = /*$_*/ ctx[19]('options.variableColor') + "";
+	let t57_value = /*$_*/ ctx[20]('options.variableColor') + "";
 	let t57;
 	let t58;
 	let label13;
 	let colorpicker4;
 	let updating_value_4;
 	let t59;
-	let t60_value = /*$_*/ ctx[19]('options.listColor') + "";
+	let t60_value = /*$_*/ ctx[20]('options.listColor') + "";
 	let t60;
 	let current;
 	let mounted;
 	let dispose;
 
 	function imageinput0_file_binding(value) {
-		/*imageinput0_file_binding*/ ctx[60](value);
+		/*imageinput0_file_binding*/ ctx[61](value);
 	}
 
 	let imageinput0_props = {
@@ -2083,7 +2149,7 @@ function create_default_slot_10(ctx) {
 	svelte_internal__WEBPACK_IMPORTED_MODULE_0__["binding_callbacks"].push(() => Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["bind"])(imageinput0, 'file', imageinput0_file_binding));
 
 	function imageinput1_file_binding(value) {
-		/*imageinput1_file_binding*/ ctx[63](value);
+		/*imageinput1_file_binding*/ ctx[64](value);
 	}
 
 	let imageinput1_props = { previewSizes: [['', '']] };
@@ -2098,7 +2164,7 @@ function create_default_slot_10(ctx) {
 	let if_block1 = /*$options*/ ctx[1].autoplay && create_if_block_40(ctx);
 
 	function colorpicker0_value_binding(value) {
-		/*colorpicker0_value_binding*/ ctx[71](value);
+		/*colorpicker0_value_binding*/ ctx[72](value);
 	}
 
 	let colorpicker0_props = {};
@@ -2111,7 +2177,7 @@ function create_default_slot_10(ctx) {
 	svelte_internal__WEBPACK_IMPORTED_MODULE_0__["binding_callbacks"].push(() => Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["bind"])(colorpicker0, 'value', colorpicker0_value_binding));
 
 	function colorpicker1_value_binding(value) {
-		/*colorpicker1_value_binding*/ ctx[72](value);
+		/*colorpicker1_value_binding*/ ctx[73](value);
 	}
 
 	let colorpicker1_props = {};
@@ -2124,7 +2190,7 @@ function create_default_slot_10(ctx) {
 	svelte_internal__WEBPACK_IMPORTED_MODULE_0__["binding_callbacks"].push(() => Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["bind"])(colorpicker1, 'value', colorpicker1_value_binding));
 
 	function colorpicker2_value_binding(value) {
-		/*colorpicker2_value_binding*/ ctx[73](value);
+		/*colorpicker2_value_binding*/ ctx[74](value);
 	}
 
 	let colorpicker2_props = {};
@@ -2137,7 +2203,7 @@ function create_default_slot_10(ctx) {
 	svelte_internal__WEBPACK_IMPORTED_MODULE_0__["binding_callbacks"].push(() => Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["bind"])(colorpicker2, 'value', colorpicker2_value_binding));
 
 	function colorpicker3_value_binding(value) {
-		/*colorpicker3_value_binding*/ ctx[75](value);
+		/*colorpicker3_value_binding*/ ctx[76](value);
 	}
 
 	let colorpicker3_props = {};
@@ -2150,7 +2216,7 @@ function create_default_slot_10(ctx) {
 	svelte_internal__WEBPACK_IMPORTED_MODULE_0__["binding_callbacks"].push(() => Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["bind"])(colorpicker3, 'value', colorpicker3_value_binding));
 
 	function colorpicker4_value_binding(value) {
-		/*colorpicker4_value_binding*/ ctx[76](value);
+		/*colorpicker4_value_binding*/ ctx[77](value);
 	}
 
 	let colorpicker4_props = {};
@@ -2268,42 +2334,42 @@ function create_default_slot_10(ctx) {
 			t59 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			t60 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t60_value);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "type", "text");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label1, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label1, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "type", "text");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "placeholder", input2_placeholder_value = /*$_*/ ctx[19]('options.loadingScreenTextPlaceholder'));
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label2, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div1, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "placeholder", input2_placeholder_value = /*$_*/ ctx[20]('options.loadingScreenTextPlaceholder'));
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label2, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div1, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label3, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "group svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label3, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "group svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label4, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label4, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input5, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input5, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label5, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input5, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label5, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input6, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input6, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label6, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input6, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label6, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input7, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input7, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label7, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label8, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label9, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label10, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input7, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label7, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label8, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label9, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label10, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input8, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input8, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label11, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label12, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label13, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input8, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label11, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label12, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label13, "class", "option svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div3, anchor);
@@ -2422,29 +2488,29 @@ function create_default_slot_10(ctx) {
 
 			if (!mounted) {
 				dispose = [
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "input", /*input0_input_handler*/ ctx[59]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "change", /*input1_change_handler*/ ctx[61]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input2, "input", /*input2_input_handler*/ ctx[62]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input3, "change", /*input3_change_handler_1*/ ctx[66]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input4, "change", /*input4_change_handler*/ ctx[67]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input5, "change", /*input5_change_handler*/ ctx[68]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input6, "change", /*input6_change_handler*/ ctx[69]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input7, "change", /*input7_change_handler*/ ctx[70]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input8, "change", /*input8_change_handler_1*/ ctx[74])
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "input", /*input0_input_handler*/ ctx[60]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "change", /*input1_change_handler*/ ctx[62]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input2, "input", /*input2_input_handler*/ ctx[63]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input3, "change", /*input3_change_handler_1*/ ctx[67]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input4, "change", /*input4_change_handler*/ ctx[68]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input5, "change", /*input5_change_handler*/ ctx[69]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input6, "change", /*input6_change_handler*/ ctx[70]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input7, "change", /*input7_change_handler*/ ctx[71]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input8, "change", /*input8_change_handler_1*/ ctx[75])
 				];
 
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
-			if ((!current || dirty[0] & /*$_*/ 524288) && t0_value !== (t0_value = /*$_*/ ctx[19]('options.playerOptions') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t2_value !== (t2_value = /*$_*/ ctx[19]('options.pageTitle') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t0_value !== (t0_value = /*$_*/ ctx[20]('options.playerOptions') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t2_value !== (t2_value = /*$_*/ ctx[20]('options.pageTitle') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
 
 			if (dirty[0] & /*$options*/ 2 && input0.value !== /*$options*/ ctx[1].app.windowTitle) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(input0, /*$options*/ ctx[1].app.windowTitle);
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t5_value !== (t5_value = /*$_*/ ctx[19]('options.icon') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t5, t5_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t5_value !== (t5_value = /*$_*/ ctx[20]('options.icon') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t5, t5_value);
 			const imageinput0_changes = {};
 
 			if (!updating_file && dirty[0] & /*$icon*/ 16) {
@@ -2454,16 +2520,16 @@ function create_default_slot_10(ctx) {
 			}
 
 			imageinput0.$set(imageinput0_changes);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t8_value !== (t8_value = /*$_*/ ctx[19]('options.loadingScreen') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t8, t8_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t8_value !== (t8_value = /*$_*/ ctx[20]('options.loadingScreen') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t8, t8_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input1.checked = /*$options*/ ctx[1].loadingScreen.progressBar;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t11_value !== (t11_value = /*$_*/ ctx[19]('options.showProgressBar') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t11, t11_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t13_value !== (t13_value = /*$_*/ ctx[19]('options.loadingScreenText') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t13, t13_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t11_value !== (t11_value = /*$_*/ ctx[20]('options.showProgressBar') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t11, t11_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t13_value !== (t13_value = /*$_*/ ctx[20]('options.loadingScreenText') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t13, t13_value);
 
-			if (!current || dirty[0] & /*$_*/ 524288 && input2_placeholder_value !== (input2_placeholder_value = /*$_*/ ctx[19]('options.loadingScreenTextPlaceholder'))) {
+			if (!current || dirty[0] & /*$_*/ 1048576 && input2_placeholder_value !== (input2_placeholder_value = /*$_*/ ctx[20]('options.loadingScreenTextPlaceholder'))) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "placeholder", input2_placeholder_value);
 			}
 
@@ -2471,7 +2537,7 @@ function create_default_slot_10(ctx) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(input2, /*$options*/ ctx[1].loadingScreen.text);
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t16_value !== (t16_value = /*$_*/ ctx[19]('options.loadingScreenImage') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t16, t16_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t16_value !== (t16_value = /*$_*/ ctx[20]('options.loadingScreenImage') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t16, t16_value);
 			const imageinput1_changes = {};
 
 			if (!updating_file_1 && dirty[0] & /*$loadingScreenImage*/ 4) {
@@ -2495,13 +2561,13 @@ function create_default_slot_10(ctx) {
 				if_block0 = null;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t20_value !== (t20_value = /*$_*/ ctx[19]('options.controls') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t20, t20_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t20_value !== (t20_value = /*$_*/ ctx[20]('options.controls') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t20, t20_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input3.checked = /*$options*/ ctx[1].autoplay;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t23_value !== (t23_value = /*$_*/ ctx[19]('options.autoplay') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t23, t23_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t23_value !== (t23_value = /*$_*/ ctx[20]('options.autoplay') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t23, t23_value);
 
 			if (/*$options*/ ctx[1].autoplay) {
 				if (if_block1) {
@@ -2520,27 +2586,27 @@ function create_default_slot_10(ctx) {
 				input4.checked = /*$options*/ ctx[1].controls.greenFlag.enabled;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t27_value !== (t27_value = /*$_*/ ctx[19]('options.showFlag') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t27, t27_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t27_value !== (t27_value = /*$_*/ ctx[20]('options.showFlag') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t27, t27_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input5.checked = /*$options*/ ctx[1].controls.stopAll.enabled;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t30_value !== (t30_value = /*$_*/ ctx[19]('options.showStop') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t30, t30_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t30_value !== (t30_value = /*$_*/ ctx[20]('options.showStop') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t30, t30_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input6.checked = /*$options*/ ctx[1].controls.pause.enabled;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t33_value !== (t33_value = /*$_*/ ctx[19]('options.showPause') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t33, t33_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t33_value !== (t33_value = /*$_*/ ctx[20]('options.showPause') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t33, t33_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input7.checked = /*$options*/ ctx[1].controls.fullscreen.enabled;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t36_value !== (t36_value = /*$_*/ ctx[19]('options.showFullscreen') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t36, t36_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t38_value !== (t38_value = /*$_*/ ctx[19]('options.controlsHelp') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t38, t38_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t40_value !== (t40_value = /*$_*/ ctx[19]('options.colors') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t40, t40_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t36_value !== (t36_value = /*$_*/ ctx[20]('options.showFullscreen') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t36, t36_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t38_value !== (t38_value = /*$_*/ ctx[20]('options.controlsHelp') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t38, t38_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t40_value !== (t40_value = /*$_*/ ctx[20]('options.colors') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t40, t40_value);
 			const colorpicker0_changes = {};
 
 			if (!updating_value && dirty[0] & /*$options*/ 2) {
@@ -2550,7 +2616,7 @@ function create_default_slot_10(ctx) {
 			}
 
 			colorpicker0.$set(colorpicker0_changes);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t43_value !== (t43_value = /*$_*/ ctx[19]('options.backgroundColor') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t43, t43_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t43_value !== (t43_value = /*$_*/ ctx[20]('options.backgroundColor') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t43, t43_value);
 			const colorpicker1_changes = {};
 
 			if (!updating_value_1 && dirty[0] & /*$options*/ 2) {
@@ -2560,7 +2626,7 @@ function create_default_slot_10(ctx) {
 			}
 
 			colorpicker1.$set(colorpicker1_changes);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t46_value !== (t46_value = /*$_*/ ctx[19]('options.foregroundColor') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t46, t46_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t46_value !== (t46_value = /*$_*/ ctx[20]('options.foregroundColor') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t46, t46_value);
 			const colorpicker2_changes = {};
 
 			if (!updating_value_2 && dirty[0] & /*$options*/ 2) {
@@ -2570,14 +2636,14 @@ function create_default_slot_10(ctx) {
 			}
 
 			colorpicker2.$set(colorpicker2_changes);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t49_value !== (t49_value = /*$_*/ ctx[19]('options.accentColor') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t49, t49_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t51_value !== (t51_value = /*$_*/ ctx[19]('options.monitors') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t51, t51_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t49_value !== (t49_value = /*$_*/ ctx[20]('options.accentColor') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t49, t49_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t51_value !== (t51_value = /*$_*/ ctx[20]('options.monitors') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t51, t51_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input8.checked = /*$options*/ ctx[1].monitors.editableLists;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t54_value !== (t54_value = /*$_*/ ctx[19]('options.editableLists') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t54, t54_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t54_value !== (t54_value = /*$_*/ ctx[20]('options.editableLists') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t54, t54_value);
 			const colorpicker3_changes = {};
 
 			if (!updating_value_3 && dirty[0] & /*$options*/ 2) {
@@ -2587,7 +2653,7 @@ function create_default_slot_10(ctx) {
 			}
 
 			colorpicker3.$set(colorpicker3_changes);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t57_value !== (t57_value = /*$_*/ ctx[19]('options.variableColor') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t57, t57_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t57_value !== (t57_value = /*$_*/ ctx[20]('options.variableColor') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t57, t57_value);
 			const colorpicker4_changes = {};
 
 			if (!updating_value_4 && dirty[0] & /*$options*/ 2) {
@@ -2597,7 +2663,7 @@ function create_default_slot_10(ctx) {
 			}
 
 			colorpicker4.$set(colorpicker4_changes);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t60_value !== (t60_value = /*$_*/ ctx[19]('options.listColor') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t60, t60_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t60_value !== (t60_value = /*$_*/ ctx[20]('options.listColor') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t60, t60_value);
 		},
 		i(local) {
 			if (current) return;
@@ -2637,18 +2703,18 @@ function create_default_slot_10(ctx) {
 	};
 }
 
-// (940:4) {#if $options.cursor.type === 'custom'}
+// (981:4) {#if $options.cursor.type === 'custom'}
 function create_if_block_39(ctx) {
 	let div;
 	let imageinput;
 	let updating_file;
 	let t0;
 	let p;
-	let t1_value = /*$_*/ ctx[19]('options.cursorHelp') + "";
+	let t1_value = /*$_*/ ctx[20]('options.cursorHelp') + "";
 	let t1;
 	let t2;
 	let label;
-	let t3_value = /*$_*/ ctx[19]('options.cursorCenter') + "";
+	let t3_value = /*$_*/ ctx[20]('options.cursorCenter') + "";
 	let t3;
 	let t4;
 	let input0;
@@ -2656,7 +2722,7 @@ function create_if_block_39(ctx) {
 	let input1;
 	let t6;
 	let button;
-	let t7_value = /*$_*/ ctx[19]('options.automaticallyCenter') + "";
+	let t7_value = /*$_*/ ctx[20]('options.automaticallyCenter') + "";
 	let t7;
 	let button_disabled_value;
 	let div_intro;
@@ -2665,7 +2731,7 @@ function create_if_block_39(ctx) {
 	let dispose;
 
 	function imageinput_file_binding(value) {
-		/*imageinput_file_binding*/ ctx[81](value);
+		/*imageinput_file_binding*/ ctx[82](value);
 	}
 
 	let imageinput_props = { previewSizes: [[32, 32], [16, 16]] };
@@ -2694,16 +2760,16 @@ function create_if_block_39(ctx) {
 			t6 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			button = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("button");
 			t7 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t7_value);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "type", "number");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "min", "0");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "type", "number");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "min", "0");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "svelte-p1bfed");
 			button.disabled = button_disabled_value = !/*$customCursorIcon*/ ctx[3];
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div, "class", "option svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div, anchor);
@@ -2727,9 +2793,9 @@ function create_if_block_39(ctx) {
 
 			if (!mounted) {
 				dispose = [
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "input", /*input0_input_handler_1*/ ctx[82]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "input", /*input1_input_handler_1*/ ctx[83]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button, "click", /*automaticallyCenterCursor*/ ctx[28])
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "input", /*input0_input_handler_1*/ ctx[83]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "input", /*input1_input_handler_1*/ ctx[84]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button, "click", /*automaticallyCenterCursor*/ ctx[29])
 				];
 
 				mounted = true;
@@ -2745,8 +2811,8 @@ function create_if_block_39(ctx) {
 			}
 
 			imageinput.$set(imageinput_changes);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t1_value !== (t1_value = /*$_*/ ctx[19]('options.cursorHelp') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, t1_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t3_value !== (t3_value = /*$_*/ ctx[19]('options.cursorCenter') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t3, t3_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t1_value !== (t1_value = /*$_*/ ctx[20]('options.cursorHelp') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, t1_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t3_value !== (t3_value = /*$_*/ ctx[20]('options.cursorCenter') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t3, t3_value);
 
 			if (dirty[0] & /*$options*/ 2 && Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["to_number"])(input0.value) !== /*$options*/ ctx[1].cursor.center.x) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(input0, /*$options*/ ctx[1].cursor.center.x);
@@ -2756,7 +2822,7 @@ function create_if_block_39(ctx) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(input1, /*$options*/ ctx[1].cursor.center.y);
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t7_value !== (t7_value = /*$_*/ ctx[19]('options.automaticallyCenter') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t7, t7_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t7_value !== (t7_value = /*$_*/ ctx[20]('options.automaticallyCenter') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t7, t7_value);
 
 			if (!current || dirty[0] & /*$customCursorIcon*/ 8 && button_disabled_value !== (button_disabled_value = !/*$customCursorIcon*/ ctx[3])) {
 				button.disabled = button_disabled_value;
@@ -2788,30 +2854,30 @@ function create_if_block_39(ctx) {
 	};
 }
 
-// (914:0) <Section   accent="#4CBFE6"   reset={() => {     $customCursorIcon = null;     resetOptions([       'cursor',       'chunks',     ]);   }} >
+// (955:0) <Section   accent="#4CBFE6"   reset={() => {     $customCursorIcon = null;     resetOptions([       'cursor',       'chunks',     ]);   }} >
 function create_default_slot_9(ctx) {
 	let div3;
 	let h2;
-	let t0_value = /*$_*/ ctx[19]('options.interaction') + "";
+	let t0_value = /*$_*/ ctx[20]('options.interaction') + "";
 	let t0;
 	let t1;
 	let div0;
 	let label0;
 	let input0;
 	let t2;
-	let t3_value = /*$_*/ ctx[19]('options.normalCursor') + "";
+	let t3_value = /*$_*/ ctx[20]('options.normalCursor') + "";
 	let t3;
 	let t4;
 	let label1;
 	let input1;
 	let t5;
-	let t6_value = /*$_*/ ctx[19]('options.noCursor') + "";
+	let t6_value = /*$_*/ ctx[20]('options.noCursor') + "";
 	let t6;
 	let t7;
 	let label2;
 	let input2;
 	let t8;
-	let t9_value = /*$_*/ ctx[19]('options.customCursor') + "";
+	let t9_value = /*$_*/ ctx[20]('options.customCursor') + "";
 	let t9;
 	let t10;
 	let t11;
@@ -2819,29 +2885,29 @@ function create_default_slot_9(ctx) {
 	let label3;
 	let input3;
 	let t12;
-	let t13_value = /*$_*/ ctx[19]('options.pointerlock') + "";
+	let t13_value = /*$_*/ ctx[20]('options.pointerlock') + "";
 	let t13;
 	let t14;
 	let a0;
-	let t15_value = /*$_*/ ctx[19]('options.pointerlockHelp') + "";
+	let t15_value = /*$_*/ ctx[20]('options.pointerlockHelp') + "";
 	let t15;
 	let t16;
 	let div2;
 	let label4;
 	let input4;
 	let t17;
-	let t18_value = /*$_*/ ctx[19]('options.gamepad') + "";
+	let t18_value = /*$_*/ ctx[20]('options.gamepad') + "";
 	let t18;
 	let t19;
 	let a1;
-	let t20_value = /*$_*/ ctx[19]('options.gamepadHelp') + "";
+	let t20_value = /*$_*/ ctx[20]('options.gamepadHelp') + "";
 	let t20;
 	let current;
 	let binding_group;
 	let mounted;
 	let dispose;
 	let if_block = /*$options*/ ctx[1].cursor.type === 'custom' && create_if_block_39(ctx);
-	binding_group = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["init_binding_group"])(/*$$binding_groups*/ ctx[55][1]);
+	binding_group = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["init_binding_group"])(/*$$binding_groups*/ ctx[56][1]);
 
 	return {
 		c() {
@@ -2888,35 +2954,35 @@ function create_default_slot_9(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "name", "cursor-type");
 			input0.__value = "auto";
 			input0.value = input0.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "name", "cursor-type");
 			input1.__value = "none";
 			input1.value = input1.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label1, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label1, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "name", "cursor-type");
 			input2.__value = "custom";
 			input2.value = input2.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label2, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "group svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label2, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "group svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label3, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label3, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a0, "href", "https://experiments.turbowarp.org/pointerlock/");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a0, "target", "_blank");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a0, "rel", "noopener noreferrer");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div1, "class", "group svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div1, "class", "group svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label4, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label4, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a1, "href", "https://turbowarp.org/addons#gamepad");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a1, "target", "_blank");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a1, "rel", "noopener noreferrer");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "group svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "group svelte-p1bfed");
 			binding_group.p(input0, input1, input2);
 		},
 		m(target, anchor) {
@@ -2968,36 +3034,36 @@ function create_default_slot_9(ctx) {
 
 			if (!mounted) {
 				dispose = [
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "change", /*input0_change_handler_2*/ ctx[78]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "change", /*input1_change_handler_2*/ ctx[79]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input2, "change", /*input2_change_handler_1*/ ctx[80]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input3, "change", /*input3_change_handler_2*/ ctx[84]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input4, "change", /*input4_change_handler_1*/ ctx[85])
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "change", /*input0_change_handler_2*/ ctx[79]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "change", /*input1_change_handler_2*/ ctx[80]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input2, "change", /*input2_change_handler_1*/ ctx[81]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input3, "change", /*input3_change_handler_2*/ ctx[85]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input4, "change", /*input4_change_handler_1*/ ctx[86])
 				];
 
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
-			if ((!current || dirty[0] & /*$_*/ 524288) && t0_value !== (t0_value = /*$_*/ ctx[19]('options.interaction') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t0_value !== (t0_value = /*$_*/ ctx[20]('options.interaction') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input0.checked = input0.__value === /*$options*/ ctx[1].cursor.type;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t3_value !== (t3_value = /*$_*/ ctx[19]('options.normalCursor') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t3, t3_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t3_value !== (t3_value = /*$_*/ ctx[20]('options.normalCursor') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t3, t3_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input1.checked = input1.__value === /*$options*/ ctx[1].cursor.type;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t6_value !== (t6_value = /*$_*/ ctx[19]('options.noCursor') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t6, t6_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t6_value !== (t6_value = /*$_*/ ctx[20]('options.noCursor') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t6, t6_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input2.checked = input2.__value === /*$options*/ ctx[1].cursor.type;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t9_value !== (t9_value = /*$_*/ ctx[19]('options.customCursor') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t9, t9_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t9_value !== (t9_value = /*$_*/ ctx[20]('options.customCursor') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t9, t9_value);
 
 			if (/*$options*/ ctx[1].cursor.type === 'custom') {
 				if (if_block) {
@@ -3026,15 +3092,15 @@ function create_default_slot_9(ctx) {
 				input3.checked = /*$options*/ ctx[1].chunks.pointerlock;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t13_value !== (t13_value = /*$_*/ ctx[19]('options.pointerlock') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t13, t13_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t15_value !== (t15_value = /*$_*/ ctx[19]('options.pointerlockHelp') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t15, t15_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t13_value !== (t13_value = /*$_*/ ctx[20]('options.pointerlock') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t13, t13_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t15_value !== (t15_value = /*$_*/ ctx[20]('options.pointerlockHelp') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t15, t15_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input4.checked = /*$options*/ ctx[1].chunks.gamepad;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t18_value !== (t18_value = /*$_*/ ctx[19]('options.gamepad') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t18, t18_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t20_value !== (t20_value = /*$_*/ ctx[19]('options.gamepadHelp') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t20, t20_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t18_value !== (t18_value = /*$_*/ ctx[20]('options.gamepad') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t18, t18_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t20_value !== (t20_value = /*$_*/ ctx[20]('options.gamepadHelp') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t20, t20_value);
 		},
 		i(local) {
 			if (current) return;
@@ -3055,24 +3121,24 @@ function create_default_slot_9(ctx) {
 	};
 }
 
-// (1054:4) {:else}
+// (1095:4) {:else}
 function create_else_block_6(ctx) {
 	let p;
-	let t_value = /*$_*/ ctx[19]('options.noCloudVariables') + "";
+	let t_value = /*$_*/ ctx[20]('options.noCloudVariables') + "";
 	let t;
 
 	return {
 		c() {
 			p = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("p");
 			t = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t_value);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, p, anchor);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(p, t);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*$_*/ 524288 && t_value !== (t_value = /*$_*/ ctx[19]('options.noCloudVariables') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, t_value);
+			if (dirty[0] & /*$_*/ 1048576 && t_value !== (t_value = /*$_*/ ctx[20]('options.noCloudVariables') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, t_value);
 		},
 		i: svelte_internal__WEBPACK_IMPORTED_MODULE_0__["noop"],
 		o: svelte_internal__WEBPACK_IMPORTED_MODULE_0__["noop"],
@@ -3082,49 +3148,49 @@ function create_else_block_6(ctx) {
 	};
 }
 
-// (992:4) {#if cloudVariables.length > 0}
+// (1033:4) {#if cloudVariables.length > 0}
 function create_if_block_35(ctx) {
 	let label0;
-	let t0_value = /*$_*/ ctx[19]('options.mode') + "";
+	let t0_value = /*$_*/ ctx[20]('options.mode') + "";
 	let t0;
 	let t1;
 	let select;
 	let option0;
-	let t2_value = /*$_*/ ctx[19]('options.cloudVariables-ws') + "";
+	let t2_value = /*$_*/ ctx[20]('options.cloudVariables-ws') + "";
 	let t2;
 	let option1;
-	let t3_value = /*$_*/ ctx[19]('options.cloudVariables-local') + "";
+	let t3_value = /*$_*/ ctx[20]('options.cloudVariables-local') + "";
 	let t3;
 	let option2;
-	let t4_value = /*$_*/ ctx[19]('options.cloudVariables-ignore') + "";
+	let t4_value = /*$_*/ ctx[20]('options.cloudVariables-ignore') + "";
 	let t4;
 	let option3;
-	let t5_value = /*$_*/ ctx[19]('options.cloudVariables-custom') + "";
+	let t5_value = /*$_*/ ctx[20]('options.cloudVariables-custom') + "";
 	let t5;
 	let t6;
 	let t7;
 	let t8;
 	let p0;
-	let t9_value = /*$_*/ ctx[19]('options.cloudVariables-ws-help') + "";
+	let t9_value = /*$_*/ ctx[20]('options.cloudVariables-ws-help') + "";
 	let t9;
 	let t10;
 	let p1;
-	let t11_value = /*$_*/ ctx[19]('options.cloudVariables-local-help') + "";
+	let t11_value = /*$_*/ ctx[20]('options.cloudVariables-local-help') + "";
 	let t11;
 	let t12;
 	let p2;
-	let t13_value = /*$_*/ ctx[19]('options.cloudVariables-ignore-help') + "";
+	let t13_value = /*$_*/ ctx[20]('options.cloudVariables-ignore-help') + "";
 	let t13;
 	let t14;
 	let p3;
-	let t15_value = /*$_*/ ctx[19]('options.cloudVariables-custom-help') + "";
+	let t15_value = /*$_*/ ctx[20]('options.cloudVariables-custom-help') + "";
 	let t15;
 	let t16;
 	let div0;
 	let label1;
 	let input0;
 	let t17;
-	let t18_value = /*$_*/ ctx[19]('options.specialCloudBehaviors') + "";
+	let t18_value = /*$_*/ ctx[20]('options.specialCloudBehaviors') + "";
 	let t18;
 	let t19;
 	let learnmore0;
@@ -3133,14 +3199,14 @@ function create_if_block_35(ctx) {
 	let label2;
 	let input1;
 	let t21;
-	let t22_value = /*$_*/ ctx[19]('options.unsafeCloudBehaviors') + "";
+	let t22_value = /*$_*/ ctx[20]('options.unsafeCloudBehaviors') + "";
 	let t22;
 	let t23;
 	let learnmore1;
 	let t24;
 	let t25;
 	let p4;
-	let t26_value = /*$_*/ ctx[19]('options.implicitCloudHint').replace('{cloud}', '☁') + "";
+	let t26_value = /*$_*/ ctx[20]('options.implicitCloudHint').replace('{cloud}', '☁') + "";
 	let t26;
 	let current;
 	let mounted;
@@ -3219,19 +3285,19 @@ function create_if_block_35(ctx) {
 			option2.value = option2.__value;
 			option3.__value = "custom";
 			option3.value = option3.__value;
-			if (/*$options*/ ctx[1].cloudVariables.mode === void 0) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["add_render_callback"])(() => /*select_change_handler*/ ctx[87].call(select));
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p0, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p1, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p2, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p3, "class", "svelte-gmiihq");
+			if (/*$options*/ ctx[1].cloudVariables.mode === void 0) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["add_render_callback"])(() => /*select_change_handler*/ ctx[88].call(select));
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p0, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p1, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p2, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p3, "class", "svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div1, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p4, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div1, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p4, "class", "svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, label0, anchor);
@@ -3290,20 +3356,20 @@ function create_if_block_35(ctx) {
 
 			if (!mounted) {
 				dispose = [
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(select, "change", /*select_change_handler*/ ctx[87]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "change", /*input0_change_handler_3*/ ctx[90]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "change", /*input1_change_handler_3*/ ctx[91])
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(select, "change", /*select_change_handler*/ ctx[88]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "change", /*input0_change_handler_3*/ ctx[91]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "change", /*input1_change_handler_3*/ ctx[92])
 				];
 
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
-			if ((!current || dirty[0] & /*$_*/ 524288) && t0_value !== (t0_value = /*$_*/ ctx[19]('options.mode') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t2_value !== (t2_value = /*$_*/ ctx[19]('options.cloudVariables-ws') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t3_value !== (t3_value = /*$_*/ ctx[19]('options.cloudVariables-local') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t3, t3_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t4_value !== (t4_value = /*$_*/ ctx[19]('options.cloudVariables-ignore') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t4, t4_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t5_value !== (t5_value = /*$_*/ ctx[19]('options.cloudVariables-custom') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t5, t5_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t0_value !== (t0_value = /*$_*/ ctx[20]('options.mode') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t2_value !== (t2_value = /*$_*/ ctx[20]('options.cloudVariables-ws') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t3_value !== (t3_value = /*$_*/ ctx[20]('options.cloudVariables-local') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t3, t3_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t4_value !== (t4_value = /*$_*/ ctx[20]('options.cloudVariables-ignore') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t4, t4_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t5_value !== (t5_value = /*$_*/ ctx[20]('options.cloudVariables-custom') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t5, t5_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["select_option"])(select, /*$options*/ ctx[1].cloudVariables.mode);
@@ -3355,22 +3421,22 @@ function create_if_block_35(ctx) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["check_outros"])();
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t9_value !== (t9_value = /*$_*/ ctx[19]('options.cloudVariables-ws-help') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t9, t9_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t11_value !== (t11_value = /*$_*/ ctx[19]('options.cloudVariables-local-help') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t11, t11_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t13_value !== (t13_value = /*$_*/ ctx[19]('options.cloudVariables-ignore-help') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t13, t13_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t15_value !== (t15_value = /*$_*/ ctx[19]('options.cloudVariables-custom-help') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t15, t15_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t9_value !== (t9_value = /*$_*/ ctx[20]('options.cloudVariables-ws-help') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t9, t9_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t11_value !== (t11_value = /*$_*/ ctx[20]('options.cloudVariables-local-help') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t11, t11_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t13_value !== (t13_value = /*$_*/ ctx[20]('options.cloudVariables-ignore-help') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t13, t13_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t15_value !== (t15_value = /*$_*/ ctx[20]('options.cloudVariables-custom-help') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t15, t15_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input0.checked = /*$options*/ ctx[1].cloudVariables.specialCloudBehaviors;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t18_value !== (t18_value = /*$_*/ ctx[19]('options.specialCloudBehaviors') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t18, t18_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t18_value !== (t18_value = /*$_*/ ctx[20]('options.specialCloudBehaviors') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t18, t18_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input1.checked = /*$options*/ ctx[1].cloudVariables.unsafeCloudBehaviors;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t22_value !== (t22_value = /*$_*/ ctx[19]('options.unsafeCloudBehaviors') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t22, t22_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t22_value !== (t22_value = /*$_*/ ctx[20]('options.unsafeCloudBehaviors') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t22, t22_value);
 
 			if (/*$options*/ ctx[1].cloudVariables.unsafeCloudBehaviors) {
 				if (if_block2) {
@@ -3385,7 +3451,7 @@ function create_if_block_35(ctx) {
 				if_block2 = null;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t26_value !== (t26_value = /*$_*/ ctx[19]('options.implicitCloudHint').replace('{cloud}', '☁') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t26, t26_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t26_value !== (t26_value = /*$_*/ ctx[20]('options.implicitCloudHint').replace('{cloud}', '☁') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t26, t26_value);
 		},
 		i(local) {
 			if (current) return;
@@ -3432,12 +3498,12 @@ function create_if_block_35(ctx) {
 	};
 }
 
-// (1003:6) {#if $options.cloudVariables.mode === "custom"}
+// (1044:6) {#if $options.cloudVariables.mode === "custom"}
 function create_if_block_38(ctx) {
 	let div;
 	let div_transition;
 	let current;
-	let each_value_1 = /*cloudVariables*/ ctx[20];
+	let each_value_1 = /*cloudVariables*/ ctx[21];
 	let each_blocks = [];
 
 	for (let i = 0; i < each_value_1.length; i += 1) {
@@ -3464,8 +3530,8 @@ function create_if_block_38(ctx) {
 			current = true;
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*cloudVariables, $options, $_*/ 1572866) {
-				each_value_1 = /*cloudVariables*/ ctx[20];
+			if (dirty[0] & /*cloudVariables, $options, $_*/ 3145730) {
+				each_value_1 = /*cloudVariables*/ ctx[21];
 				let i;
 
 				for (i = 0; i < each_value_1.length; i += 1) {
@@ -3516,28 +3582,28 @@ function create_if_block_38(ctx) {
 	};
 }
 
-// (1005:10) {#each cloudVariables as variable}
+// (1046:10) {#each cloudVariables as variable}
 function create_each_block_1(ctx) {
 	let label;
 	let select;
 	let option0;
-	let t0_value = /*$_*/ ctx[19]('options.cloudVariables-ws') + "";
+	let t0_value = /*$_*/ ctx[20]('options.cloudVariables-ws') + "";
 	let t0;
 	let option1;
-	let t1_value = /*$_*/ ctx[19]('options.cloudVariables-local') + "";
+	let t1_value = /*$_*/ ctx[20]('options.cloudVariables-local') + "";
 	let t1;
 	let option2;
-	let t2_value = /*$_*/ ctx[19]('options.cloudVariables-ignore') + "";
+	let t2_value = /*$_*/ ctx[20]('options.cloudVariables-ignore') + "";
 	let t2;
 	let t3;
-	let t4_value = /*variable*/ ctx[151] + "";
+	let t4_value = /*variable*/ ctx[156] + "";
 	let t4;
 	let t5;
 	let mounted;
 	let dispose;
 
 	function select_change_handler_1() {
-		/*select_change_handler_1*/ ctx[88].call(select, /*variable*/ ctx[151]);
+		/*select_change_handler_1*/ ctx[89].call(select, /*variable*/ ctx[156]);
 	}
 
 	return {
@@ -3559,8 +3625,8 @@ function create_each_block_1(ctx) {
 			option1.value = option1.__value;
 			option2.__value = "";
 			option2.value = option2.__value;
-			if (/*$options*/ ctx[1].cloudVariables.custom[/*variable*/ ctx[151]] === void 0) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["add_render_callback"])(select_change_handler_1);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label, "class", "option svelte-gmiihq");
+			if (/*$options*/ ctx[1].cloudVariables.custom[/*variable*/ ctx[156]] === void 0) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["add_render_callback"])(select_change_handler_1);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label, "class", "option svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, label, anchor);
@@ -3571,7 +3637,7 @@ function create_each_block_1(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(option1, t1);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(select, option2);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(option2, t2);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["select_option"])(select, /*$options*/ ctx[1].cloudVariables.custom[/*variable*/ ctx[151]], true);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["select_option"])(select, /*$options*/ ctx[1].cloudVariables.custom[/*variable*/ ctx[156]], true);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label, t3);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label, t4);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label, t5);
@@ -3583,12 +3649,12 @@ function create_each_block_1(ctx) {
 		},
 		p(new_ctx, dirty) {
 			ctx = new_ctx;
-			if (dirty[0] & /*$_*/ 524288 && t0_value !== (t0_value = /*$_*/ ctx[19]('options.cloudVariables-ws') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
-			if (dirty[0] & /*$_*/ 524288 && t1_value !== (t1_value = /*$_*/ ctx[19]('options.cloudVariables-local') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, t1_value);
-			if (dirty[0] & /*$_*/ 524288 && t2_value !== (t2_value = /*$_*/ ctx[19]('options.cloudVariables-ignore') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
+			if (dirty[0] & /*$_*/ 1048576 && t0_value !== (t0_value = /*$_*/ ctx[20]('options.cloudVariables-ws') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if (dirty[0] & /*$_*/ 1048576 && t1_value !== (t1_value = /*$_*/ ctx[20]('options.cloudVariables-local') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, t1_value);
+			if (dirty[0] & /*$_*/ 1048576 && t2_value !== (t2_value = /*$_*/ ctx[20]('options.cloudVariables-ignore') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
 
-			if (dirty[0] & /*$options, cloudVariables*/ 1048578) {
-				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["select_option"])(select, /*$options*/ ctx[1].cloudVariables.custom[/*variable*/ ctx[151]]);
+			if (dirty[0] & /*$options, cloudVariables*/ 2097154) {
+				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["select_option"])(select, /*$options*/ ctx[1].cloudVariables.custom[/*variable*/ ctx[156]]);
 			}
 		},
 		d(detaching) {
@@ -3599,11 +3665,11 @@ function create_each_block_1(ctx) {
 	};
 }
 
-// (1018:6) {#if $options.cloudVariables.mode === 'ws' || $options.cloudVariables.mode === 'custom'}
+// (1059:6) {#if $options.cloudVariables.mode === 'ws' || $options.cloudVariables.mode === 'custom'}
 function create_if_block_37(ctx) {
 	let div;
 	let label;
-	let t0_value = /*$_*/ ctx[19]('options.cloudVariablesHost') + "";
+	let t0_value = /*$_*/ ctx[20]('options.cloudVariablesHost') + "";
 	let t0;
 	let t1;
 	let input;
@@ -3621,8 +3687,8 @@ function create_if_block_37(ctx) {
 			input = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("input");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input, "type", "text");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input, "pattern", "wss?:.*");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label, "class", "option svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div, anchor);
@@ -3634,12 +3700,12 @@ function create_if_block_37(ctx) {
 			current = true;
 
 			if (!mounted) {
-				dispose = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input, "input", /*input_input_handler*/ ctx[89]);
+				dispose = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input, "input", /*input_input_handler*/ ctx[90]);
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
-			if ((!current || dirty[0] & /*$_*/ 524288) && t0_value !== (t0_value = /*$_*/ ctx[19]('options.cloudVariablesHost') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t0_value !== (t0_value = /*$_*/ ctx[20]('options.cloudVariablesHost') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
 
 			if (dirty[0] & /*$options*/ 2 && input.value !== /*$options*/ ctx[1].cloudVariables.cloudHost) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(input, /*$options*/ ctx[1].cloudVariables.cloudHost);
@@ -3675,24 +3741,24 @@ function create_if_block_37(ctx) {
 	};
 }
 
-// (1050:6) {#if $options.cloudVariables.unsafeCloudBehaviors}
+// (1091:6) {#if $options.cloudVariables.unsafeCloudBehaviors}
 function create_if_block_36(ctx) {
 	let p;
-	let t_value = /*$_*/ ctx[19]('options.unsafeCloudBehaviorsWarning') + "";
+	let t_value = /*$_*/ ctx[20]('options.unsafeCloudBehaviorsWarning') + "";
 	let t;
 
 	return {
 		c() {
 			p = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("p");
 			t = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t_value);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "warning svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "warning svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, p, anchor);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(p, t);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*$_*/ 524288 && t_value !== (t_value = /*$_*/ ctx[19]('options.unsafeCloudBehaviorsWarning') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, t_value);
+			if (dirty[0] & /*$_*/ 1048576 && t_value !== (t_value = /*$_*/ ctx[20]('options.unsafeCloudBehaviorsWarning') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, t_value);
 		},
 		d(detaching) {
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(p);
@@ -3700,11 +3766,11 @@ function create_if_block_36(ctx) {
 	};
 }
 
-// (981:0) <Section   accent="#FF8C1A"   reset={cloudVariables.length === 0 ? null : () => {     resetOptions([       'cloudVariables'     ]);   }} >
+// (1022:0) <Section   accent="#FF8C1A"   reset={cloudVariables.length === 0 ? null : () => {     resetOptions([       'cloudVariables'     ]);   }} >
 function create_default_slot_8(ctx) {
 	let div;
 	let h2;
-	let t0_value = /*$_*/ ctx[19]('options.cloudVariables') + "";
+	let t0_value = /*$_*/ ctx[20]('options.cloudVariables') + "";
 	let t0;
 	let t1;
 	let current_block_type_index;
@@ -3714,11 +3780,11 @@ function create_default_slot_8(ctx) {
 	const if_blocks = [];
 
 	function select_block_type(ctx, dirty) {
-		if (/*cloudVariables*/ ctx[20].length > 0) return 0;
+		if (/*cloudVariables*/ ctx[21].length > 0) return 0;
 		return 1;
 	}
 
-	current_block_type_index = select_block_type(ctx, [-1, -1, -1, -1, -1]);
+	current_block_type_index = select_block_type(ctx, [-1, -1, -1, -1, -1, -1]);
 	if_block = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
 
 	return {
@@ -3738,7 +3804,7 @@ function create_default_slot_8(ctx) {
 			current = true;
 		},
 		p(ctx, dirty) {
-			if ((!current || dirty[0] & /*$_*/ 524288) && t0_value !== (t0_value = /*$_*/ ctx[19]('options.cloudVariables') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t0_value !== (t0_value = /*$_*/ ctx[20]('options.cloudVariables') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
 			if_block.p(ctx, dirty);
 		},
 		i(local) {
@@ -3757,23 +3823,23 @@ function create_default_slot_8(ctx) {
 	};
 }
 
-// (1060:0) <Section   accent="#FF6680"   reset={() => {     resetOptions([       'compiler',       'extensions',       'bakeExtensions',       'custom',       'projectId',       'maxTextureDimension'     ]);   }} >
+// (1101:0) <Section   accent="#FF6680"   reset={() => {     resetOptions([       'compiler',       'extensions',       'bakeExtensions',       'custom',       'projectId',       'maxTextureDimension'     ]);   }}   >
 function create_default_slot_7(ctx) {
-	let div2;
+	let div3;
 	let h2;
-	let t0_value = /*$_*/ ctx[19]('options.advancedOptions') + "";
+	let t0_value = /*$_*/ ctx[20]('options.advancedOptions') + "";
 	let t0;
 	let t1;
 	let details;
 	let summary;
-	let t2_value = /*$_*/ ctx[19]('options.advancedSummary') + "";
+	let t2_value = /*$_*/ ctx[20]('options.advancedSummary') + "";
 	let t2;
 	let t3;
 	let div0;
 	let label0;
 	let input0;
 	let t4;
-	let t5_value = /*$_*/ ctx[19]('options.enableCompiler') + "";
+	let t5_value = /*$_*/ ctx[20]('options.enableCompiler') + "";
 	let t5;
 	let t6;
 	let learnmore0;
@@ -3782,64 +3848,71 @@ function create_default_slot_7(ctx) {
 	let label1;
 	let input1;
 	let t8;
-	let t9_value = /*$_*/ ctx[19]('options.warpTimer') + "";
+	let t9_value = /*$_*/ ctx[20]('options.warpTimer') + "";
 	let t9;
 	let t10;
 	let learnmore1;
 	let t11;
+	let div2;
 	let label2;
-	let t12_value = /*$_*/ ctx[19]('options.customExtensions') + "";
+	let input2;
 	let t12;
+	let t13_value = /*$_*/ ctx[20]('options.compiledProject') + "";
 	let t13;
-	let learnmore2;
 	let t14;
+	let label3;
+	let t15_value = /*$_*/ ctx[20]('options.customExtensions') + "";
+	let t15;
+	let t16;
+	let learnmore2;
+	let t17;
 	let customextensions;
 	let updating_extensions;
-	let t15;
-	let p0;
-	let t16_value = /*$_*/ ctx[19]('options.customExtensionsSecurity') + "";
-	let t16;
-	let t17;
-	let label3;
-	let input2;
 	let t18;
-	let t19_value = /*$_*/ ctx[19]('options.bakeExtensions') + "";
+	let p0;
+	let t19_value = /*$_*/ ctx[20]('options.customExtensionsSecurity') + "";
 	let t19;
 	let t20;
 	let label4;
-	let t21_value = /*$_*/ ctx[19]('options.customCSS') + "";
+	let input3;
 	let t21;
+	let t22_value = /*$_*/ ctx[20]('options.bakeExtensions') + "";
 	let t22;
-	let textarea0;
 	let t23;
 	let label5;
-	let t24_value = /*$_*/ ctx[19]('options.customJS') + "";
+	let t24_value = /*$_*/ ctx[20]('options.customCSS') + "";
 	let t24;
 	let t25;
-	let textarea1;
+	let textarea0;
 	let t26;
 	let label6;
-	let t27_value = /*$_*/ ctx[19]('options.projectId') + "";
+	let t27_value = /*$_*/ ctx[20]('options.customJS') + "";
 	let t27;
 	let t28;
-	let input3;
+	let textarea1;
 	let t29;
-	let p1;
-	let t30_value = /*$_*/ ctx[19]('options.projectIdHelp') + "";
+	let label7;
+	let t30_value = /*$_*/ ctx[20]('options.projectId') + "";
 	let t30;
 	let t31;
-	let label7;
 	let input4;
 	let t32;
-	let t33_value = /*$_*/ ctx[19]('options.packagedRuntime') + "";
+	let p1;
+	let t33_value = /*$_*/ ctx[20]('options.projectIdHelp') + "";
 	let t33;
 	let t34;
 	let label8;
 	let input5;
-	let input5_checked_value;
 	let t35;
-	let t36_value = /*$_*/ ctx[19]('options.maxTextureDimension') + "";
+	let t36_value = /*$_*/ ctx[20]('options.packagedRuntime') + "";
 	let t36;
+	let t37;
+	let label9;
+	let input6;
+	let input6_checked_value;
+	let t38;
+	let t39_value = /*$_*/ ctx[20]('options.maxTextureDimension') + "";
+	let t39;
 	let current;
 	let mounted;
 	let dispose;
@@ -3851,7 +3924,7 @@ function create_default_slot_7(ctx) {
 		});
 
 	function customextensions_extensions_binding(value) {
-		/*customextensions_extensions_binding*/ ctx[95](value);
+		/*customextensions_extensions_binding*/ ctx[98](value);
 	}
 
 	let customextensions_props = {};
@@ -3865,7 +3938,7 @@ function create_default_slot_7(ctx) {
 
 	return {
 		c() {
-			div2 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
+			div3 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 			h2 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("h2");
 			t0 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t0_value);
 			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
@@ -3889,82 +3962,91 @@ function create_default_slot_7(ctx) {
 			t10 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["create_component"])(learnmore1.$$.fragment);
 			t11 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
+			div2 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 			label2 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("label");
-			t12 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t12_value);
-			t13 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["create_component"])(learnmore2.$$.fragment);
-			t14 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["create_component"])(customextensions.$$.fragment);
-			t15 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
-			p0 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("p");
-			t16 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t16_value);
-			t17 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
-			label3 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("label");
 			input2 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("input");
+			t12 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
+			t13 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t13_value);
+			t14 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
+			label3 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("label");
+			t15 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t15_value);
+			t16 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["create_component"])(learnmore2.$$.fragment);
+			t17 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["create_component"])(customextensions.$$.fragment);
 			t18 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
+			p0 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("p");
 			t19 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t19_value);
 			t20 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			label4 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("label");
-			t21 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t21_value);
-			t22 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
-			textarea0 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("textarea");
+			input3 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("input");
+			t21 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
+			t22 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t22_value);
 			t23 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			label5 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("label");
 			t24 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t24_value);
 			t25 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
-			textarea1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("textarea");
+			textarea0 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("textarea");
 			t26 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			label6 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("label");
 			t27 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t27_value);
 			t28 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
-			input3 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("input");
+			textarea1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("textarea");
 			t29 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
-			p1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("p");
+			label7 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("label");
 			t30 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t30_value);
 			t31 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
-			label7 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("label");
 			input4 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("input");
 			t32 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
+			p1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("p");
 			t33 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t33_value);
 			t34 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			label8 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("label");
 			input5 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("input");
 			t35 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			t36 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t36_value);
+			t37 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
+			label9 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("label");
+			input6 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("input");
+			t38 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
+			t39 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t39_value);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div1, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p0, "class", "warning svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label2, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div1, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label3, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(textarea0, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label4, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(textarea1, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label5, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "type", "text");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label6, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p1, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "type", "checkbox");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label7, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "id", "compiled-project-option");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p0, "class", "warning svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label3, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "type", "checkbox");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label4, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(textarea0, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label5, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(textarea1, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label6, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "type", "text");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label7, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p1, "class", "svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input5, "type", "checkbox");
-			input5.checked = input5_checked_value = /*$options*/ ctx[1].maxTextureDimension !== /*defaultOptions*/ ctx[6].maxTextureDimension;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input5, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label8, "class", "option svelte-gmiihq");
-			details.open = /*advancedOptionsInitiallyOpen*/ ctx[27];
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input5, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label8, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input6, "type", "checkbox");
+			input6.checked = input6_checked_value = /*$options*/ ctx[1].maxTextureDimension !== /*defaultOptions*/ ctx[6].maxTextureDimension;
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input6, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label9, "class", "option svelte-p1bfed");
 		},
 		m(target, anchor) {
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div2, anchor);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div2, h2);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div3, anchor);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div3, h2);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(h2, t0);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div2, t1);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div2, details);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div3, t1);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div3, details);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, summary);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(summary, t2);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, t3);
@@ -3986,86 +4068,103 @@ function create_default_slot_7(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div1, t10);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["mount_component"])(learnmore1, div1, null);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, t11);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, label2);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, div2);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div2, label2);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label2, input2);
+			input2.checked = /*$options*/ ctx[1].compiler.compiledProject;
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label2, t12);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label2, t13);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["mount_component"])(learnmore2, label2, null);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label2, t14);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["mount_component"])(customextensions, label2, null);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label2, t15);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label2, p0);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(p0, t16);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, t17);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, t14);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, label3);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label3, input2);
-			input2.checked = /*$options*/ ctx[1].bakeExtensions;
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label3, t15);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label3, t16);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["mount_component"])(learnmore2, label3, null);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label3, t17);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["mount_component"])(customextensions, label3, null);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label3, t18);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label3, t19);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label3, p0);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(p0, t19);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, t20);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, label4);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label4, input3);
+			input3.checked = /*$options*/ ctx[1].bakeExtensions;
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label4, t21);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label4, t22);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label4, textarea0);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(textarea0, /*$options*/ ctx[1].custom.css);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, t23);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, label5);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label5, t24);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label5, t25);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label5, textarea1);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(textarea1, /*$options*/ ctx[1].custom.js);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label5, textarea0);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(textarea0, /*$options*/ ctx[1].custom.css);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, t26);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, label6);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label6, t27);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label6, t28);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label6, input3);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(input3, /*$options*/ ctx[1].projectId);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label6, textarea1);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(textarea1, /*$options*/ ctx[1].custom.js);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, t29);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, p1);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(p1, t30);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, t31);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, label7);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label7, t30);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label7, t31);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label7, input4);
-			input4.checked = /*$options*/ ctx[1].packagedRuntime;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label7, t32);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label7, t33);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(input4, /*$options*/ ctx[1].projectId);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, t32);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, p1);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(p1, t33);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, t34);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, label8);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label8, input5);
+			input5.checked = /*$options*/ ctx[1].packagedRuntime;
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label8, t35);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label8, t36);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, t37);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(details, label9);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label9, input6);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label9, t38);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(label9, t39);
+			details.open = /*advancedOptionsOpen*/ ctx[8];
 			current = true;
 
 			if (!mounted) {
 				dispose = [
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "change", /*input0_change_handler_4*/ ctx[93]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "change", /*input1_change_handler_4*/ ctx[94]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "change", /*input0_change_handler_4*/ ctx[94]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "change", /*input1_change_handler_4*/ ctx[95]),
 					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input2, "change", /*input2_change_handler_2*/ ctx[96]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(textarea0, "input", /*textarea0_input_handler*/ ctx[97]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(textarea1, "input", /*textarea1_input_handler*/ ctx[98]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input3, "input", /*input3_input_handler*/ ctx[99]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input4, "change", /*input4_change_handler_2*/ ctx[100]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input5, "change", /*change_handler_3*/ ctx[101])
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input2, "change", /*change_handler_3*/ ctx[97]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input3, "change", /*input3_change_handler_3*/ ctx[99]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(textarea0, "input", /*textarea0_input_handler*/ ctx[100]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(textarea1, "input", /*textarea1_input_handler*/ ctx[101]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input4, "input", /*input4_input_handler*/ ctx[102]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input5, "change", /*input5_change_handler_1*/ ctx[103]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input6, "change", /*change_handler_4*/ ctx[104]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(details, "toggle", /*details_toggle_handler*/ ctx[105])
 				];
 
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
-			if ((!current || dirty[0] & /*$_*/ 524288) && t0_value !== (t0_value = /*$_*/ ctx[19]('options.advancedOptions') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t2_value !== (t2_value = /*$_*/ ctx[19]('options.advancedSummary') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t0_value !== (t0_value = /*$_*/ ctx[20]('options.advancedOptions') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t2_value !== (t2_value = /*$_*/ ctx[20]('options.advancedSummary') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input0.checked = /*$options*/ ctx[1].compiler.enabled;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t5_value !== (t5_value = /*$_*/ ctx[19]('options.enableCompiler') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t5, t5_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t5_value !== (t5_value = /*$_*/ ctx[20]('options.enableCompiler') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t5, t5_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input1.checked = /*$options*/ ctx[1].compiler.warpTimer;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t9_value !== (t9_value = /*$_*/ ctx[19]('options.warpTimer') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t9, t9_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t12_value !== (t12_value = /*$_*/ ctx[19]('options.customExtensions') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t12, t12_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t9_value !== (t9_value = /*$_*/ ctx[20]('options.warpTimer') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t9, t9_value);
+
+			if (dirty[0] & /*$options*/ 2) {
+				input2.checked = /*$options*/ ctx[1].compiler.compiledProject;
+			}
+
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t13_value !== (t13_value = /*$_*/ ctx[20]('options.compiledProject') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t13, t13_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t15_value !== (t15_value = /*$_*/ ctx[20]('options.customExtensions') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t15, t15_value);
 			const customextensions_changes = {};
 
 			if (!updating_extensions && dirty[0] & /*$options*/ 2) {
@@ -4075,44 +4174,48 @@ function create_default_slot_7(ctx) {
 			}
 
 			customextensions.$set(customextensions_changes);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t16_value !== (t16_value = /*$_*/ ctx[19]('options.customExtensionsSecurity') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t16, t16_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t19_value !== (t19_value = /*$_*/ ctx[20]('options.customExtensionsSecurity') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t19, t19_value);
 
 			if (dirty[0] & /*$options*/ 2) {
-				input2.checked = /*$options*/ ctx[1].bakeExtensions;
+				input3.checked = /*$options*/ ctx[1].bakeExtensions;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t19_value !== (t19_value = /*$_*/ ctx[19]('options.bakeExtensions') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t19, t19_value);
-			if ((!current || dirty[0] & /*$_*/ 524288) && t21_value !== (t21_value = /*$_*/ ctx[19]('options.customCSS') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t21, t21_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t22_value !== (t22_value = /*$_*/ ctx[20]('options.bakeExtensions') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t22, t22_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t24_value !== (t24_value = /*$_*/ ctx[20]('options.customCSS') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t24, t24_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(textarea0, /*$options*/ ctx[1].custom.css);
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t24_value !== (t24_value = /*$_*/ ctx[19]('options.customJS') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t24, t24_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t27_value !== (t27_value = /*$_*/ ctx[20]('options.customJS') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t27, t27_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(textarea1, /*$options*/ ctx[1].custom.js);
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t27_value !== (t27_value = /*$_*/ ctx[19]('options.projectId') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t27, t27_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t30_value !== (t30_value = /*$_*/ ctx[20]('options.projectId') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t30, t30_value);
 
-			if (dirty[0] & /*$options*/ 2 && input3.value !== /*$options*/ ctx[1].projectId) {
-				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(input3, /*$options*/ ctx[1].projectId);
+			if (dirty[0] & /*$options*/ 2 && input4.value !== /*$options*/ ctx[1].projectId) {
+				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(input4, /*$options*/ ctx[1].projectId);
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t30_value !== (t30_value = /*$_*/ ctx[19]('options.projectIdHelp') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t30, t30_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t33_value !== (t33_value = /*$_*/ ctx[20]('options.projectIdHelp') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t33, t33_value);
 
 			if (dirty[0] & /*$options*/ 2) {
-				input4.checked = /*$options*/ ctx[1].packagedRuntime;
+				input5.checked = /*$options*/ ctx[1].packagedRuntime;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t33_value !== (t33_value = /*$_*/ ctx[19]('options.packagedRuntime') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t33, t33_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t36_value !== (t36_value = /*$_*/ ctx[20]('options.packagedRuntime') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t36, t36_value);
 
-			if (!current || dirty[0] & /*$options, defaultOptions*/ 66 && input5_checked_value !== (input5_checked_value = /*$options*/ ctx[1].maxTextureDimension !== /*defaultOptions*/ ctx[6].maxTextureDimension)) {
-				input5.checked = input5_checked_value;
+			if (!current || dirty[0] & /*$options, defaultOptions*/ 66 && input6_checked_value !== (input6_checked_value = /*$options*/ ctx[1].maxTextureDimension !== /*defaultOptions*/ ctx[6].maxTextureDimension)) {
+				input6.checked = input6_checked_value;
 			}
 
-			if ((!current || dirty[0] & /*$_*/ 524288) && t36_value !== (t36_value = /*$_*/ ctx[19]('options.maxTextureDimension') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t36, t36_value);
+			if ((!current || dirty[0] & /*$_*/ 1048576) && t39_value !== (t39_value = /*$_*/ ctx[20]('options.maxTextureDimension') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t39, t39_value);
+
+			if (dirty[0] & /*advancedOptionsOpen*/ 256) {
+				details.open = /*advancedOptionsOpen*/ ctx[8];
+			}
 		},
 		i(local) {
 			if (current) return;
@@ -4130,7 +4233,7 @@ function create_default_slot_7(ctx) {
 			current = false;
 		},
 		d(detaching) {
-			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(div2);
+			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(div3);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["destroy_component"])(learnmore0);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["destroy_component"])(learnmore1);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["destroy_component"])(learnmore2);
@@ -4141,59 +4244,59 @@ function create_default_slot_7(ctx) {
 	};
 }
 
-// (1138:0) <Section   accent="#0FBD8C"   reset={() => {     resetOptions([       'target'     ])   }} >
+// (1193:0) <Section   accent="#0FBD8C"   reset={() => {     resetOptions([       'target'     ])   }} >
 function create_default_slot_6(ctx) {
 	let div7;
 	let h2;
-	let t0_value = /*$_*/ ctx[19]('options.environment') + "";
+	let t0_value = /*$_*/ ctx[20]('options.environment') + "";
 	let t0;
 	let t1;
 	let div0;
 	let label0;
 	let input0;
 	let t2;
-	let t3_value = /*$_*/ ctx[19]('options.html') + "";
+	let t3_value = /*$_*/ ctx[20]('options.html') + "";
 	let t3;
 	let t4;
 	let label1;
 	let input1;
 	let t5;
-	let t6_value = /*$_*/ ctx[19]('options.zip') + "";
+	let t6_value = /*$_*/ ctx[20]('options.zip') + "";
 	let t6;
 	let t7;
 	let div1;
 	let label2;
 	let input2;
 	let t8;
-	let t9_value = /*$_*/ ctx[19]('options.application-win32').replace('{type}', 'Electron') + "";
+	let t9_value = /*$_*/ ctx[20]('options.application-win32').replace('{type}', 'Electron') + "";
 	let t9;
 	let t10;
 	let label3;
 	let input3;
 	let t11;
-	let t12_value = /*$_*/ ctx[19]('options.application-mac').replace('{type}', 'WKWebView') + "";
+	let t12_value = /*$_*/ ctx[20]('options.application-mac').replace('{type}', 'WKWebView') + "";
 	let t12;
 	let t13;
 	let label4;
 	let input4;
 	let t14;
-	let t15_value = /*$_*/ ctx[19]('options.application-linux64').replace('{type}', 'Electron') + "";
+	let t15_value = /*$_*/ ctx[20]('options.application-linux64').replace('{type}', 'Electron') + "";
 	let t15;
 	let t16;
 	let details;
 	let summary;
-	let t17_value = /*$_*/ ctx[19]('options.otherEnvironments') + "";
+	let t17_value = /*$_*/ ctx[20]('options.otherEnvironments') + "";
 	let t17;
 	let t18;
 	let p;
-	let t19_value = /*$_*/ ctx[19]('options.otherEnvironmentsHelp') + "";
+	let t19_value = /*$_*/ ctx[20]('options.otherEnvironmentsHelp') + "";
 	let t19;
 	let t20;
 	let div2;
 	let label5;
 	let input5;
 	let t21;
-	let t22_value = /*$_*/ ctx[19]('options.zip-one-asset') + "";
+	let t22_value = /*$_*/ ctx[20]('options.zip-one-asset') + "";
 	let t22;
 	let t23;
 	let div3;
@@ -4205,56 +4308,56 @@ function create_default_slot_6(ctx) {
 	let label7;
 	let input7;
 	let t26;
-	let t27_value = /*$_*/ ctx[19]('options.application-win64').replace('{type}', 'Electron') + "";
+	let t27_value = /*$_*/ ctx[20]('options.application-win64').replace('{type}', 'Electron') + "";
 	let t27;
 	let t28;
 	let label8;
 	let input8;
 	let t29;
-	let t30_value = /*$_*/ ctx[19]('options.application-win-arm').replace('{type}', 'Electron') + "";
+	let t30_value = /*$_*/ ctx[20]('options.application-win-arm').replace('{type}', 'Electron') + "";
 	let t30;
 	let t31;
 	let label9;
 	let input9;
 	let t32;
-	let t33_value = /*$_*/ ctx[19]('options.application-mac').replace('{type}', 'Electron') + "";
+	let t33_value = /*$_*/ ctx[20]('options.application-mac').replace('{type}', 'Electron') + "";
 	let t33;
 	let t34;
 	let label10;
 	let input10;
 	let t35;
-	let t36_value = /*$_*/ ctx[19]('options.application-linux-arm32').replace('{type}', 'Electron') + "";
+	let t36_value = /*$_*/ ctx[20]('options.application-linux-arm32').replace('{type}', 'Electron') + "";
 	let t36;
 	let t37;
 	let label11;
 	let input11;
 	let t38;
-	let t39_value = /*$_*/ ctx[19]('options.application-linux-arm64').replace('{type}', 'Electron') + "";
+	let t39_value = /*$_*/ ctx[20]('options.application-linux-arm64').replace('{type}', 'Electron') + "";
 	let t39;
 	let t40;
 	let div5;
 	let label12;
 	let input12;
 	let t41;
-	let t42_value = /*$_*/ ctx[19]('options.application-win32').replace('{type}', 'NW.js') + "";
+	let t42_value = /*$_*/ ctx[20]('options.application-win32').replace('{type}', 'NW.js') + "";
 	let t42;
 	let t43;
 	let label13;
 	let input13;
 	let t44;
-	let t45_value = /*$_*/ ctx[19]('options.application-win64').replace('{type}', 'NW.js') + "";
+	let t45_value = /*$_*/ ctx[20]('options.application-win64').replace('{type}', 'NW.js') + "";
 	let t45;
 	let t46;
 	let label14;
 	let input14;
 	let t47;
-	let t48_value = /*$_*/ ctx[19]('options.application-mac').replace('{type}', 'NW.js') + "";
+	let t48_value = /*$_*/ ctx[20]('options.application-mac').replace('{type}', 'NW.js') + "";
 	let t48;
 	let t49;
 	let label15;
 	let input15;
 	let t50;
-	let t51_value = /*$_*/ ctx[19]('options.application-linux64').replace('{type}', 'NW.js') + "";
+	let t51_value = /*$_*/ ctx[20]('options.application-linux64').replace('{type}', 'NW.js') + "";
 	let t51;
 	let t52;
 	let div6;
@@ -4272,7 +4375,7 @@ function create_default_slot_6(ctx) {
 	let binding_group;
 	let mounted;
 	let dispose;
-	binding_group = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["init_binding_group"])(/*$$binding_groups*/ ctx[55][0]);
+	binding_group = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["init_binding_group"])(/*$$binding_groups*/ ctx[56][0]);
 
 	return {
 		c() {
@@ -4388,125 +4491,125 @@ function create_default_slot_6(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "name", "environment");
 			input0.__value = "html";
 			input0.value = input0.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "name", "environment");
 			input1.__value = "zip";
 			input1.value = input1.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label1, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "group svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label1, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "group svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "name", "environment");
 			input2.__value = "electron-win32";
 			input2.value = input2.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label2, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input2, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label2, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "name", "environment");
 			input3.__value = "webview-mac";
 			input3.value = input3.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label3, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input3, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label3, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "name", "environment");
 			input4.__value = "electron-linux64";
 			input4.value = input4.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label4, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div1, "class", "group svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input4, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label4, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div1, "class", "group svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input5, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input5, "name", "environment");
 			input5.__value = "zip-one-asset";
 			input5.value = input5.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input5, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label5, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "group svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input5, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label5, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "group svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input6, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input6, "name", "environment");
 			input6.__value = "cordova-android";
 			input6.value = input6.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input6, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label6, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div3, "class", "group svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input6, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label6, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div3, "class", "group svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input7, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input7, "name", "environment");
 			input7.__value = "electron-win64";
 			input7.value = input7.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input7, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label7, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input7, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label7, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input8, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input8, "name", "environment");
 			input8.__value = "electron-win-arm";
 			input8.value = input8.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input8, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label8, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input8, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label8, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input9, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input9, "name", "environment");
 			input9.__value = "electron-mac";
 			input9.value = input9.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input9, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label9, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input9, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label9, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input10, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input10, "name", "environment");
 			input10.__value = "electron-linux-arm32";
 			input10.value = input10.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input10, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label10, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input10, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label10, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input11, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input11, "name", "environment");
 			input11.__value = "electron-linux-arm64";
 			input11.value = input11.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input11, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label11, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div4, "class", "group svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input11, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label11, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div4, "class", "group svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input12, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input12, "name", "environment");
 			input12.__value = "nwjs-win32";
 			input12.value = input12.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input12, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label12, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input12, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label12, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input13, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input13, "name", "environment");
 			input13.__value = "nwjs-win64";
 			input13.value = input13.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input13, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label13, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input13, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label13, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input14, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input14, "name", "environment");
 			input14.__value = "nwjs-mac";
 			input14.value = input14.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input14, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label14, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input14, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label14, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input15, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input15, "name", "environment");
 			input15.__value = "nwjs-linux-x64";
 			input15.value = input15.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input15, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label15, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div5, "class", "group svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input15, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label15, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div5, "class", "group svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input16, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input16, "name", "environment");
 			input16.__value = "node-cli-win64";
 			input16.value = input16.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input16, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label16, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input16, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label16, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input17, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input17, "name", "environment");
 			input17.__value = "node-cli-mac";
 			input17.value = input17.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input17, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label17, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input17, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label17, "class", "option svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input18, "type", "radio");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input18, "name", "environment");
 			input18.__value = "node-cli-linux64";
 			input18.value = input18.__value;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input18, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label18, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div6, "class", "group svelte-gmiihq");
-			details.open = /*otherEnvironmentsInitiallyOpen*/ ctx[26];
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input18, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label18, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div6, "class", "group svelte-p1bfed");
+			details.open = /*otherEnvironmentsInitiallyOpen*/ ctx[27];
 			binding_group.p(input0, input1, input2, input3, input4, input5, input6, input7, input8, input9, input10, input11, input12, input13, input14, input15, input16, input17, input18);
 		},
 		m(target, anchor) {
@@ -4640,70 +4743,70 @@ function create_default_slot_6(ctx) {
 
 			if (!mounted) {
 				dispose = [
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "change", /*input0_change_handler_5*/ ctx[103]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "change", /*input1_change_handler_5*/ ctx[104]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input2, "change", /*input2_change_handler_3*/ ctx[105]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input3, "change", /*input3_change_handler_3*/ ctx[106]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input4, "change", /*input4_change_handler_3*/ ctx[107]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input5, "change", /*input5_change_handler_1*/ ctx[108]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input6, "change", /*input6_change_handler_1*/ ctx[109]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input7, "change", /*input7_change_handler_1*/ ctx[110]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input8, "change", /*input8_change_handler_2*/ ctx[111]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input9, "change", /*input9_change_handler*/ ctx[112]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input10, "change", /*input10_change_handler*/ ctx[113]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input11, "change", /*input11_change_handler_1*/ ctx[114]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input12, "change", /*input12_change_handler_1*/ ctx[115]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input13, "change", /*input13_change_handler_1*/ ctx[116]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input14, "change", /*input14_change_handler*/ ctx[117]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input15, "change", /*input15_change_handler*/ ctx[118]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input16, "change", /*input16_change_handler*/ ctx[119]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input17, "change", /*input17_change_handler*/ ctx[120]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input18, "change", /*input18_change_handler*/ ctx[121])
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "change", /*input0_change_handler_5*/ ctx[107]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "change", /*input1_change_handler_5*/ ctx[108]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input2, "change", /*input2_change_handler_3*/ ctx[109]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input3, "change", /*input3_change_handler_4*/ ctx[110]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input4, "change", /*input4_change_handler_2*/ ctx[111]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input5, "change", /*input5_change_handler_2*/ ctx[112]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input6, "change", /*input6_change_handler_1*/ ctx[113]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input7, "change", /*input7_change_handler_1*/ ctx[114]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input8, "change", /*input8_change_handler_2*/ ctx[115]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input9, "change", /*input9_change_handler*/ ctx[116]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input10, "change", /*input10_change_handler*/ ctx[117]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input11, "change", /*input11_change_handler_1*/ ctx[118]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input12, "change", /*input12_change_handler_1*/ ctx[119]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input13, "change", /*input13_change_handler_1*/ ctx[120]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input14, "change", /*input14_change_handler*/ ctx[121]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input15, "change", /*input15_change_handler*/ ctx[122]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input16, "change", /*input16_change_handler*/ ctx[123]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input17, "change", /*input17_change_handler*/ ctx[124]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input18, "change", /*input18_change_handler*/ ctx[125])
 				];
 
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*$_*/ 524288 && t0_value !== (t0_value = /*$_*/ ctx[19]('options.environment') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if (dirty[0] & /*$_*/ 1048576 && t0_value !== (t0_value = /*$_*/ ctx[20]('options.environment') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input0.checked = input0.__value === /*$options*/ ctx[1].target;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t3_value !== (t3_value = /*$_*/ ctx[19]('options.html') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t3, t3_value);
+			if (dirty[0] & /*$_*/ 1048576 && t3_value !== (t3_value = /*$_*/ ctx[20]('options.html') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t3, t3_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input1.checked = input1.__value === /*$options*/ ctx[1].target;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t6_value !== (t6_value = /*$_*/ ctx[19]('options.zip') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t6, t6_value);
+			if (dirty[0] & /*$_*/ 1048576 && t6_value !== (t6_value = /*$_*/ ctx[20]('options.zip') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t6, t6_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input2.checked = input2.__value === /*$options*/ ctx[1].target;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t9_value !== (t9_value = /*$_*/ ctx[19]('options.application-win32').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t9, t9_value);
+			if (dirty[0] & /*$_*/ 1048576 && t9_value !== (t9_value = /*$_*/ ctx[20]('options.application-win32').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t9, t9_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input3.checked = input3.__value === /*$options*/ ctx[1].target;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t12_value !== (t12_value = /*$_*/ ctx[19]('options.application-mac').replace('{type}', 'WKWebView') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t12, t12_value);
+			if (dirty[0] & /*$_*/ 1048576 && t12_value !== (t12_value = /*$_*/ ctx[20]('options.application-mac').replace('{type}', 'WKWebView') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t12, t12_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input4.checked = input4.__value === /*$options*/ ctx[1].target;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t15_value !== (t15_value = /*$_*/ ctx[19]('options.application-linux64').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t15, t15_value);
-			if (dirty[0] & /*$_*/ 524288 && t17_value !== (t17_value = /*$_*/ ctx[19]('options.otherEnvironments') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t17, t17_value);
-			if (dirty[0] & /*$_*/ 524288 && t19_value !== (t19_value = /*$_*/ ctx[19]('options.otherEnvironmentsHelp') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t19, t19_value);
+			if (dirty[0] & /*$_*/ 1048576 && t15_value !== (t15_value = /*$_*/ ctx[20]('options.application-linux64').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t15, t15_value);
+			if (dirty[0] & /*$_*/ 1048576 && t17_value !== (t17_value = /*$_*/ ctx[20]('options.otherEnvironments') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t17, t17_value);
+			if (dirty[0] & /*$_*/ 1048576 && t19_value !== (t19_value = /*$_*/ ctx[20]('options.otherEnvironmentsHelp') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t19, t19_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input5.checked = input5.__value === /*$options*/ ctx[1].target;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t22_value !== (t22_value = /*$_*/ ctx[19]('options.zip-one-asset') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t22, t22_value);
+			if (dirty[0] & /*$_*/ 1048576 && t22_value !== (t22_value = /*$_*/ ctx[20]('options.zip-one-asset') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t22, t22_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input6.checked = input6.__value === /*$options*/ ctx[1].target;
@@ -4713,55 +4816,55 @@ function create_default_slot_6(ctx) {
 				input7.checked = input7.__value === /*$options*/ ctx[1].target;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t27_value !== (t27_value = /*$_*/ ctx[19]('options.application-win64').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t27, t27_value);
+			if (dirty[0] & /*$_*/ 1048576 && t27_value !== (t27_value = /*$_*/ ctx[20]('options.application-win64').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t27, t27_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input8.checked = input8.__value === /*$options*/ ctx[1].target;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t30_value !== (t30_value = /*$_*/ ctx[19]('options.application-win-arm').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t30, t30_value);
+			if (dirty[0] & /*$_*/ 1048576 && t30_value !== (t30_value = /*$_*/ ctx[20]('options.application-win-arm').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t30, t30_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input9.checked = input9.__value === /*$options*/ ctx[1].target;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t33_value !== (t33_value = /*$_*/ ctx[19]('options.application-mac').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t33, t33_value);
+			if (dirty[0] & /*$_*/ 1048576 && t33_value !== (t33_value = /*$_*/ ctx[20]('options.application-mac').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t33, t33_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input10.checked = input10.__value === /*$options*/ ctx[1].target;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t36_value !== (t36_value = /*$_*/ ctx[19]('options.application-linux-arm32').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t36, t36_value);
+			if (dirty[0] & /*$_*/ 1048576 && t36_value !== (t36_value = /*$_*/ ctx[20]('options.application-linux-arm32').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t36, t36_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input11.checked = input11.__value === /*$options*/ ctx[1].target;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t39_value !== (t39_value = /*$_*/ ctx[19]('options.application-linux-arm64').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t39, t39_value);
+			if (dirty[0] & /*$_*/ 1048576 && t39_value !== (t39_value = /*$_*/ ctx[20]('options.application-linux-arm64').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t39, t39_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input12.checked = input12.__value === /*$options*/ ctx[1].target;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t42_value !== (t42_value = /*$_*/ ctx[19]('options.application-win32').replace('{type}', 'NW.js') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t42, t42_value);
+			if (dirty[0] & /*$_*/ 1048576 && t42_value !== (t42_value = /*$_*/ ctx[20]('options.application-win32').replace('{type}', 'NW.js') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t42, t42_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input13.checked = input13.__value === /*$options*/ ctx[1].target;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t45_value !== (t45_value = /*$_*/ ctx[19]('options.application-win64').replace('{type}', 'NW.js') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t45, t45_value);
+			if (dirty[0] & /*$_*/ 1048576 && t45_value !== (t45_value = /*$_*/ ctx[20]('options.application-win64').replace('{type}', 'NW.js') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t45, t45_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input14.checked = input14.__value === /*$options*/ ctx[1].target;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t48_value !== (t48_value = /*$_*/ ctx[19]('options.application-mac').replace('{type}', 'NW.js') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t48, t48_value);
+			if (dirty[0] & /*$_*/ 1048576 && t48_value !== (t48_value = /*$_*/ ctx[20]('options.application-mac').replace('{type}', 'NW.js') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t48, t48_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input15.checked = input15.__value === /*$options*/ ctx[1].target;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t51_value !== (t51_value = /*$_*/ ctx[19]('options.application-linux64').replace('{type}', 'NW.js') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t51, t51_value);
+			if (dirty[0] & /*$_*/ 1048576 && t51_value !== (t51_value = /*$_*/ ctx[20]('options.application-linux64').replace('{type}', 'NW.js') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t51, t51_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				input16.checked = input16.__value === /*$options*/ ctx[1].target;
@@ -4784,7 +4887,7 @@ function create_default_slot_6(ctx) {
 	};
 }
 
-// (1250:0) {#if $options.target !== 'html'}
+// (1305:0) {#if $options.target !== 'html'}
 function create_if_block_5(ctx) {
 	let div;
 	let section;
@@ -4796,7 +4899,7 @@ function create_if_block_5(ctx) {
 				accent: "#FF661A",
 				reset: /*$options*/ ctx[1].target.startsWith('zip')
 				? null
-				: /*func_6*/ ctx[131],
+				: /*func_6*/ ctx[135],
 				$$slots: { default: [create_default_slot_5] },
 				$$scope: { ctx }
 			}
@@ -4817,9 +4920,9 @@ function create_if_block_5(ctx) {
 
 			if (dirty[0] & /*$options*/ 2) section_changes.reset = /*$options*/ ctx[1].target.startsWith('zip')
 			? null
-			: /*func_6*/ ctx[131];
+			: /*func_6*/ ctx[135];
 
-			if (dirty[0] & /*$options, $_, uploadError, showReleaseModal, assetDownloadUrl, releaseUrl, assetName, logs, createdRepoUrl, uploadInProgress, oauthUserInfo, oauthInProgress, oauthError*/ 1048322 | dirty[4] & /*$$scope*/ 1073741824) {
+			if (dirty[0] & /*$options, $_, uploadError, showReleaseModal, assetDownloadUrl, releaseUrl, assetName, logs, createdRepoUrl, uploadInProgress, oauthUserInfo, oauthInProgress, oauthError*/ 2096642 | dirty[5] & /*$$scope*/ 16) {
 				section_changes.$$scope = { dirty, ctx };
 			}
 
@@ -4851,31 +4954,31 @@ function create_if_block_5(ctx) {
 	};
 }
 
-// (1266:8) {:else}
+// (1321:8) {:else}
 function create_else_block_1(ctx) {
 	let h2;
-	let t0_value = /*$_*/ ctx[19]('options.applicationSettings') + "";
+	let t0_value = /*$_*/ ctx[20]('options.applicationSettings') + "";
 	let t0;
 	let t1;
 	let label0;
-	let t2_value = /*$_*/ ctx[19]('options.packageName') + "";
+	let t2_value = /*$_*/ ctx[20]('options.packageName') + "";
 	let t2;
 	let t3;
 	let input0;
 	let t4;
 	let p0;
-	let t5_value = /*$_*/ ctx[19]('options.packageNameHelp') + "";
+	let t5_value = /*$_*/ ctx[20]('options.packageNameHelp') + "";
 	let t5;
 	let t6;
 	let t7;
 	let label1;
-	let t8_value = /*$_*/ ctx[19]('options.version') + "";
+	let t8_value = /*$_*/ ctx[20]('options.version') + "";
 	let t8;
 	let t9;
 	let input1;
 	let t10;
 	let p1;
-	let t11_value = /*$_*/ ctx[19]('options.versionHelp') + "";
+	let t11_value = /*$_*/ ctx[20]('options.versionHelp') + "";
 	let t11;
 	let t12;
 	let show_if_7 = /*$options*/ ctx[1].target.includes('electron');
@@ -4908,7 +5011,7 @@ function create_else_block_1(ctx) {
 		if (show_if_6) return create_if_block_18;
 	}
 
-	let current_block_type = select_block_type_6(ctx, [-1, -1, -1, -1, -1]);
+	let current_block_type = select_block_type_6(ctx, [-1, -1, -1, -1, -1, -1]);
 	let if_block2 = current_block_type && current_block_type(ctx);
 
 	function select_block_type_7(ctx, dirty) {
@@ -4926,7 +5029,7 @@ function create_else_block_1(ctx) {
 		if (show_if_3) return create_if_block_15;
 	}
 
-	let current_block_type_1 = select_block_type_7(ctx, [-1, -1, -1, -1, -1]);
+	let current_block_type_1 = select_block_type_7(ctx, [-1, -1, -1, -1, -1, -1]);
 	let if_block3 = current_block_type_1 && current_block_type_1(ctx);
 
 	return {
@@ -4971,17 +5074,17 @@ function create_else_block_1(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "type", "text");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "pattern", "[\\w \\-]+");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "minlength", "1");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p0, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input0, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p0, "class", "svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "type", "text");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "version svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "class", "version svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "pattern", "\\d+\\.\\d+\\.\\d+");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "placeholder", "1.0.0");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input1, "minlength", "1");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label1, "class", "option svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p1, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "warning svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label1, "class", "option svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p1, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "warning svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, h2, anchor);
@@ -5018,22 +5121,22 @@ function create_else_block_1(ctx) {
 
 			if (!mounted) {
 				dispose = [
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "input", /*input0_input_handler_2*/ ctx[123]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "input", /*input1_input_handler_2*/ ctx[127])
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input0, "input", /*input0_input_handler_2*/ ctx[127]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input1, "input", /*input1_input_handler_2*/ ctx[131])
 				];
 
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*$_*/ 524288 && t0_value !== (t0_value = /*$_*/ ctx[19]('options.applicationSettings') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
-			if (dirty[0] & /*$_*/ 524288 && t2_value !== (t2_value = /*$_*/ ctx[19]('options.packageName') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
+			if (dirty[0] & /*$_*/ 1048576 && t0_value !== (t0_value = /*$_*/ ctx[20]('options.applicationSettings') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if (dirty[0] & /*$_*/ 1048576 && t2_value !== (t2_value = /*$_*/ ctx[20]('options.packageName') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
 
 			if (dirty[0] & /*$options*/ 2 && input0.value !== /*$options*/ ctx[1].app.packageName) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(input0, /*$options*/ ctx[1].app.packageName);
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t5_value !== (t5_value = /*$_*/ ctx[19]('options.packageNameHelp') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t5, t5_value);
+			if (dirty[0] & /*$_*/ 1048576 && t5_value !== (t5_value = /*$_*/ ctx[20]('options.packageNameHelp') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t5, t5_value);
 
 			if (/*$options*/ ctx[1].target === 'cordova-android') {
 				if (if_block0) {
@@ -5048,13 +5151,13 @@ function create_else_block_1(ctx) {
 				if_block0 = null;
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t8_value !== (t8_value = /*$_*/ ctx[19]('options.version') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t8, t8_value);
+			if (dirty[0] & /*$_*/ 1048576 && t8_value !== (t8_value = /*$_*/ ctx[20]('options.version') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t8, t8_value);
 
 			if (dirty[0] & /*$options*/ 2 && input1.value !== /*$options*/ ctx[1].app.version) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(input1, /*$options*/ ctx[1].app.version);
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t11_value !== (t11_value = /*$_*/ ctx[19]('options.versionHelp') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t11, t11_value);
+			if (dirty[0] & /*$_*/ 1048576 && t11_value !== (t11_value = /*$_*/ ctx[20]('options.versionHelp') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t11, t11_value);
 			if (dirty[0] & /*$options*/ 2) show_if_7 = /*$options*/ ctx[1].target.includes('electron');
 
 			if (show_if_7) {
@@ -5127,7 +5230,7 @@ function create_else_block_1(ctx) {
 	};
 }
 
-// (1263:8) {#if $options.target.startsWith('zip')}
+// (1318:8) {#if $options.target.startsWith('zip')}
 function create_if_block_6(ctx) {
 	let h2;
 	let t1;
@@ -5140,7 +5243,7 @@ function create_if_block_6(ctx) {
 			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			p = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("p");
 			p.textContent = "The zip environment is intended to be used for publishing to a website. Other uses such as sending your project to a friend over a chat app or email should use \"Plain HTML\" instead as zip will not work.";
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, h2, anchor);
@@ -5156,7 +5259,7 @@ function create_if_block_6(ctx) {
 	};
 }
 
-// (1275:10) {#if $options.target === 'cordova-android'}
+// (1330:10) {#if $options.target === 'cordova-android'}
 function create_if_block_20(ctx) {
 	let div8;
 	let div0;
@@ -5188,38 +5291,38 @@ function create_if_block_20(ctx) {
 	let dispose;
 
 	function select_block_type_2(ctx, dirty) {
-		if (!/*oauthUserInfo*/ ctx[17]) return create_if_block_31;
+		if (!/*oauthUserInfo*/ ctx[18]) return create_if_block_31;
 		return create_else_block_5;
 	}
 
-	let current_block_type = select_block_type_2(ctx, [-1, -1, -1, -1, -1]);
+	let current_block_type = select_block_type_2(ctx, [-1, -1, -1, -1, -1, -1]);
 	let if_block0 = current_block_type(ctx);
 
 	function select_block_type_4(ctx, dirty) {
-		if (/*uploadInProgress*/ ctx[8]) return create_if_block_30;
+		if (/*uploadInProgress*/ ctx[9]) return create_if_block_30;
 		return create_else_block_3;
 	}
 
-	let current_block_type_1 = select_block_type_4(ctx, [-1, -1, -1, -1, -1]);
+	let current_block_type_1 = select_block_type_4(ctx, [-1, -1, -1, -1, -1, -1]);
 	let if_block1 = current_block_type_1(ctx);
-	let if_block2 = /*createdRepoUrl*/ ctx[10] && create_if_block_29(ctx);
-	let if_block3 = /*releaseUrl*/ ctx[11] && create_if_block_28(ctx);
-	let if_block4 = /*uploadError*/ ctx[9] && create_if_block_27(ctx);
+	let if_block2 = /*createdRepoUrl*/ ctx[11] && create_if_block_29(ctx);
+	let if_block3 = /*releaseUrl*/ ctx[12] && create_if_block_28(ctx);
+	let if_block4 = /*uploadError*/ ctx[10] && create_if_block_27(ctx);
 
 	function select_block_type_5(ctx, dirty) {
-		if (/*logs*/ ctx[18].length === 0) return create_if_block_26;
+		if (/*logs*/ ctx[19].length === 0) return create_if_block_26;
 		return create_else_block_2;
 	}
 
-	let current_block_type_2 = select_block_type_5(ctx, [-1, -1, -1, -1, -1]);
+	let current_block_type_2 = select_block_type_5(ctx, [-1, -1, -1, -1, -1, -1]);
 	let if_block5 = current_block_type_2(ctx);
-	let if_block6 = /*showReleaseModal*/ ctx[14] && create_if_block_21(ctx);
+	let if_block6 = /*showReleaseModal*/ ctx[15] && create_if_block_21(ctx);
 
 	return {
 		c() {
 			div8 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 			div0 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
-			div0.innerHTML = `<p class="svelte-gmiihq">如果您想手动构建您的安卓APK，请点击最下面的打包按钮，如果您想自动构建，请使用GitHub OAuth登录获取权限，然后点击自动构建按钮。</p>`;
+			div0.innerHTML = `<p class="svelte-p1bfed">如果您想手动构建您的安卓APK，请点击最下面的打包按钮，如果您想自动构建，请使用GitHub OAuth登录获取权限，然后点击自动构建按钮。</p>`;
 			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			if_block0.c();
 			t2 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
@@ -5252,25 +5355,25 @@ function create_if_block_20(ctx) {
 			div5.textContent = `显示最新 ${MAX_LOGS} 条`;
 			t17 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			if (if_block6) if_block6.c();
-			button0.disabled = button0_disabled_value = /*uploadInProgress*/ ctx[8] || !/*oauthUserInfo*/ ctx[17];
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(button0, "class", "svelte-gmiihq");
+			button0.disabled = button0_disabled_value = /*uploadInProgress*/ ctx[9] || !/*oauthUserInfo*/ ctx[18];
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(button0, "class", "svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div1, "margin-top", "0.25rem");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "upload-status svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "upload-status svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div3, "font-weight", "bold");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div3, "margin-bottom", "6px");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div4, "class", "log-entries svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div4, "class", "log-entries svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div4, "aria-live", "polite");
-			button1.disabled = button1_disabled_value = /*logs*/ ctx[18].length === 0;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(button1, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(button2, "class", "svelte-gmiihq");
+			button1.disabled = button1_disabled_value = /*logs*/ ctx[19].length === 0;
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(button1, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(button2, "class", "svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div5, "margin-left", "auto");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div5, "font-size", "12px");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div5, "color", "#666");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div5, "align-self", "center");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div6, "class", "log-controls svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div7, "class", "log-panel svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div6, "class", "log-controls svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div7, "class", "log-panel svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div7, "margin-top", "0.5rem");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div8, "class", "github-uploader svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div8, "class", "github-uploader svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div8, "margin-top", "0.5rem");
 		},
 		m(target, anchor) {
@@ -5308,9 +5411,9 @@ function create_if_block_20(ctx) {
 
 			if (!mounted) {
 				dispose = [
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button0, "click", /*packAndUpload*/ ctx[31]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button1, "click", /*copyLogs*/ ctx[30]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button2, "click", /*click_handler*/ ctx[124])
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button0, "click", /*packAndUpload*/ ctx[32]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button1, "click", /*copyLogs*/ ctx[31]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button2, "click", /*click_handler*/ ctx[128])
 				];
 
 				mounted = true;
@@ -5339,11 +5442,11 @@ function create_if_block_20(ctx) {
 				}
 			}
 
-			if (dirty[0] & /*uploadInProgress, oauthUserInfo*/ 131328 && button0_disabled_value !== (button0_disabled_value = /*uploadInProgress*/ ctx[8] || !/*oauthUserInfo*/ ctx[17])) {
+			if (dirty[0] & /*uploadInProgress, oauthUserInfo*/ 262656 && button0_disabled_value !== (button0_disabled_value = /*uploadInProgress*/ ctx[9] || !/*oauthUserInfo*/ ctx[18])) {
 				button0.disabled = button0_disabled_value;
 			}
 
-			if (/*createdRepoUrl*/ ctx[10]) {
+			if (/*createdRepoUrl*/ ctx[11]) {
 				if (if_block2) {
 					if_block2.p(ctx, dirty);
 				} else {
@@ -5356,7 +5459,7 @@ function create_if_block_20(ctx) {
 				if_block2 = null;
 			}
 
-			if (/*releaseUrl*/ ctx[11]) {
+			if (/*releaseUrl*/ ctx[12]) {
 				if (if_block3) {
 					if_block3.p(ctx, dirty);
 				} else {
@@ -5369,7 +5472,7 @@ function create_if_block_20(ctx) {
 				if_block3 = null;
 			}
 
-			if (/*uploadError*/ ctx[9]) {
+			if (/*uploadError*/ ctx[10]) {
 				if (if_block4) {
 					if_block4.p(ctx, dirty);
 				} else {
@@ -5394,11 +5497,11 @@ function create_if_block_20(ctx) {
 				}
 			}
 
-			if (dirty[0] & /*logs*/ 262144 && button1_disabled_value !== (button1_disabled_value = /*logs*/ ctx[18].length === 0)) {
+			if (dirty[0] & /*logs*/ 524288 && button1_disabled_value !== (button1_disabled_value = /*logs*/ ctx[19].length === 0)) {
 				button1.disabled = button1_disabled_value;
 			}
 
-			if (/*showReleaseModal*/ ctx[14]) {
+			if (/*showReleaseModal*/ ctx[15]) {
 				if (if_block6) {
 					if_block6.p(ctx, dirty);
 				} else {
@@ -5426,7 +5529,7 @@ function create_if_block_20(ctx) {
 	};
 }
 
-// (1308:14) {:else}
+// (1363:14) {:else}
 function create_else_block_5(ctx) {
 	let div4;
 	let h4;
@@ -5435,17 +5538,17 @@ function create_else_block_5(ctx) {
 	let t2;
 	let div2;
 	let div0;
-	let t3_value = /*oauthUserInfo*/ ctx[17].user.login + "";
+	let t3_value = /*oauthUserInfo*/ ctx[18].user.login + "";
 	let t3;
 	let t4;
 	let div1;
-	let t5_value = /*oauthUserInfo*/ ctx[17].email + "";
+	let t5_value = /*oauthUserInfo*/ ctx[18].email + "";
 	let t5;
 	let t6;
 	let button;
 	let mounted;
 	let dispose;
-	let if_block = /*oauthUserInfo*/ ctx[17].user.avatar_url && create_if_block_34(ctx);
+	let if_block = /*oauthUserInfo*/ ctx[18].user.avatar_url && create_if_block_34(ctx);
 
 	return {
 		c() {
@@ -5479,7 +5582,7 @@ function create_else_block_5(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(button, "border-radius", "4px");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(button, "cursor", "pointer");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(button, "font-size", "0.8rem");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(button, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(button, "class", "svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div3, "display", "flex");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div3, "align-items", "center");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div3, "gap", "0.5rem");
@@ -5507,12 +5610,12 @@ function create_else_block_5(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div3, button);
 
 			if (!mounted) {
-				dispose = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button, "click", /*logoutOAuth*/ ctx[40]);
+				dispose = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button, "click", /*logoutOAuth*/ ctx[41]);
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
-			if (/*oauthUserInfo*/ ctx[17].user.avatar_url) {
+			if (/*oauthUserInfo*/ ctx[18].user.avatar_url) {
 				if (if_block) {
 					if_block.p(ctx, dirty);
 				} else {
@@ -5525,8 +5628,8 @@ function create_else_block_5(ctx) {
 				if_block = null;
 			}
 
-			if (dirty[0] & /*oauthUserInfo*/ 131072 && t3_value !== (t3_value = /*oauthUserInfo*/ ctx[17].user.login + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t3, t3_value);
-			if (dirty[0] & /*oauthUserInfo*/ 131072 && t5_value !== (t5_value = /*oauthUserInfo*/ ctx[17].email + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t5, t5_value);
+			if (dirty[0] & /*oauthUserInfo*/ 262144 && t3_value !== (t3_value = /*oauthUserInfo*/ ctx[18].user.login + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t3, t3_value);
+			if (dirty[0] & /*oauthUserInfo*/ 262144 && t5_value !== (t5_value = /*oauthUserInfo*/ ctx[18].email + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t5, t5_value);
 		},
 		d(detaching) {
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(div4);
@@ -5537,7 +5640,7 @@ function create_else_block_5(ctx) {
 	};
 }
 
-// (1282:14) {#if !oauthUserInfo}
+// (1337:14) {#if !oauthUserInfo}
 function create_if_block_31(ctx) {
 	let div;
 	let h4;
@@ -5548,14 +5651,14 @@ function create_if_block_31(ctx) {
 	let button;
 	let mounted;
 	let dispose;
-	let if_block0 = /*oauthError*/ ctx[16] && create_if_block_33(ctx);
+	let if_block0 = /*oauthError*/ ctx[17] && create_if_block_33(ctx);
 
 	function select_block_type_3(ctx, dirty) {
-		if (/*oauthInProgress*/ ctx[15]) return create_if_block_32;
+		if (/*oauthInProgress*/ ctx[16]) return create_if_block_32;
 		return create_else_block_4;
 	}
 
-	let current_block_type = select_block_type_3(ctx, [-1, -1, -1, -1, -1]);
+	let current_block_type = select_block_type_3(ctx, [-1, -1, -1, -1, -1, -1]);
 	let if_block1 = current_block_type(ctx);
 
 	return {
@@ -5576,8 +5679,8 @@ function create_if_block_31(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(p, "margin", "0 0 1rem 0");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(p, "font-size", "0.9rem");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(p, "color", "#666");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-gmiihq");
-			button.disabled = /*oauthInProgress*/ ctx[15];
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-p1bfed");
+			button.disabled = /*oauthInProgress*/ ctx[16];
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(button, "background", "#24292e");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(button, "color", "white");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(button, "border", "none");
@@ -5588,7 +5691,7 @@ function create_if_block_31(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(button, "display", "inline-flex");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(button, "align-items", "center");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(button, "gap", "0.5rem");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(button, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(button, "class", "svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div, "class", "oauth-section");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div, "margin", "1rem 0");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div, "padding", "1rem");
@@ -5608,12 +5711,12 @@ function create_if_block_31(ctx) {
 			if_block1.m(button, null);
 
 			if (!mounted) {
-				dispose = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button, "click", /*startOAuth*/ ctx[39]);
+				dispose = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button, "click", /*startOAuth*/ ctx[40]);
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
-			if (/*oauthError*/ ctx[16]) {
+			if (/*oauthError*/ ctx[17]) {
 				if (if_block0) {
 					if_block0.p(ctx, dirty);
 				} else {
@@ -5636,8 +5739,8 @@ function create_if_block_31(ctx) {
 				}
 			}
 
-			if (dirty[0] & /*oauthInProgress*/ 32768) {
-				button.disabled = /*oauthInProgress*/ ctx[15];
+			if (dirty[0] & /*oauthInProgress*/ 65536) {
+				button.disabled = /*oauthInProgress*/ ctx[16];
 			}
 		},
 		d(detaching) {
@@ -5650,7 +5753,7 @@ function create_if_block_31(ctx) {
 	};
 }
 
-// (1312:20) {#if oauthUserInfo.user.avatar_url}
+// (1367:20) {#if oauthUserInfo.user.avatar_url}
 function create_if_block_34(ctx) {
 	let img;
 	let img_src_value;
@@ -5658,7 +5761,7 @@ function create_if_block_34(ctx) {
 	return {
 		c() {
 			img = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("img");
-			if (!Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["src_url_equal"])(img.src, img_src_value = /*oauthUserInfo*/ ctx[17].user.avatar_url)) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(img, "src", img_src_value);
+			if (!Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["src_url_equal"])(img.src, img_src_value = /*oauthUserInfo*/ ctx[18].user.avatar_url)) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(img, "src", img_src_value);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(img, "alt", "Avatar");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(img, "width", "32px");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(img, "height", "32px");
@@ -5668,7 +5771,7 @@ function create_if_block_34(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, img, anchor);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*oauthUserInfo*/ 131072 && !Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["src_url_equal"])(img.src, img_src_value = /*oauthUserInfo*/ ctx[17].user.avatar_url)) {
+			if (dirty[0] & /*oauthUserInfo*/ 262144 && !Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["src_url_equal"])(img.src, img_src_value = /*oauthUserInfo*/ ctx[18].user.avatar_url)) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(img, "src", img_src_value);
 			}
 		},
@@ -5678,7 +5781,7 @@ function create_if_block_34(ctx) {
 	};
 }
 
-// (1288:18) {#if oauthError}
+// (1343:18) {#if oauthError}
 function create_if_block_33(ctx) {
 	let div;
 	let t;
@@ -5686,7 +5789,7 @@ function create_if_block_33(ctx) {
 	return {
 		c() {
 			div = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
-			t = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(/*oauthError*/ ctx[16]);
+			t = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(/*oauthError*/ ctx[17]);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div, "color", "#d32f2f");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div, "margin-bottom", "1rem");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div, "padding", "0.5rem");
@@ -5699,7 +5802,7 @@ function create_if_block_33(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div, t);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*oauthError*/ 65536) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, /*oauthError*/ ctx[16]);
+			if (dirty[0] & /*oauthError*/ 131072) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, /*oauthError*/ ctx[17]);
 		},
 		d(detaching) {
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(div);
@@ -5707,7 +5810,7 @@ function create_if_block_33(ctx) {
 	};
 }
 
-// (1300:20) {:else}
+// (1355:20) {:else}
 function create_else_block_4(ctx) {
 	let svg;
 	let path;
@@ -5736,7 +5839,7 @@ function create_else_block_4(ctx) {
 	};
 }
 
-// (1298:20) {#if oauthInProgress}
+// (1353:20) {#if oauthInProgress}
 function create_if_block_32(ctx) {
 	let span;
 
@@ -5754,7 +5857,7 @@ function create_if_block_32(ctx) {
 	};
 }
 
-// (1331:48) {:else}
+// (1386:48) {:else}
 function create_else_block_3(ctx) {
 	let t;
 
@@ -5771,7 +5874,7 @@ function create_else_block_3(ctx) {
 	};
 }
 
-// (1331:18) {#if uploadInProgress}
+// (1386:18) {#if uploadInProgress}
 function create_if_block_30(ctx) {
 	let t;
 
@@ -5788,7 +5891,7 @@ function create_if_block_30(ctx) {
 	};
 }
 
-// (1335:16) {#if createdRepoUrl}
+// (1390:16) {#if createdRepoUrl}
 function create_if_block_29(ctx) {
 	let div;
 	let t0;
@@ -5800,8 +5903,8 @@ function create_if_block_29(ctx) {
 			div = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 			t0 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])("仓库已创建: ");
 			a = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("a");
-			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(/*createdRepoUrl*/ ctx[10]);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*createdRepoUrl*/ ctx[10]);
+			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(/*createdRepoUrl*/ ctx[11]);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*createdRepoUrl*/ ctx[11]);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "target", "_blank");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "rel", "noopener");
 		},
@@ -5812,10 +5915,10 @@ function create_if_block_29(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(a, t1);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*createdRepoUrl*/ 1024) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, /*createdRepoUrl*/ ctx[10]);
+			if (dirty[0] & /*createdRepoUrl*/ 2048) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, /*createdRepoUrl*/ ctx[11]);
 
-			if (dirty[0] & /*createdRepoUrl*/ 1024) {
-				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*createdRepoUrl*/ ctx[10]);
+			if (dirty[0] & /*createdRepoUrl*/ 2048) {
+				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*createdRepoUrl*/ ctx[11]);
 			}
 		},
 		d(detaching) {
@@ -5824,15 +5927,15 @@ function create_if_block_29(ctx) {
 	};
 }
 
-// (1338:16) {#if releaseUrl}
+// (1393:16) {#if releaseUrl}
 function create_if_block_28(ctx) {
 	let div;
 	let t0;
 	let a;
 
-	let t1_value = (/*assetName*/ ctx[12]
-	? /*assetName*/ ctx[12]
-	: /*releaseUrl*/ ctx[11]) + "";
+	let t1_value = (/*assetName*/ ctx[13]
+	? /*assetName*/ ctx[13]
+	: /*releaseUrl*/ ctx[12]) + "";
 
 	let t1;
 
@@ -5842,7 +5945,7 @@ function create_if_block_28(ctx) {
 			t0 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])("构建产物 Release: ");
 			a = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("a");
 			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t1_value);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*releaseUrl*/ ctx[11]);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*releaseUrl*/ ctx[12]);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "target", "_blank");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "rel", "noopener");
 		},
@@ -5853,12 +5956,12 @@ function create_if_block_28(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(a, t1);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*assetName, releaseUrl*/ 6144 && t1_value !== (t1_value = (/*assetName*/ ctx[12]
-			? /*assetName*/ ctx[12]
-			: /*releaseUrl*/ ctx[11]) + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, t1_value);
+			if (dirty[0] & /*assetName, releaseUrl*/ 12288 && t1_value !== (t1_value = (/*assetName*/ ctx[13]
+			? /*assetName*/ ctx[13]
+			: /*releaseUrl*/ ctx[12]) + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, t1_value);
 
-			if (dirty[0] & /*releaseUrl*/ 2048) {
-				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*releaseUrl*/ ctx[11]);
+			if (dirty[0] & /*releaseUrl*/ 4096) {
+				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*releaseUrl*/ ctx[12]);
 			}
 		},
 		d(detaching) {
@@ -5867,7 +5970,7 @@ function create_if_block_28(ctx) {
 	};
 }
 
-// (1341:16) {#if uploadError}
+// (1396:16) {#if uploadError}
 function create_if_block_27(ctx) {
 	let div;
 	let t0;
@@ -5877,7 +5980,7 @@ function create_if_block_27(ctx) {
 		c() {
 			div = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 			t0 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])("错误: ");
-			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(/*uploadError*/ ctx[9]);
+			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(/*uploadError*/ ctx[10]);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div, "color", "tomato");
 		},
 		m(target, anchor) {
@@ -5886,7 +5989,7 @@ function create_if_block_27(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div, t1);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*uploadError*/ 512) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, /*uploadError*/ ctx[9]);
+			if (dirty[0] & /*uploadError*/ 1024) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, /*uploadError*/ ctx[10]);
 		},
 		d(detaching) {
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(div);
@@ -5894,10 +5997,10 @@ function create_if_block_27(ctx) {
 	};
 }
 
-// (1351:18) {:else}
+// (1406:18) {:else}
 function create_else_block_2(ctx) {
 	let each_1_anchor;
-	let each_value = /*logs*/ ctx[18];
+	let each_value = /*logs*/ ctx[19];
 	let each_blocks = [];
 
 	for (let i = 0; i < each_value.length; i += 1) {
@@ -5922,8 +6025,8 @@ function create_else_block_2(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, each_1_anchor, anchor);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*logs*/ 262144) {
-				each_value = /*logs*/ ctx[18];
+			if (dirty[0] & /*logs*/ 524288) {
+				each_value = /*logs*/ ctx[19];
 				let i;
 
 				for (i = 0; i < each_value.length; i += 1) {
@@ -5952,7 +6055,7 @@ function create_else_block_2(ctx) {
 	};
 }
 
-// (1349:18) {#if logs.length === 0}
+// (1404:18) {#if logs.length === 0}
 function create_if_block_26(ctx) {
 	let div;
 
@@ -5960,7 +6063,7 @@ function create_if_block_26(ctx) {
 		c() {
 			div = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 			div.textContent = "暂无日志";
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div, "class", "log-entry info svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div, "class", "log-entry info svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div, anchor);
@@ -5972,16 +6075,16 @@ function create_if_block_26(ctx) {
 	};
 }
 
-// (1352:20) {#each logs as l}
+// (1407:20) {#each logs as l}
 function create_each_block(ctx) {
 	let div;
-	let t0_value = /*l*/ ctx[148].time + "";
+	let t0_value = /*l*/ ctx[153].time + "";
 	let t0;
 	let t1;
-	let t2_value = /*l*/ ctx[148].level + "";
+	let t2_value = /*l*/ ctx[153].level + "";
 	let t2;
 	let t3;
-	let t4_value = /*l*/ ctx[148].msg + "";
+	let t4_value = /*l*/ ctx[153].msg + "";
 	let t4;
 	let div_class_value;
 
@@ -5993,7 +6096,7 @@ function create_each_block(ctx) {
 			t2 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t2_value);
 			t3 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])("] ");
 			t4 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t4_value);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div, "class", div_class_value = "log-entry " + /*l*/ ctx[148].level + " svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div, "class", div_class_value = "log-entry " + /*l*/ ctx[153].level + " svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div, anchor);
@@ -6004,11 +6107,11 @@ function create_each_block(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div, t4);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*logs*/ 262144 && t0_value !== (t0_value = /*l*/ ctx[148].time + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
-			if (dirty[0] & /*logs*/ 262144 && t2_value !== (t2_value = /*l*/ ctx[148].level + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
-			if (dirty[0] & /*logs*/ 262144 && t4_value !== (t4_value = /*l*/ ctx[148].msg + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t4, t4_value);
+			if (dirty[0] & /*logs*/ 524288 && t0_value !== (t0_value = /*l*/ ctx[153].time + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if (dirty[0] & /*logs*/ 524288 && t2_value !== (t2_value = /*l*/ ctx[153].level + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
+			if (dirty[0] & /*logs*/ 524288 && t4_value !== (t4_value = /*l*/ ctx[153].msg + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t4, t4_value);
 
-			if (dirty[0] & /*logs*/ 262144 && div_class_value !== (div_class_value = "log-entry " + /*l*/ ctx[148].level + " svelte-gmiihq")) {
+			if (dirty[0] & /*logs*/ 524288 && div_class_value !== (div_class_value = "log-entry " + /*l*/ ctx[153].level + " svelte-p1bfed")) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div, "class", div_class_value);
 			}
 		},
@@ -6018,7 +6121,7 @@ function create_each_block(ctx) {
 	};
 }
 
-// (1363:14) {#if showReleaseModal}
+// (1418:14) {#if showReleaseModal}
 function create_if_block_21(ctx) {
 	let div2;
 	let div0;
@@ -6035,10 +6138,10 @@ function create_if_block_21(ctx) {
 	let t10;
 	let mounted;
 	let dispose;
-	let if_block0 = /*assetName*/ ctx[12] && create_if_block_25(ctx);
-	let if_block1 = /*assetDownloadUrl*/ ctx[13] && create_if_block_24(ctx);
-	let if_block2 = /*releaseUrl*/ ctx[11] && create_if_block_23(ctx);
-	let if_block3 = /*uploadError*/ ctx[9] && create_if_block_22(ctx);
+	let if_block0 = /*assetName*/ ctx[13] && create_if_block_25(ctx);
+	let if_block1 = /*assetDownloadUrl*/ ctx[14] && create_if_block_24(ctx);
+	let if_block2 = /*releaseUrl*/ ctx[12] && create_if_block_23(ctx);
+	let if_block3 = /*uploadError*/ ctx[10] && create_if_block_22(ctx);
 
 	return {
 		c() {
@@ -6063,9 +6166,9 @@ function create_if_block_21(ctx) {
 			button2.textContent = "删除临时仓库";
 			t10 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			if (if_block3) if_block3.c();
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(button0, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(button1, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(button2, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(button0, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(button1, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(button2, "class", "svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div1, "margin-top", "0.5rem");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "release-modal");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div2, "border", "1px solid #ccc");
@@ -6094,16 +6197,16 @@ function create_if_block_21(ctx) {
 
 			if (!mounted) {
 				dispose = [
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button0, "click", /*click_handler_1*/ ctx[125]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button1, "click", /*click_handler_2*/ ctx[126]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button2, "click", /*deleteRepoFromUI*/ ctx[32])
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button0, "click", /*click_handler_1*/ ctx[129]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button1, "click", /*click_handler_2*/ ctx[130]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(button2, "click", /*deleteRepoFromUI*/ ctx[33])
 				];
 
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
-			if (/*assetName*/ ctx[12]) {
+			if (/*assetName*/ ctx[13]) {
 				if (if_block0) {
 					if_block0.p(ctx, dirty);
 				} else {
@@ -6116,7 +6219,7 @@ function create_if_block_21(ctx) {
 				if_block0 = null;
 			}
 
-			if (/*assetDownloadUrl*/ ctx[13]) {
+			if (/*assetDownloadUrl*/ ctx[14]) {
 				if (if_block1) {
 					if_block1.p(ctx, dirty);
 				} else {
@@ -6129,7 +6232,7 @@ function create_if_block_21(ctx) {
 				if_block1 = null;
 			}
 
-			if (/*releaseUrl*/ ctx[11]) {
+			if (/*releaseUrl*/ ctx[12]) {
 				if (if_block2) {
 					if_block2.p(ctx, dirty);
 				} else {
@@ -6142,7 +6245,7 @@ function create_if_block_21(ctx) {
 				if_block2 = null;
 			}
 
-			if (/*uploadError*/ ctx[9]) {
+			if (/*uploadError*/ ctx[10]) {
 				if (if_block3) {
 					if_block3.p(ctx, dirty);
 				} else {
@@ -6167,7 +6270,7 @@ function create_if_block_21(ctx) {
 	};
 }
 
-// (1366:18) {#if assetName}
+// (1421:18) {#if assetName}
 function create_if_block_25(ctx) {
 	let div;
 	let t0;
@@ -6177,7 +6280,7 @@ function create_if_block_25(ctx) {
 		c() {
 			div = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 			t0 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])("产物: ");
-			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(/*assetName*/ ctx[12]);
+			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(/*assetName*/ ctx[13]);
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div, anchor);
@@ -6185,7 +6288,7 @@ function create_if_block_25(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div, t1);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*assetName*/ 4096) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, /*assetName*/ ctx[12]);
+			if (dirty[0] & /*assetName*/ 8192) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, /*assetName*/ ctx[13]);
 		},
 		d(detaching) {
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(div);
@@ -6193,7 +6296,7 @@ function create_if_block_25(ctx) {
 	};
 }
 
-// (1369:18) {#if assetDownloadUrl}
+// (1424:18) {#if assetDownloadUrl}
 function create_if_block_24(ctx) {
 	let div;
 	let t0;
@@ -6205,8 +6308,8 @@ function create_if_block_24(ctx) {
 			div = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 			t0 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])("下载链接: ");
 			a = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("a");
-			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(/*assetDownloadUrl*/ ctx[13]);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*assetDownloadUrl*/ ctx[13]);
+			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(/*assetDownloadUrl*/ ctx[14]);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*assetDownloadUrl*/ ctx[14]);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "target", "_blank");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "rel", "noopener");
 		},
@@ -6217,10 +6320,10 @@ function create_if_block_24(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(a, t1);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*assetDownloadUrl*/ 8192) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, /*assetDownloadUrl*/ ctx[13]);
+			if (dirty[0] & /*assetDownloadUrl*/ 16384) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, /*assetDownloadUrl*/ ctx[14]);
 
-			if (dirty[0] & /*assetDownloadUrl*/ 8192) {
-				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*assetDownloadUrl*/ ctx[13]);
+			if (dirty[0] & /*assetDownloadUrl*/ 16384) {
+				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*assetDownloadUrl*/ ctx[14]);
 			}
 		},
 		d(detaching) {
@@ -6229,7 +6332,7 @@ function create_if_block_24(ctx) {
 	};
 }
 
-// (1372:18) {#if releaseUrl}
+// (1427:18) {#if releaseUrl}
 function create_if_block_23(ctx) {
 	let div;
 	let t0;
@@ -6241,8 +6344,8 @@ function create_if_block_23(ctx) {
 			div = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 			t0 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])("Release 页面: ");
 			a = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("a");
-			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(/*releaseUrl*/ ctx[11]);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*releaseUrl*/ ctx[11]);
+			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(/*releaseUrl*/ ctx[12]);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*releaseUrl*/ ctx[12]);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "target", "_blank");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "rel", "noopener");
 		},
@@ -6253,10 +6356,10 @@ function create_if_block_23(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(a, t1);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*releaseUrl*/ 2048) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, /*releaseUrl*/ ctx[11]);
+			if (dirty[0] & /*releaseUrl*/ 4096) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, /*releaseUrl*/ ctx[12]);
 
-			if (dirty[0] & /*releaseUrl*/ 2048) {
-				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*releaseUrl*/ ctx[11]);
+			if (dirty[0] & /*releaseUrl*/ 4096) {
+				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", /*releaseUrl*/ ctx[12]);
 			}
 		},
 		d(detaching) {
@@ -6265,7 +6368,7 @@ function create_if_block_23(ctx) {
 	};
 }
 
-// (1380:18) {#if uploadError}
+// (1435:18) {#if uploadError}
 function create_if_block_22(ctx) {
 	let div;
 	let t0;
@@ -6275,7 +6378,7 @@ function create_if_block_22(ctx) {
 		c() {
 			div = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 			t0 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])("错误: ");
-			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(/*uploadError*/ ctx[9]);
+			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(/*uploadError*/ ctx[10]);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_style"])(div, "color", "tomato");
 		},
 		m(target, anchor) {
@@ -6284,7 +6387,7 @@ function create_if_block_22(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(div, t1);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*uploadError*/ 512) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, /*uploadError*/ ctx[9]);
+			if (dirty[0] & /*uploadError*/ 1024) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t1, /*uploadError*/ ctx[10]);
 		},
 		d(detaching) {
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(div);
@@ -6292,51 +6395,51 @@ function create_if_block_22(ctx) {
 	};
 }
 
-// (1394:10) {#if $options.target.includes('electron')}
+// (1449:10) {#if $options.target.includes('electron')}
 function create_if_block_19(ctx) {
 	let label0;
-	let t0_value = /*$_*/ ctx[19]('options.initalWindowSize') + "";
+	let t0_value = /*$_*/ ctx[20]('options.initalWindowSize') + "";
 	let t0;
 	let t1;
 	let select0;
 	let option0;
-	let t2_value = /*$_*/ ctx[19]('options.startWindow') + "";
+	let t2_value = /*$_*/ ctx[20]('options.startWindow') + "";
 	let t2;
 	let option1;
-	let t3_value = /*$_*/ ctx[19]('options.startMaximized') + "";
+	let t3_value = /*$_*/ ctx[20]('options.startMaximized') + "";
 	let t3;
 	let option2;
-	let t4_value = /*$_*/ ctx[19]('options.startFullscreen') + "";
+	let t4_value = /*$_*/ ctx[20]('options.startFullscreen') + "";
 	let t4;
 	let t5;
 	let label1;
-	let t6_value = /*$_*/ ctx[19]('options.escapeBehavior') + "";
+	let t6_value = /*$_*/ ctx[20]('options.escapeBehavior') + "";
 	let t6;
 	let t7;
 	let select1;
 	let option3;
-	let t8_value = /*$_*/ ctx[19]('options.unFullscreenOnly') + "";
+	let t8_value = /*$_*/ ctx[20]('options.unFullscreenOnly') + "";
 	let t8;
 	let option4;
-	let t9_value = /*$_*/ ctx[19]('options.exitOnly') + "";
+	let t9_value = /*$_*/ ctx[20]('options.exitOnly') + "";
 	let t9;
 	let option5;
-	let t10_value = /*$_*/ ctx[19]('options.unFullscreenOrExit') + "";
+	let t10_value = /*$_*/ ctx[20]('options.unFullscreenOrExit') + "";
 	let t10;
 	let option6;
-	let t11_value = /*$_*/ ctx[19]('options.doNothing') + "";
+	let t11_value = /*$_*/ ctx[20]('options.doNothing') + "";
 	let t11;
 	let t12;
 	let label2;
-	let t13_value = /*$_*/ ctx[19]('options.windowControls') + "";
+	let t13_value = /*$_*/ ctx[20]('options.windowControls') + "";
 	let t13;
 	let t14;
 	let select2;
 	let option7;
-	let t15_value = /*$_*/ ctx[19]('options.defaultControls') + "";
+	let t15_value = /*$_*/ ctx[20]('options.defaultControls') + "";
 	let t15;
 	let option8;
-	let t16_value = /*$_*/ ctx[19]('options.noControls') + "";
+	let t16_value = /*$_*/ ctx[20]('options.noControls') + "";
 	let t16;
 	let mounted;
 	let dispose;
@@ -6381,8 +6484,8 @@ function create_if_block_19(ctx) {
 			option1.value = option1.__value;
 			option2.__value = "fullscreen";
 			option2.value = option2.__value;
-			if (/*$options*/ ctx[1].app.windowMode === void 0) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["add_render_callback"])(() => /*select0_change_handler*/ ctx[128].call(select0));
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-gmiihq");
+			if (/*$options*/ ctx[1].app.windowMode === void 0) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["add_render_callback"])(() => /*select0_change_handler*/ ctx[132].call(select0));
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-p1bfed");
 			option3.__value = "unfullscreen-only";
 			option3.value = option3.__value;
 			option4.__value = "exit-only";
@@ -6391,14 +6494,14 @@ function create_if_block_19(ctx) {
 			option5.value = option5.__value;
 			option6.__value = "nothing";
 			option6.value = option6.__value;
-			if (/*$options*/ ctx[1].app.escapeBehavior === void 0) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["add_render_callback"])(() => /*select1_change_handler*/ ctx[129].call(select1));
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label1, "class", "option svelte-gmiihq");
+			if (/*$options*/ ctx[1].app.escapeBehavior === void 0) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["add_render_callback"])(() => /*select1_change_handler*/ ctx[133].call(select1));
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label1, "class", "option svelte-p1bfed");
 			option7.__value = "default";
 			option7.value = option7.__value;
 			option8.__value = "frameless";
 			option8.value = option8.__value;
-			if (/*$options*/ ctx[1].app.windowControls === void 0) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["add_render_callback"])(() => /*select2_change_handler*/ ctx[130].call(select2));
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label2, "class", "option svelte-gmiihq");
+			if (/*$options*/ ctx[1].app.windowControls === void 0) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["add_render_callback"])(() => /*select2_change_handler*/ ctx[134].call(select2));
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label2, "class", "option svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, label0, anchor);
@@ -6439,37 +6542,37 @@ function create_if_block_19(ctx) {
 
 			if (!mounted) {
 				dispose = [
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(select0, "change", /*select0_change_handler*/ ctx[128]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(select1, "change", /*select1_change_handler*/ ctx[129]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(select2, "change", /*select2_change_handler*/ ctx[130])
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(select0, "change", /*select0_change_handler*/ ctx[132]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(select1, "change", /*select1_change_handler*/ ctx[133]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(select2, "change", /*select2_change_handler*/ ctx[134])
 				];
 
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*$_*/ 524288 && t0_value !== (t0_value = /*$_*/ ctx[19]('options.initalWindowSize') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
-			if (dirty[0] & /*$_*/ 524288 && t2_value !== (t2_value = /*$_*/ ctx[19]('options.startWindow') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
-			if (dirty[0] & /*$_*/ 524288 && t3_value !== (t3_value = /*$_*/ ctx[19]('options.startMaximized') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t3, t3_value);
-			if (dirty[0] & /*$_*/ 524288 && t4_value !== (t4_value = /*$_*/ ctx[19]('options.startFullscreen') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t4, t4_value);
+			if (dirty[0] & /*$_*/ 1048576 && t0_value !== (t0_value = /*$_*/ ctx[20]('options.initalWindowSize') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if (dirty[0] & /*$_*/ 1048576 && t2_value !== (t2_value = /*$_*/ ctx[20]('options.startWindow') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
+			if (dirty[0] & /*$_*/ 1048576 && t3_value !== (t3_value = /*$_*/ ctx[20]('options.startMaximized') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t3, t3_value);
+			if (dirty[0] & /*$_*/ 1048576 && t4_value !== (t4_value = /*$_*/ ctx[20]('options.startFullscreen') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t4, t4_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["select_option"])(select0, /*$options*/ ctx[1].app.windowMode);
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t6_value !== (t6_value = /*$_*/ ctx[19]('options.escapeBehavior') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t6, t6_value);
-			if (dirty[0] & /*$_*/ 524288 && t8_value !== (t8_value = /*$_*/ ctx[19]('options.unFullscreenOnly') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t8, t8_value);
-			if (dirty[0] & /*$_*/ 524288 && t9_value !== (t9_value = /*$_*/ ctx[19]('options.exitOnly') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t9, t9_value);
-			if (dirty[0] & /*$_*/ 524288 && t10_value !== (t10_value = /*$_*/ ctx[19]('options.unFullscreenOrExit') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t10, t10_value);
-			if (dirty[0] & /*$_*/ 524288 && t11_value !== (t11_value = /*$_*/ ctx[19]('options.doNothing') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t11, t11_value);
+			if (dirty[0] & /*$_*/ 1048576 && t6_value !== (t6_value = /*$_*/ ctx[20]('options.escapeBehavior') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t6, t6_value);
+			if (dirty[0] & /*$_*/ 1048576 && t8_value !== (t8_value = /*$_*/ ctx[20]('options.unFullscreenOnly') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t8, t8_value);
+			if (dirty[0] & /*$_*/ 1048576 && t9_value !== (t9_value = /*$_*/ ctx[20]('options.exitOnly') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t9, t9_value);
+			if (dirty[0] & /*$_*/ 1048576 && t10_value !== (t10_value = /*$_*/ ctx[20]('options.unFullscreenOrExit') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t10, t10_value);
+			if (dirty[0] & /*$_*/ 1048576 && t11_value !== (t11_value = /*$_*/ ctx[20]('options.doNothing') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t11, t11_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["select_option"])(select1, /*$options*/ ctx[1].app.escapeBehavior);
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t13_value !== (t13_value = /*$_*/ ctx[19]('options.windowControls') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t13, t13_value);
-			if (dirty[0] & /*$_*/ 524288 && t15_value !== (t15_value = /*$_*/ ctx[19]('options.defaultControls') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t15, t15_value);
-			if (dirty[0] & /*$_*/ 524288 && t16_value !== (t16_value = /*$_*/ ctx[19]('options.noControls') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t16, t16_value);
+			if (dirty[0] & /*$_*/ 1048576 && t13_value !== (t13_value = /*$_*/ ctx[20]('options.windowControls') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t13, t13_value);
+			if (dirty[0] & /*$_*/ 1048576 && t15_value !== (t15_value = /*$_*/ ctx[20]('options.defaultControls') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t15, t15_value);
+			if (dirty[0] & /*$_*/ 1048576 && t16_value !== (t16_value = /*$_*/ ctx[20]('options.noControls') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t16, t16_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["select_option"])(select2, /*$options*/ ctx[1].app.windowControls);
@@ -6487,7 +6590,7 @@ function create_if_block_19(ctx) {
 	};
 }
 
-// (1449:54) 
+// (1504:54) 
 function create_if_block_18(ctx) {
 	let div;
 
@@ -6496,7 +6599,7 @@ function create_if_block_18(ctx) {
 			div = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 
 			div.innerHTML = `<h2>Linux</h2> 
-              <p class="svelte-gmiihq">Linux support is still experimental.</p>`;
+              <p class="svelte-p1bfed">Linux support is still experimental.</p>`;
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div, anchor);
@@ -6507,7 +6610,7 @@ function create_if_block_18(ctx) {
 	};
 }
 
-// (1440:52) 
+// (1495:52) 
 function create_if_block_17(ctx) {
 	let div;
 
@@ -6516,7 +6619,7 @@ function create_if_block_17(ctx) {
 			div = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 
 			div.innerHTML = `<h2>macOS</h2> 
-              <p class="svelte-gmiihq">Due to Apple policy, packaging for their platforms is troublesome. You either have to:</p> 
+              <p class="svelte-p1bfed">Due to Apple policy, packaging for their platforms is troublesome. You either have to:</p> 
               <ul><li>Instruct users to ignore scary Gatekeeper warnings by opening Finder &gt; Navigating to the application &gt; Right click &gt; Open &gt; Open. This website generates applications that require this workaround.</li> 
                 <li>Or pay Apple \$100/year for a developer account to sign and notarize the app (very involved process; reach out in feedback for more information)</li></ul>`;
 		},
@@ -6529,7 +6632,7 @@ function create_if_block_17(ctx) {
 	};
 }
 
-// (1434:10) {#if $options.target.includes('win')}
+// (1489:10) {#if $options.target.includes('win')}
 function create_if_block_16(ctx) {
 	let div;
 
@@ -6538,8 +6641,8 @@ function create_if_block_16(ctx) {
 			div = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 
 			div.innerHTML = `<h2>Windows</h2> 
-              <p class="svelte-gmiihq">All Windows applications generated by this site are unsigned, so users will see SmartScreen warnings when they try to run it for the first time. They can bypass these warnings by pressing &quot;More info&quot; then &quot;Run anyways&quot;.</p> 
-              <p class="svelte-gmiihq">To change the icon of the executable file or create an installer program, download and run <a href="https://github.com/TurboWarp/packager-extras/releases">TurboWarp Packager Extras</a> and select the output of this website.</p>`;
+              <p class="svelte-p1bfed">All Windows applications generated by this site are unsigned, so users will see SmartScreen warnings when they try to run it for the first time. They can bypass these warnings by pressing &quot;More info&quot; then &quot;Run anyways&quot;.</p> 
+              <p class="svelte-p1bfed">To change the icon of the executable file or create an installer program, download and run <a href="https://github.com/TurboWarp/packager-extras/releases">TurboWarp Packager Extras</a> and select the output of this website.</p>`;
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div, anchor);
@@ -6550,7 +6653,7 @@ function create_if_block_16(ctx) {
 	};
 }
 
-// (1494:57) 
+// (1549:57) 
 function create_if_block_15(ctx) {
 	let div;
 
@@ -6559,18 +6662,18 @@ function create_if_block_15(ctx) {
 			div = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 
 			div.innerHTML = `<h2>Node.js CLI</h2> 
-              <p class="svelte-gmiihq">Node.js CLI runs your Scratch project directly in Node.js environment using scratch-vm. This is intended for server-side execution, automated testing, or batch processing tasks.</p> 
-              <p class="svelte-gmiihq"><strong>Advantages:</strong></p> 
+              <p class="svelte-p1bfed">Node.js CLI runs your Scratch project directly in Node.js environment using scratch-vm. This is intended for server-side execution, automated testing, or batch processing tasks.</p> 
+              <p class="svelte-p1bfed"><strong>Advantages:</strong></p> 
               <ul><li>Small file size (~20-30MB vs ~100MB for Electron)</li> 
                 <li>Fast startup (no browser overhead)</li> 
                 <li>No cache or GPU issues</li> 
                 <li>Direct event monitoring</li> 
                 <li>Stable and reliable</li></ul> 
-              <p class="svelte-gmiihq"><strong>Command Line Arguments:</strong></p> 
-              <p class="svelte-gmiihq">You can pass arguments to your application like this:</p> 
+              <p class="svelte-p1bfed"><strong>Command Line Arguments:</strong></p> 
+              <p class="svelte-p1bfed">You can pass arguments to your application like this:</p> 
               <pre><code>app.exe your-project.sb3 --arg1 value1 --arg2 value2 --flag</code></pre> 
-              <p class="svelte-gmiihq"><strong>CLI API Available:</strong></p> 
-              <p class="svelte-gmiihq">In CLI mode, you can use the following JavaScript functions in your Scratch project:</p> 
+              <p class="svelte-p1bfed"><strong>CLI API Available:</strong></p> 
+              <p class="svelte-p1bfed">In CLI mode, you can use the following JavaScript functions in your Scratch project:</p> 
               <ul><li><code>cli.log(message)</code> - Output text to console</li> 
                 <li><code>cli.error(message)</code> - Output error to console</li> 
                 <li><code>cli.warn(message)</code> - Output warning to console</li> 
@@ -6578,7 +6681,7 @@ function create_if_block_15(ctx) {
                 <li><code>cli.exit(code)</code> - Exit the application (0 = success, non-zero = error)</li> 
                 <li><code>cli.getArgs()</code> - Get all command line arguments as an object</li> 
                 <li><code>cli.getArg(key)</code> - Get a specific command line argument by key</li></ul> 
-              <p class="svelte-gmiihq"><strong>Example Usage:</strong></p> 
+              <p class="svelte-p1bfed"><strong>Example Usage:</strong></p> 
               <pre><code>// Get command line arguments
 const args = cli.getArgs();
 cli.log(&#39;Arguments:&#39;, args);
@@ -6591,8 +6694,8 @@ if (mode === &#39;test&#39;) {
 
 // Exit with success code
 cli.exit(0);</code></pre> 
-              <p class="svelte-gmiihq"><strong>Packaging Instructions:</strong></p> 
-              <p class="svelte-gmiihq">After downloading the package:</p> 
+              <p class="svelte-p1bfed"><strong>Packaging Instructions:</strong></p> 
+              <p class="svelte-p1bfed">After downloading the package:</p> 
               <ol><li>Extract the ZIP file to a folder</li> 
                 <li>Install <a href="https://nodejs.org/" target="_blank">Node.js</a> (version 18 or higher)</li> 
                 <li>Open a terminal/command prompt in the extracted folder</li> 
@@ -6600,7 +6703,7 @@ cli.exit(0);</code></pre>
                 <li>Run <code>npm run build</code> to create the executable</li> 
                 <li>The executable will be created in the same folder</li> 
                 <li><strong>Simply run the executable - no external SB3 file needed!</strong></li></ol> 
-              <p class="svelte-gmiihq"><strong>Important:</strong> Node.js CLI mode:</p> 
+              <p class="svelte-p1bfed"><strong>Important:</strong> Node.js CLI mode:</p> 
               <ul><li>No graphical output - project runs in headless mode</li> 
                 <li>Mouse and keyboard interactions will not work</li> 
                 <li>Audio playback may be limited</li> 
@@ -6617,7 +6720,7 @@ cli.exit(0);</code></pre>
 	};
 }
 
-// (1481:60) 
+// (1536:60) 
 function create_if_block_14(ctx) {
 	let div;
 
@@ -6626,13 +6729,13 @@ function create_if_block_14(ctx) {
 			div = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 
 			div.innerHTML = `<h2>WKWebView</h2> 
-              <p class="svelte-gmiihq">WKWebView is the preferred way to package for macOS. It will be hundreds of MB smaller than the other macOS-specific environments and typically run the fastest.</p> 
-              <p class="svelte-gmiihq">The app will run natively on both Intel and Apple silicon Macs running macOS 10.13 or later.</p> 
-              <p class="svelte-gmiihq">Note that:</p> 
+              <p class="svelte-p1bfed">WKWebView is the preferred way to package for macOS. It will be hundreds of MB smaller than the other macOS-specific environments and typically run the fastest.</p> 
+              <p class="svelte-p1bfed">The app will run natively on both Intel and Apple silicon Macs running macOS 10.13 or later.</p> 
+              <p class="svelte-p1bfed">Note that:</p> 
               <ul><li>Video sensing and loudness blocks will only work in macOS 12 or later.</li> 
                 <li>Pointer lock will not work.</li> 
                 <li>Extremely large projects might not work properly.</li></ul> 
-              <p class="svelte-gmiihq">Use the &quot;Electron macOS Application&quot; (inside Other environments) or &quot;Plain HTML&quot; environments instead if you encounter these issues.</p>`;
+              <p class="svelte-p1bfed">Use the &quot;Electron macOS Application&quot; (inside Other environments) or &quot;Plain HTML&quot; environments instead if you encounter these issues.</p>`;
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div, anchor);
@@ -6644,7 +6747,7 @@ function create_if_block_14(ctx) {
 	};
 }
 
-// (1471:53) 
+// (1526:53) 
 function create_if_block_12(ctx) {
 	let div;
 	let h2;
@@ -6674,9 +6777,9 @@ function create_if_block_12(ctx) {
 			p2.innerHTML = `For further help and steps, see <a href="https://docs.nwjs.io/en/latest/For%20Users/Package%20and%20Distribute/#linux">NW.js Documentation</a>.`;
 			t9 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			if (if_block) if_block.c();
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p0, "class", "warning svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p1, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p2, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p0, "class", "warning svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p1, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p2, "class", "svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div, anchor);
@@ -6713,7 +6816,7 @@ function create_if_block_12(ctx) {
 	};
 }
 
-// (1456:10) {#if $options.target.includes('electron')}
+// (1511:10) {#if $options.target.includes('electron')}
 function create_if_block_7(ctx) {
 	let div;
 	let h2;
@@ -6736,7 +6839,7 @@ function create_if_block_7(ctx) {
 		if (show_if_2) return create_if_block_11;
 	}
 
-	let current_block_type = select_block_type_8(ctx, [-1, -1, -1, -1, -1]);
+	let current_block_type = select_block_type_8(ctx, [-1, -1, -1, -1, -1, -1]);
 	let if_block = current_block_type && current_block_type(ctx);
 
 	return {
@@ -6749,7 +6852,7 @@ function create_if_block_7(ctx) {
 			p.textContent = "The Electron environment works by embedding a copy of Chromium (the open source part of Google Chrome) along with your project, which means the app will be very large.";
 			t3 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			if (if_block) if_block.c();
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div, anchor);
@@ -6782,7 +6885,7 @@ function create_if_block_7(ctx) {
 	};
 }
 
-// (1477:14) {#if $options.target.includes('mac')}
+// (1532:14) {#if $options.target.includes('mac')}
 function create_if_block_13(ctx) {
 	let p;
 
@@ -6790,7 +6893,7 @@ function create_if_block_13(ctx) {
 		c() {
 			p = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("p");
 			p.textContent = "On macOS, the app will run using Rosetta on Apple Silicon Macs.";
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, p, anchor);
@@ -6801,7 +6904,7 @@ function create_if_block_13(ctx) {
 	};
 }
 
-// (1467:58) 
+// (1522:58) 
 function create_if_block_11(ctx) {
 	let p;
 
@@ -6809,7 +6912,7 @@ function create_if_block_11(ctx) {
 		c() {
 			p = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("p");
 			p.innerHTML = `On Linux, the application can be started by running <code>start.sh</code>`;
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, p, anchor);
@@ -6821,7 +6924,7 @@ function create_if_block_11(ctx) {
 	};
 }
 
-// (1465:56) 
+// (1520:56) 
 function create_if_block_10(ctx) {
 	let p;
 
@@ -6829,7 +6932,7 @@ function create_if_block_10(ctx) {
 		c() {
 			p = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("p");
 			p.textContent = "On macOS, the app will run natively on both Intel Silicon and Apple Silicon Macs.";
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, p, anchor);
@@ -6841,7 +6944,7 @@ function create_if_block_10(ctx) {
 	};
 }
 
-// (1461:14) {#if $options.target.includes('win')}
+// (1516:14) {#if $options.target.includes('win')}
 function create_if_block_8(ctx) {
 	let show_if = /*$options*/ ctx[1].target.includes('32');
 	let if_block_anchor;
@@ -6879,7 +6982,7 @@ function create_if_block_8(ctx) {
 	};
 }
 
-// (1462:16) {#if $options.target.includes('32')}
+// (1517:16) {#if $options.target.includes('32')}
 function create_if_block_9(ctx) {
 	let p;
 
@@ -6887,7 +6990,7 @@ function create_if_block_9(ctx) {
 		c() {
 			p = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("p");
 			p.textContent = "Note: You have selected the 32-bit or 64-bit mode. This maximizes device compatibility but limits the amount of memory the app can use. If you encounter crashes, try going into \"Other environments\" and using the 64-bit only mode instead.";
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, p, anchor);
@@ -6898,7 +7001,7 @@ function create_if_block_9(ctx) {
 	};
 }
 
-// (1252:4) <Section       accent="#FF661A"       reset={$options.target.startsWith('zip') ? null : () => {         resetOptions([           'app.packageName',           'app.windowMode',           'app.escapeBehavior'         ]);       }}     >
+// (1307:4) <Section       accent="#FF661A"       reset={$options.target.startsWith('zip') ? null : () => {         resetOptions([           'app.packageName',           'app.windowMode',           'app.escapeBehavior'         ]);       }}     >
 function create_default_slot_5(ctx) {
 	let div;
 	let show_if;
@@ -6910,7 +7013,7 @@ function create_default_slot_5(ctx) {
 		return create_else_block_1;
 	}
 
-	let current_block_type = select_block_type_1(ctx, [-1, -1, -1, -1, -1]);
+	let current_block_type = select_block_type_1(ctx, [-1, -1, -1, -1, -1, -1]);
 	let if_block = current_block_type(ctx);
 
 	return {
@@ -6942,7 +7045,7 @@ function create_default_slot_5(ctx) {
 	};
 }
 
-// (1560:0) {#if projectData.project.analysis.usesSteamworks}
+// (1615:0) {#if projectData.project.analysis.usesSteamworks}
 function create_if_block_2(ctx) {
 	let section;
 	let current;
@@ -6950,7 +7053,7 @@ function create_if_block_2(ctx) {
 	section = new _Section_svelte__WEBPACK_IMPORTED_MODULE_4__["default"]({
 			props: {
 				accent: "#136C9F",
-				reset: /*func_7*/ ctx[134],
+				reset: /*func_7*/ ctx[138],
 				$$slots: { default: [create_default_slot_4] },
 				$$scope: { ctx }
 			}
@@ -6967,7 +7070,7 @@ function create_if_block_2(ctx) {
 		p(ctx, dirty) {
 			const section_changes = {};
 
-			if (dirty[0] & /*$_, $options*/ 524290 | dirty[4] & /*$$scope*/ 1073741824) {
+			if (dirty[0] & /*$_, $options*/ 1048578 | dirty[5] & /*$$scope*/ 16) {
 				section_changes.$$scope = { dirty, ctx };
 			}
 
@@ -6988,28 +7091,28 @@ function create_if_block_2(ctx) {
 	};
 }
 
-// (1590:4) {:else}
+// (1645:4) {:else}
 function create_else_block(ctx) {
 	let p;
-	let t0_value = /*$_*/ ctx[19]('options.steamworksUnavailable') + "";
+	let t0_value = /*$_*/ ctx[20]('options.steamworksUnavailable') + "";
 	let t0;
 	let t1;
 	let ul;
 	let li0;
-	let t2_value = /*$_*/ ctx[19]('options.application-win64').replace('{type}', 'Electron') + "";
+	let t2_value = /*$_*/ ctx[20]('options.application-win64').replace('{type}', 'Electron') + "";
 	let t2;
 	let t3;
 	let li1;
-	let t4_value = /*$_*/ ctx[19]('options.application-mac').replace('{type}', 'Electron') + "";
+	let t4_value = /*$_*/ ctx[20]('options.application-mac').replace('{type}', 'Electron') + "";
 	let t4;
 	let t5;
 	let br;
 	let t6;
-	let t7_value = /*$_*/ ctx[19]('options.steamworksMacWarning') + "";
+	let t7_value = /*$_*/ ctx[20]('options.steamworksMacWarning') + "";
 	let t7;
 	let t8;
 	let li2;
-	let t9_value = /*$_*/ ctx[19]('options.application-linux64').replace('{type}', 'Electron') + "";
+	let t9_value = /*$_*/ ctx[20]('options.application-linux64').replace('{type}', 'Electron') + "";
 	let t9;
 
 	return {
@@ -7030,7 +7133,7 @@ function create_else_block(ctx) {
 			t8 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			li2 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("li");
 			t9 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t9_value);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, p, anchor);
@@ -7051,11 +7154,11 @@ function create_else_block(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(li2, t9);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*$_*/ 524288 && t0_value !== (t0_value = /*$_*/ ctx[19]('options.steamworksUnavailable') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
-			if (dirty[0] & /*$_*/ 524288 && t2_value !== (t2_value = /*$_*/ ctx[19]('options.application-win64').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
-			if (dirty[0] & /*$_*/ 524288 && t4_value !== (t4_value = /*$_*/ ctx[19]('options.application-mac').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t4, t4_value);
-			if (dirty[0] & /*$_*/ 524288 && t7_value !== (t7_value = /*$_*/ ctx[19]('options.steamworksMacWarning') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t7, t7_value);
-			if (dirty[0] & /*$_*/ 524288 && t9_value !== (t9_value = /*$_*/ ctx[19]('options.application-linux64').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t9, t9_value);
+			if (dirty[0] & /*$_*/ 1048576 && t0_value !== (t0_value = /*$_*/ ctx[20]('options.steamworksUnavailable') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if (dirty[0] & /*$_*/ 1048576 && t2_value !== (t2_value = /*$_*/ ctx[20]('options.application-win64').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
+			if (dirty[0] & /*$_*/ 1048576 && t4_value !== (t4_value = /*$_*/ ctx[20]('options.application-mac').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t4, t4_value);
+			if (dirty[0] & /*$_*/ 1048576 && t7_value !== (t7_value = /*$_*/ ctx[20]('options.steamworksMacWarning') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t7, t7_value);
+			if (dirty[0] & /*$_*/ 1048576 && t9_value !== (t9_value = /*$_*/ ctx[20]('options.application-linux64').replace('{type}', 'Electron') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t9, t9_value);
 		},
 		d(detaching) {
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(p);
@@ -7065,31 +7168,31 @@ function create_else_block(ctx) {
 	};
 }
 
-// (1570:4) {#if ['electron-win64', 'electron-linux64', 'electron-mac'].includes($options.target)}
+// (1625:4) {#if ['electron-win64', 'electron-linux64', 'electron-mac'].includes($options.target)}
 function create_if_block_3(ctx) {
 	let p;
-	let t0_value = /*$_*/ ctx[19]('options.steamworksAvailable').replace('{n}', '480') + "";
+	let t0_value = /*$_*/ ctx[20]('options.steamworksAvailable').replace('{n}', '480') + "";
 	let t0;
 	let t1;
 	let label0;
-	let t2_value = /*$_*/ ctx[19]('options.steamworksAppId') + "";
+	let t2_value = /*$_*/ ctx[20]('options.steamworksAppId') + "";
 	let t2;
 	let t3;
 	let input;
 	let t4;
 	let label1;
-	let t5_value = /*$_*/ ctx[19]('options.steamworksOnError') + "";
+	let t5_value = /*$_*/ ctx[20]('options.steamworksOnError') + "";
 	let t5;
 	let t6;
 	let select;
 	let option0;
-	let t7_value = /*$_*/ ctx[19]('options.steamworksIgnore') + "";
+	let t7_value = /*$_*/ ctx[20]('options.steamworksIgnore') + "";
 	let t7;
 	let option1;
-	let t8_value = /*$_*/ ctx[19]('options.steamworksWarning') + "";
+	let t8_value = /*$_*/ ctx[20]('options.steamworksWarning') + "";
 	let t8;
 	let option2;
-	let t9_value = /*$_*/ ctx[19]('options.steamworksError') + "";
+	let t9_value = /*$_*/ ctx[20]('options.steamworksError') + "";
 	let t9;
 	let t10;
 	let if_block_anchor;
@@ -7120,19 +7223,19 @@ function create_if_block_3(ctx) {
 			t10 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			if (if_block) if_block.c();
 			if_block_anchor = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["empty"])();
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input, "pattern", "\\d+");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input, "minlength", "1");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input, "class", "svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(input, "class", "svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label0, "class", "option svelte-p1bfed");
 			option0.__value = "ignore";
 			option0.value = option0.__value;
 			option1.__value = "warning";
 			option1.value = option1.__value;
 			option2.__value = "error";
 			option2.value = option2.__value;
-			if (/*$options*/ ctx[1].steamworks.onError === void 0) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["add_render_callback"])(() => /*select_change_handler_2*/ ctx[133].call(select));
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label1, "class", "option svelte-gmiihq");
+			if (/*$options*/ ctx[1].steamworks.onError === void 0) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["add_render_callback"])(() => /*select_change_handler_2*/ ctx[137].call(select));
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(label1, "class", "option svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, p, anchor);
@@ -7161,25 +7264,25 @@ function create_if_block_3(ctx) {
 
 			if (!mounted) {
 				dispose = [
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input, "input", /*input_input_handler_1*/ ctx[132]),
-					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(select, "change", /*select_change_handler_2*/ ctx[133])
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(input, "input", /*input_input_handler_1*/ ctx[136]),
+					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["listen"])(select, "change", /*select_change_handler_2*/ ctx[137])
 				];
 
 				mounted = true;
 			}
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*$_*/ 524288 && t0_value !== (t0_value = /*$_*/ ctx[19]('options.steamworksAvailable').replace('{n}', '480') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
-			if (dirty[0] & /*$_*/ 524288 && t2_value !== (t2_value = /*$_*/ ctx[19]('options.steamworksAppId') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
+			if (dirty[0] & /*$_*/ 1048576 && t0_value !== (t0_value = /*$_*/ ctx[20]('options.steamworksAvailable').replace('{n}', '480') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if (dirty[0] & /*$_*/ 1048576 && t2_value !== (t2_value = /*$_*/ ctx[20]('options.steamworksAppId') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t2, t2_value);
 
 			if (dirty[0] & /*$options*/ 2 && input.value !== /*$options*/ ctx[1].steamworks.appId) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_input_value"])(input, /*$options*/ ctx[1].steamworks.appId);
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t5_value !== (t5_value = /*$_*/ ctx[19]('options.steamworksOnError') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t5, t5_value);
-			if (dirty[0] & /*$_*/ 524288 && t7_value !== (t7_value = /*$_*/ ctx[19]('options.steamworksIgnore') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t7, t7_value);
-			if (dirty[0] & /*$_*/ 524288 && t8_value !== (t8_value = /*$_*/ ctx[19]('options.steamworksWarning') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t8, t8_value);
-			if (dirty[0] & /*$_*/ 524288 && t9_value !== (t9_value = /*$_*/ ctx[19]('options.steamworksError') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t9, t9_value);
+			if (dirty[0] & /*$_*/ 1048576 && t5_value !== (t5_value = /*$_*/ ctx[20]('options.steamworksOnError') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t5, t5_value);
+			if (dirty[0] & /*$_*/ 1048576 && t7_value !== (t7_value = /*$_*/ ctx[20]('options.steamworksIgnore') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t7, t7_value);
+			if (dirty[0] & /*$_*/ 1048576 && t8_value !== (t8_value = /*$_*/ ctx[20]('options.steamworksWarning') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t8, t8_value);
+			if (dirty[0] & /*$_*/ 1048576 && t9_value !== (t9_value = /*$_*/ ctx[20]('options.steamworksError') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t9, t9_value);
 
 			if (dirty[0] & /*$options*/ 2) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["select_option"])(select, /*$options*/ ctx[1].steamworks.onError);
@@ -7213,24 +7316,24 @@ function create_if_block_3(ctx) {
 	};
 }
 
-// (1585:6) {#if $options.target === 'electron-mac'}
+// (1640:6) {#if $options.target === 'electron-mac'}
 function create_if_block_4(ctx) {
 	let p;
-	let t_value = /*$_*/ ctx[19]('options.steamworksMacWarning') + "";
+	let t_value = /*$_*/ ctx[20]('options.steamworksMacWarning') + "";
 	let t;
 
 	return {
 		c() {
 			p = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("p");
 			t = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t_value);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "warning svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "warning svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, p, anchor);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(p, t);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*$_*/ 524288 && t_value !== (t_value = /*$_*/ ctx[19]('options.steamworksMacWarning') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, t_value);
+			if (dirty[0] & /*$_*/ 1048576 && t_value !== (t_value = /*$_*/ ctx[20]('options.steamworksMacWarning') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, t_value);
 		},
 		d(detaching) {
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(p);
@@ -7238,17 +7341,17 @@ function create_if_block_4(ctx) {
 	};
 }
 
-// (1561:2) <Section     accent="#136C9F"     reset={() => {       resetOptions([         'steamworks'       ]);     }}   >
+// (1616:2) <Section     accent="#136C9F"     reset={() => {       resetOptions([         'steamworks'       ]);     }}   >
 function create_default_slot_4(ctx) {
 	let h2;
-	let t0_value = /*$_*/ ctx[19]('options.steamworksExtension') + "";
+	let t0_value = /*$_*/ ctx[20]('options.steamworksExtension') + "";
 	let t0;
 	let t1;
 	let show_if;
 	let t2;
 	let p;
 	let a;
-	let t3_value = /*$_*/ ctx[19]('options.steamworksDocumentation') + "";
+	let t3_value = /*$_*/ ctx[20]('options.steamworksDocumentation') + "";
 	let t3;
 
 	function select_block_type_9(ctx, dirty) {
@@ -7258,7 +7361,7 @@ function create_default_slot_4(ctx) {
 		return create_else_block;
 	}
 
-	let current_block_type = select_block_type_9(ctx, [-1, -1, -1, -1, -1]);
+	let current_block_type = select_block_type_9(ctx, [-1, -1, -1, -1, -1, -1]);
 	let if_block = current_block_type(ctx);
 
 	return {
@@ -7272,7 +7375,7 @@ function create_default_slot_4(ctx) {
 			a = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("a");
 			t3 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t3_value);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(a, "href", "https://extensions.turbowarp.org/steamworks");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, h2, anchor);
@@ -7285,7 +7388,7 @@ function create_default_slot_4(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(a, t3);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*$_*/ 524288 && t0_value !== (t0_value = /*$_*/ ctx[19]('options.steamworksExtension') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
+			if (dirty[0] & /*$_*/ 1048576 && t0_value !== (t0_value = /*$_*/ ctx[20]('options.steamworksExtension') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t0, t0_value);
 
 			if (current_block_type === (current_block_type = select_block_type_9(ctx, dirty)) && if_block) {
 				if_block.p(ctx, dirty);
@@ -7299,7 +7402,7 @@ function create_default_slot_4(ctx) {
 				}
 			}
 
-			if (dirty[0] & /*$_*/ 524288 && t3_value !== (t3_value = /*$_*/ ctx[19]('options.steamworksDocumentation') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t3, t3_value);
+			if (dirty[0] & /*$_*/ 1048576 && t3_value !== (t3_value = /*$_*/ ctx[20]('options.steamworksDocumentation') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t3, t3_value);
 		},
 		d(detaching) {
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(h2);
@@ -7311,7 +7414,7 @@ function create_default_slot_4(ctx) {
 	};
 }
 
-// (1610:2) <DropArea on:drop={(e) => importOptionsFromDataTransfer(e.detail)}>
+// (1665:2) <DropArea on:drop={(e) => importOptionsFromDataTransfer(e.detail)}>
 function create_default_slot_3(ctx) {
 	let div3;
 	let div0;
@@ -7327,29 +7430,29 @@ function create_default_slot_3(ctx) {
 	button0 = new _p4_Button_svelte__WEBPACK_IMPORTED_MODULE_5__["default"]({
 			props: {
 				secondary: true,
-				text: /*$_*/ ctx[19]('options.export')
+				text: /*$_*/ ctx[20]('options.export')
 			}
 		});
 
-	button0.$on("click", /*exportOptions*/ ctx[36]);
+	button0.$on("click", /*exportOptions*/ ctx[37]);
 
 	button1 = new _p4_Button_svelte__WEBPACK_IMPORTED_MODULE_5__["default"]({
 			props: {
 				secondary: true,
-				text: /*$_*/ ctx[19]('options.import')
+				text: /*$_*/ ctx[20]('options.import')
 			}
 		});
 
-	button1.$on("click", /*importOptions*/ ctx[37]);
+	button1.$on("click", /*importOptions*/ ctx[38]);
 
 	button2 = new _p4_Button_svelte__WEBPACK_IMPORTED_MODULE_5__["default"]({
 			props: {
 				dangerous: true,
-				text: /*$_*/ ctx[19]('options.resetAll')
+				text: /*$_*/ ctx[20]('options.resetAll')
 			}
 		});
 
-	button2.$on("click", /*resetAll*/ ctx[35]);
+	button2.$on("click", /*resetAll*/ ctx[36]);
 
 	return {
 		c() {
@@ -7362,10 +7465,10 @@ function create_default_slot_3(ctx) {
 			t1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			div2 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["create_component"])(button2.$$.fragment);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "button svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div1, "class", "button svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "side-buttons svelte-gmiihq");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div3, "class", "buttons svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "button svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div1, "class", "button svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "side-buttons svelte-p1bfed");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div3, "class", "buttons svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div3, anchor);
@@ -7381,13 +7484,13 @@ function create_default_slot_3(ctx) {
 		},
 		p(ctx, dirty) {
 			const button0_changes = {};
-			if (dirty[0] & /*$_*/ 524288) button0_changes.text = /*$_*/ ctx[19]('options.export');
+			if (dirty[0] & /*$_*/ 1048576) button0_changes.text = /*$_*/ ctx[20]('options.export');
 			button0.$set(button0_changes);
 			const button1_changes = {};
-			if (dirty[0] & /*$_*/ 524288) button1_changes.text = /*$_*/ ctx[19]('options.import');
+			if (dirty[0] & /*$_*/ 1048576) button1_changes.text = /*$_*/ ctx[20]('options.import');
 			button1.$set(button1_changes);
 			const button2_changes = {};
-			if (dirty[0] & /*$_*/ 524288) button2_changes.text = /*$_*/ ctx[19]('options.resetAll');
+			if (dirty[0] & /*$_*/ 1048576) button2_changes.text = /*$_*/ ctx[20]('options.resetAll');
 			button2.$set(button2_changes);
 		},
 		i(local) {
@@ -7412,7 +7515,7 @@ function create_default_slot_3(ctx) {
 	};
 }
 
-// (1609:0) <Section>
+// (1664:0) <Section>
 function create_default_slot_2(ctx) {
 	let droparea;
 	let current;
@@ -7424,7 +7527,7 @@ function create_default_slot_2(ctx) {
 			}
 		});
 
-	droparea.$on("drop", /*drop_handler*/ ctx[135]);
+	droparea.$on("drop", /*drop_handler*/ ctx[139]);
 
 	return {
 		c() {
@@ -7437,7 +7540,7 @@ function create_default_slot_2(ctx) {
 		p(ctx, dirty) {
 			const droparea_changes = {};
 
-			if (dirty[0] & /*$_*/ 524288 | dirty[4] & /*$$scope*/ 1073741824) {
+			if (dirty[0] & /*$_*/ 1048576 | dirty[5] & /*$$scope*/ 16) {
 				droparea_changes.$$scope = { dirty, ctx };
 			}
 
@@ -7458,7 +7561,7 @@ function create_default_slot_2(ctx) {
 	};
 }
 
-// (1625:0) <Section>
+// (1680:0) <Section>
 function create_default_slot_1(ctx) {
 	let div2;
 	let div0;
@@ -7469,19 +7572,19 @@ function create_default_slot_1(ctx) {
 	let current;
 
 	button0 = new _p4_Button_svelte__WEBPACK_IMPORTED_MODULE_5__["default"]({
-			props: { text: /*$_*/ ctx[19]('options.package') }
+			props: { text: /*$_*/ ctx[20]('options.package') }
 		});
 
-	button0.$on("click", /*pack*/ ctx[29]);
+	button0.$on("click", /*pack*/ ctx[30]);
 
 	button1 = new _p4_Button_svelte__WEBPACK_IMPORTED_MODULE_5__["default"]({
 			props: {
 				secondary: true,
-				text: /*$_*/ ctx[19]('options.preview')
+				text: /*$_*/ ctx[20]('options.preview')
 			}
 		});
 
-	button1.$on("click", /*preview*/ ctx[33]);
+	button1.$on("click", /*preview*/ ctx[34]);
 
 	return {
 		c() {
@@ -7491,9 +7594,9 @@ function create_default_slot_1(ctx) {
 			t = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			div1 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("div");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["create_component"])(button1.$$.fragment);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "button svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div0, "class", "button svelte-p1bfed");
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div1, "clas", "button");
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "buttons svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(div2, "class", "buttons svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, div2, anchor);
@@ -7506,10 +7609,10 @@ function create_default_slot_1(ctx) {
 		},
 		p(ctx, dirty) {
 			const button0_changes = {};
-			if (dirty[0] & /*$_*/ 524288) button0_changes.text = /*$_*/ ctx[19]('options.package');
+			if (dirty[0] & /*$_*/ 1048576) button0_changes.text = /*$_*/ ctx[20]('options.package');
 			button0.$set(button0_changes);
 			const button1_changes = {};
-			if (dirty[0] & /*$_*/ 524288) button1_changes.text = /*$_*/ ctx[19]('options.preview');
+			if (dirty[0] & /*$_*/ 1048576) button1_changes.text = /*$_*/ ctx[20]('options.preview');
 			button1.$set(button1_changes);
 		},
 		i(local) {
@@ -7531,7 +7634,7 @@ function create_default_slot_1(ctx) {
 	};
 }
 
-// (1643:29) 
+// (1698:29) 
 function create_if_block_1(ctx) {
 	let section;
 	let current;
@@ -7555,7 +7658,7 @@ function create_if_block_1(ctx) {
 		p(ctx, dirty) {
 			const section_changes = {};
 
-			if (dirty[0] & /*$_*/ 524288 | dirty[4] & /*$$scope*/ 1073741824) {
+			if (dirty[0] & /*$_*/ 1048576 | dirty[5] & /*$$scope*/ 16) {
 				section_changes.$$scope = { dirty, ctx };
 			}
 
@@ -7576,7 +7679,7 @@ function create_if_block_1(ctx) {
 	};
 }
 
-// (1637:0) {#if result}
+// (1692:0) {#if result}
 function create_if_block(ctx) {
 	let downloads;
 	let current;
@@ -7619,24 +7722,24 @@ function create_if_block(ctx) {
 	};
 }
 
-// (1644:2) <Section caption>
+// (1699:2) <Section caption>
 function create_default_slot(ctx) {
 	let p;
-	let t_value = /*$_*/ ctx[19]('options.downloadsWillAppearHere') + "";
+	let t_value = /*$_*/ ctx[20]('options.downloadsWillAppearHere') + "";
 	let t;
 
 	return {
 		c() {
 			p = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["element"])("p");
 			t = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["text"])(t_value);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-gmiihq");
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["attr"])(p, "class", "svelte-p1bfed");
 		},
 		m(target, anchor) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, p, anchor);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["append"])(p, t);
 		},
 		p(ctx, dirty) {
-			if (dirty[0] & /*$_*/ 524288 && t_value !== (t_value = /*$_*/ ctx[19]('options.downloadsWillAppearHere') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, t_value);
+			if (dirty[0] & /*$_*/ 1048576 && t_value !== (t_value = /*$_*/ ctx[20]('options.downloadsWillAppearHere') + "")) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_data"])(t, t_value);
 		},
 		d(detaching) {
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(p);
@@ -7657,12 +7760,14 @@ function create_fragment(ctx) {
 	let t4;
 	let section5;
 	let t5;
+	let section6;
 	let t6;
 	let t7;
-	let section6;
 	let t8;
 	let section7;
 	let t9;
+	let section8;
+	let t10;
 	let current_block_type_index;
 	let if_block2;
 	let if_block2_anchor;
@@ -7670,55 +7775,63 @@ function create_fragment(ctx) {
 
 	section0 = new _Section_svelte__WEBPACK_IMPORTED_MODULE_4__["default"]({
 			props: {
-				accent: "#FFAB19",
-				reset: /*func*/ ctx[58],
-				$$slots: { default: [create_default_slot_11] },
+				accent: "#4C97FF",
+				$$slots: { default: [create_default_slot_12] },
 				$$scope: { ctx }
 			}
 		});
 
 	section1 = new _Section_svelte__WEBPACK_IMPORTED_MODULE_4__["default"]({
 			props: {
-				accent: "#9966FF",
-				reset: /*func_1*/ ctx[77],
-				$$slots: { default: [create_default_slot_10] },
+				accent: "#FFAB19",
+				reset: /*func*/ ctx[59],
+				$$slots: { default: [create_default_slot_11] },
 				$$scope: { ctx }
 			}
 		});
 
 	section2 = new _Section_svelte__WEBPACK_IMPORTED_MODULE_4__["default"]({
 			props: {
-				accent: "#4CBFE6",
-				reset: /*func_2*/ ctx[86],
-				$$slots: { default: [create_default_slot_9] },
+				accent: "#9966FF",
+				reset: /*func_1*/ ctx[78],
+				$$slots: { default: [create_default_slot_10] },
 				$$scope: { ctx }
 			}
 		});
 
 	section3 = new _Section_svelte__WEBPACK_IMPORTED_MODULE_4__["default"]({
 			props: {
-				accent: "#FF8C1A",
-				reset: /*cloudVariables*/ ctx[20].length === 0
-				? null
-				: /*func_3*/ ctx[92],
-				$$slots: { default: [create_default_slot_8] },
+				accent: "#4CBFE6",
+				reset: /*func_2*/ ctx[87],
+				$$slots: { default: [create_default_slot_9] },
 				$$scope: { ctx }
 			}
 		});
 
 	section4 = new _Section_svelte__WEBPACK_IMPORTED_MODULE_4__["default"]({
 			props: {
-				accent: "#FF6680",
-				reset: /*func_4*/ ctx[102],
-				$$slots: { default: [create_default_slot_7] },
+				accent: "#FF8C1A",
+				reset: /*cloudVariables*/ ctx[21].length === 0
+				? null
+				: /*func_3*/ ctx[93],
+				$$slots: { default: [create_default_slot_8] },
 				$$scope: { ctx }
 			}
 		});
 
 	section5 = new _Section_svelte__WEBPACK_IMPORTED_MODULE_4__["default"]({
 			props: {
+				accent: "#FF6680",
+				reset: /*func_4*/ ctx[106],
+				$$slots: { default: [create_default_slot_7] },
+				$$scope: { ctx }
+			}
+		});
+
+	section6 = new _Section_svelte__WEBPACK_IMPORTED_MODULE_4__["default"]({
+			props: {
 				accent: "#0FBD8C",
-				reset: /*func_5*/ ctx[122],
+				reset: /*func_5*/ ctx[126],
 				$$slots: { default: [create_default_slot_6] },
 				$$scope: { ctx }
 			}
@@ -7727,14 +7840,14 @@ function create_fragment(ctx) {
 	let if_block0 = /*$options*/ ctx[1].target !== 'html' && create_if_block_5(ctx);
 	let if_block1 = /*projectData*/ ctx[0].project.analysis.usesSteamworks && create_if_block_2(ctx);
 
-	section6 = new _Section_svelte__WEBPACK_IMPORTED_MODULE_4__["default"]({
+	section7 = new _Section_svelte__WEBPACK_IMPORTED_MODULE_4__["default"]({
 			props: {
 				$$slots: { default: [create_default_slot_2] },
 				$$scope: { ctx }
 			}
 		});
 
-	section7 = new _Section_svelte__WEBPACK_IMPORTED_MODULE_4__["default"]({
+	section8 = new _Section_svelte__WEBPACK_IMPORTED_MODULE_4__["default"]({
 			props: {
 				$$slots: { default: [create_default_slot_1] },
 				$$scope: { ctx }
@@ -7750,7 +7863,7 @@ function create_fragment(ctx) {
 		return -1;
 	}
 
-	if (~(current_block_type_index = select_block_type_10(ctx, [-1, -1, -1, -1, -1]))) {
+	if (~(current_block_type_index = select_block_type_10(ctx, [-1, -1, -1, -1, -1, -1]))) {
 		if_block2 = if_blocks[current_block_type_index] = if_block_creators[current_block_type_index](ctx);
 	}
 
@@ -7768,14 +7881,16 @@ function create_fragment(ctx) {
 			t4 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["create_component"])(section5.$$.fragment);
 			t5 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
-			if (if_block0) if_block0.c();
-			t6 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
-			if (if_block1) if_block1.c();
-			t7 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["create_component"])(section6.$$.fragment);
+			t6 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
+			if (if_block0) if_block0.c();
+			t7 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
+			if (if_block1) if_block1.c();
 			t8 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["create_component"])(section7.$$.fragment);
 			t9 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["create_component"])(section8.$$.fragment);
+			t10 = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["space"])();
 			if (if_block2) if_block2.c();
 			if_block2_anchor = Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["empty"])();
 		},
@@ -7792,14 +7907,16 @@ function create_fragment(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, t4, anchor);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["mount_component"])(section5, target, anchor);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, t5, anchor);
-			if (if_block0) if_block0.m(target, anchor);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, t6, anchor);
-			if (if_block1) if_block1.m(target, anchor);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, t7, anchor);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["mount_component"])(section6, target, anchor);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, t6, anchor);
+			if (if_block0) if_block0.m(target, anchor);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, t7, anchor);
+			if (if_block1) if_block1.m(target, anchor);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, t8, anchor);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["mount_component"])(section7, target, anchor);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, t9, anchor);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["mount_component"])(section8, target, anchor);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["insert"])(target, t10, anchor);
 
 			if (~current_block_type_index) {
 				if_blocks[current_block_type_index].m(target, anchor);
@@ -7811,48 +7928,55 @@ function create_fragment(ctx) {
 		p(ctx, dirty) {
 			const section0_changes = {};
 
-			if (dirty[0] & /*$_, $options, defaultOptions*/ 524354 | dirty[4] & /*$$scope*/ 1073741824) {
+			if (dirty[0] & /*$_*/ 1048576 | dirty[5] & /*$$scope*/ 16) {
 				section0_changes.$$scope = { dirty, ctx };
 			}
 
 			section0.$set(section0_changes);
 			const section1_changes = {};
-			if (dirty[0] & /*$icon, $loadingScreenImage*/ 20) section1_changes.reset = /*func_1*/ ctx[77];
 
-			if (dirty[0] & /*$_, $options, $loadingScreenImage, $icon*/ 524310 | dirty[4] & /*$$scope*/ 1073741824) {
+			if (dirty[0] & /*$_, $options, defaultOptions*/ 1048642 | dirty[5] & /*$$scope*/ 16) {
 				section1_changes.$$scope = { dirty, ctx };
 			}
 
 			section1.$set(section1_changes);
 			const section2_changes = {};
-			if (dirty[0] & /*$customCursorIcon*/ 8) section2_changes.reset = /*func_2*/ ctx[86];
+			if (dirty[0] & /*$icon, $loadingScreenImage*/ 20) section2_changes.reset = /*func_1*/ ctx[78];
 
-			if (dirty[0] & /*$_, $options, $customCursorIcon*/ 524298 | dirty[4] & /*$$scope*/ 1073741824) {
+			if (dirty[0] & /*$_, $options, $loadingScreenImage, $icon*/ 1048598 | dirty[5] & /*$$scope*/ 16) {
 				section2_changes.$$scope = { dirty, ctx };
 			}
 
 			section2.$set(section2_changes);
 			const section3_changes = {};
+			if (dirty[0] & /*$customCursorIcon*/ 8) section3_changes.reset = /*func_2*/ ctx[87];
 
-			if (dirty[0] & /*$_, $options*/ 524290 | dirty[4] & /*$$scope*/ 1073741824) {
+			if (dirty[0] & /*$_, $options, $customCursorIcon*/ 1048586 | dirty[5] & /*$$scope*/ 16) {
 				section3_changes.$$scope = { dirty, ctx };
 			}
 
 			section3.$set(section3_changes);
 			const section4_changes = {};
 
-			if (dirty[0] & /*$_, $options, defaultOptions*/ 524354 | dirty[4] & /*$$scope*/ 1073741824) {
+			if (dirty[0] & /*$_, $options*/ 1048578 | dirty[5] & /*$$scope*/ 16) {
 				section4_changes.$$scope = { dirty, ctx };
 			}
 
 			section4.$set(section4_changes);
 			const section5_changes = {};
 
-			if (dirty[0] & /*$options, $_*/ 524290 | dirty[4] & /*$$scope*/ 1073741824) {
+			if (dirty[0] & /*advancedOptionsOpen, $_, $options, defaultOptions*/ 1048898 | dirty[5] & /*$$scope*/ 16) {
 				section5_changes.$$scope = { dirty, ctx };
 			}
 
 			section5.$set(section5_changes);
+			const section6_changes = {};
+
+			if (dirty[0] & /*$options, $_*/ 1048578 | dirty[5] & /*$$scope*/ 16) {
+				section6_changes.$$scope = { dirty, ctx };
+			}
+
+			section6.$set(section6_changes);
 
 			if (/*$options*/ ctx[1].target !== 'html') {
 				if (if_block0) {
@@ -7865,7 +7989,7 @@ function create_fragment(ctx) {
 					if_block0 = create_if_block_5(ctx);
 					if_block0.c();
 					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_in"])(if_block0, 1);
-					if_block0.m(t6.parentNode, t6);
+					if_block0.m(t7.parentNode, t7);
 				}
 			} else if (if_block0) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["group_outros"])();
@@ -7888,7 +8012,7 @@ function create_fragment(ctx) {
 					if_block1 = create_if_block_2(ctx);
 					if_block1.c();
 					Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_in"])(if_block1, 1);
-					if_block1.m(t7.parentNode, t7);
+					if_block1.m(t8.parentNode, t8);
 				}
 			} else if (if_block1) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["group_outros"])();
@@ -7900,20 +8024,20 @@ function create_fragment(ctx) {
 				Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["check_outros"])();
 			}
 
-			const section6_changes = {};
-
-			if (dirty[0] & /*$_*/ 524288 | dirty[4] & /*$$scope*/ 1073741824) {
-				section6_changes.$$scope = { dirty, ctx };
-			}
-
-			section6.$set(section6_changes);
 			const section7_changes = {};
 
-			if (dirty[0] & /*$_*/ 524288 | dirty[4] & /*$$scope*/ 1073741824) {
+			if (dirty[0] & /*$_*/ 1048576 | dirty[5] & /*$$scope*/ 16) {
 				section7_changes.$$scope = { dirty, ctx };
 			}
 
 			section7.$set(section7_changes);
+			const section8_changes = {};
+
+			if (dirty[0] & /*$_*/ 1048576 | dirty[5] & /*$$scope*/ 16) {
+				section8_changes.$$scope = { dirty, ctx };
+			}
+
+			section8.$set(section8_changes);
 			let previous_block_index = current_block_type_index;
 			current_block_type_index = select_block_type_10(ctx, dirty);
 
@@ -7957,10 +8081,11 @@ function create_fragment(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_in"])(section3.$$.fragment, local);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_in"])(section4.$$.fragment, local);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_in"])(section5.$$.fragment, local);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_in"])(section6.$$.fragment, local);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_in"])(if_block0);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_in"])(if_block1);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_in"])(section6.$$.fragment, local);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_in"])(section7.$$.fragment, local);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_in"])(section8.$$.fragment, local);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_in"])(if_block2);
 			current = true;
 		},
@@ -7971,10 +8096,11 @@ function create_fragment(ctx) {
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_out"])(section3.$$.fragment, local);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_out"])(section4.$$.fragment, local);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_out"])(section5.$$.fragment, local);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_out"])(section6.$$.fragment, local);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_out"])(if_block0);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_out"])(if_block1);
-			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_out"])(section6.$$.fragment, local);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_out"])(section7.$$.fragment, local);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_out"])(section8.$$.fragment, local);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["transition_out"])(if_block2);
 			current = false;
 		},
@@ -7991,14 +8117,16 @@ function create_fragment(ctx) {
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(t4);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["destroy_component"])(section5, detaching);
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(t5);
-			if (if_block0) if_block0.d(detaching);
-			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(t6);
-			if (if_block1) if_block1.d(detaching);
-			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(t7);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["destroy_component"])(section6, detaching);
+			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(t6);
+			if (if_block0) if_block0.d(detaching);
+			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(t7);
+			if (if_block1) if_block1.d(detaching);
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(t8);
 			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["destroy_component"])(section7, detaching);
 			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(t9);
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["destroy_component"])(section8, detaching);
+			if (detaching) Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["detach"])(t10);
 
 			if (~current_block_type_index) {
 				if_blocks[current_block_type_index].d(detaching);
@@ -8037,8 +8165,8 @@ function instance($$self, $$props, $$invalidate) {
 	let $customCursorIcon;
 	let $icon;
 	let $progress;
-	Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["component_subscribe"])($$self, _stores__WEBPACK_IMPORTED_MODULE_13__["error"], $$value => $$invalidate(140, $error = $$value));
-	Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["component_subscribe"])($$self, _locales___WEBPACK_IMPORTED_MODULE_2__["_"], $$value => $$invalidate(19, $_ = $$value));
+	Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["component_subscribe"])($$self, _stores__WEBPACK_IMPORTED_MODULE_13__["error"], $$value => $$invalidate(144, $error = $$value));
+	Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["component_subscribe"])($$self, _locales___WEBPACK_IMPORTED_MODULE_2__["_"], $$value => $$invalidate(20, $_ = $$value));
 	Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["component_subscribe"])($$self, _stores__WEBPACK_IMPORTED_MODULE_13__["progress"], $$value => $$invalidate(5, $progress = $$value));
 	let { projectData } = $$props;
 	let { title } = $$props;
@@ -8072,7 +8200,7 @@ function instance($$self, $$props, $$invalidate) {
 	let previewer = null;
 
 	const resetResult = () => {
-		$$invalidate(42, previewer = null);
+		$$invalidate(43, previewer = null);
 
 		if (result) {
 			URL.revokeObjectURL(result.url);
@@ -8106,7 +8234,18 @@ function instance($$self, $$props, $$invalidate) {
 		'node-cli-linux64'
 	].includes($options.target);
 
-	const advancedOptionsInitiallyOpen = $options.compiler.enabled !== defaultOptions.compiler.enabled || $options.compiler.warpTimer !== defaultOptions.compiler.warpTimer || $options.extensions.length !== 0 || $options.bakeExtensions !== defaultOptions.bakeExtensions || $options.custom.css !== '' || $options.custom.js !== '' || $options.projectId !== defaultOptions.projectId || $options.packagedRuntime !== defaultOptions.packagedRuntime || $options.maxTextureDimension !== defaultOptions.maxTextureDimension;
+	const advancedOptionsInitiallyOpen = $options.compiler.enabled !== defaultOptions.compiler.enabled || $options.compiler.warpTimer !== defaultOptions.compiler.warpTimer || $options.compiler.compiledProject !== defaultOptions.compiler.compiledProject || $options.extensions.length !== 0 || $options.bakeExtensions !== defaultOptions.bakeExtensions || $options.custom.css !== '' || $options.custom.js !== '' || $options.projectId !== defaultOptions.projectId || $options.packagedRuntime !== defaultOptions.packagedRuntime || $options.maxTextureDimension !== defaultOptions.maxTextureDimension;
+	let advancedOptionsOpen = advancedOptionsInitiallyOpen;
+
+	const scrollToCompiledProjectOption = async () => {
+		$$invalidate(8, advancedOptionsOpen = true);
+		await Object(svelte__WEBPACK_IMPORTED_MODULE_1__["tick"])();
+		const option = document.getElementById('compiled-project-option');
+
+		if (option) {
+			option.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		}
+	};
 
 	const automaticallyCenterCursor = () => {
 		const icon = $customCursorIcon;
@@ -8222,8 +8361,8 @@ function instance($$self, $$props, $$invalidate) {
 	function addLog(level, msg) {
 		try {
 			const time = new Date().toLocaleTimeString();
-			$$invalidate(18, logs = [...logs, { level, msg: String(msg), time }]);
-			if (logs.length > MAX_LOGS) $$invalidate(18, logs = logs.slice(logs.length - MAX_LOGS));
+			$$invalidate(19, logs = [...logs, { level, msg: String(msg), time }]);
+			if (logs.length > MAX_LOGS) $$invalidate(19, logs = logs.slice(logs.length - MAX_LOGS));
 
 			// keep log scrolled to bottom by briefly yielding to event loop
 			setTimeout(
@@ -8248,13 +8387,13 @@ function instance($$self, $$props, $$invalidate) {
 	}
 
 	const packAndUpload = async () => {
-		$$invalidate(9, uploadError = '');
+		$$invalidate(10, uploadError = '');
 		uploadedFileUrl = '';
-		$$invalidate(10, createdRepoUrl = '');
+		$$invalidate(11, createdRepoUrl = '');
 		addLog('info', '开始打包并上传流程');
 
 		if (!oauthUserInfo) {
-			$$invalidate(9, uploadError = '请先使用 GitHub OAuth 登录');
+			$$invalidate(10, uploadError = '请先使用 GitHub OAuth 登录');
 			addLog('error', uploadError);
 			return;
 		}
@@ -8263,12 +8402,12 @@ function instance($$self, $$props, $$invalidate) {
 		addLog('info', `Token available: ${!!githubToken}, User: ${githubUser}`);
 
 		if (!githubToken) {
-			$$invalidate(9, uploadError = 'GitHub token 不可用，请重新登录');
+			$$invalidate(10, uploadError = 'GitHub token 不可用，请重新登录');
 			addLog('error', uploadError);
 			return;
 		}
 
-		$$invalidate(8, uploadInProgress = true);
+		$$invalidate(9, uploadInProgress = true);
 
 		try {
 			// run packager to produce a blob
@@ -8292,17 +8431,17 @@ function instance($$self, $$props, $$invalidate) {
 				}
 			);
 
-			$$invalidate(10, createdRepoUrl = res.createdRepoUrl);
-			$$invalidate(11, releaseUrl = res.releaseUrl || '');
-			$$invalidate(12, assetName = res.assetName || '');
-			$$invalidate(13, assetDownloadUrl = res.assetDownloadUrl || '');
-			$$invalidate(14, showReleaseModal = true);
+			$$invalidate(11, createdRepoUrl = res.createdRepoUrl);
+			$$invalidate(12, releaseUrl = res.releaseUrl || '');
+			$$invalidate(13, assetName = res.assetName || '');
+			$$invalidate(14, assetDownloadUrl = res.assetDownloadUrl || '');
+			$$invalidate(15, showReleaseModal = true);
 			addLog('info', `上传并构建完成: ${assetName || assetDownloadUrl}`);
 		} catch(e) {
-			$$invalidate(9, uploadError = e.message || '上传失败');
+			$$invalidate(10, uploadError = e.message || '上传失败');
 			addLog('error', uploadError);
 		} finally {
-			$$invalidate(8, uploadInProgress = false);
+			$$invalidate(9, uploadInProgress = false);
 		}
 	};
 
@@ -8332,14 +8471,14 @@ function instance($$self, $$props, $$invalidate) {
 
 			alert('仓库已删除');
 			addLog('info', `仓库已删除: ${createdRepoUrl}`);
-			$$invalidate(10, createdRepoUrl = '');
-			$$invalidate(11, releaseUrl = '');
-			$$invalidate(13, assetDownloadUrl = '');
-			$$invalidate(12, assetName = '');
-			$$invalidate(14, showReleaseModal = false);
+			$$invalidate(11, createdRepoUrl = '');
+			$$invalidate(12, releaseUrl = '');
+			$$invalidate(14, assetDownloadUrl = '');
+			$$invalidate(13, assetName = '');
+			$$invalidate(15, showReleaseModal = false);
 		} catch(e) {
 			const errorMsg = e.message || '删除失败';
-			$$invalidate(9, uploadError = `删除仓库失败: ${errorMsg}`);
+			$$invalidate(10, uploadError = `删除仓库失败: ${errorMsg}`);
 			addLog('error', uploadError);
 
 			// Provide helpful guidance for common errors
@@ -8353,7 +8492,7 @@ function instance($$self, $$props, $$invalidate) {
 
 	const preview = async () => {
 		resetResult();
-		$$invalidate(42, previewer = new _preview__WEBPACK_IMPORTED_MODULE_14__["default"]());
+		$$invalidate(43, previewer = new _preview__WEBPACK_IMPORTED_MODULE_14__["default"]());
 		const task = new _task__WEBPACK_IMPORTED_MODULE_17__["default"]();
 		const optionsClone = Object(_deep_clone__WEBPACK_IMPORTED_MODULE_15__["default"])($options);
 		optionsClone.target = 'html';
@@ -8445,8 +8584,8 @@ function instance($$self, $$props, $$invalidate) {
 	};
 
 	async function startOAuth() {
-		$$invalidate(16, oauthError = '');
-		$$invalidate(15, oauthInProgress = true);
+		$$invalidate(17, oauthError = '');
+		$$invalidate(16, oauthInProgress = true);
 
 		try {
 			const codeVerifier = generateRandomString(128);
@@ -8462,8 +8601,8 @@ function instance($$self, $$props, $$invalidate) {
 			authUrl.searchParams.append('state', generateRandomString(32));
 			window.location.href = authUrl.toString();
 		} catch(e) {
-			$$invalidate(16, oauthError = '启动认证失败: ' + e.message);
-			$$invalidate(15, oauthInProgress = false);
+			$$invalidate(17, oauthError = '启动认证失败: ' + e.message);
+			$$invalidate(16, oauthInProgress = false);
 		}
 	}
 
@@ -8471,13 +8610,13 @@ function instance($$self, $$props, $$invalidate) {
 		const params = new URLSearchParams(window.location.search);
 		const code = params.get('code');
 		if (!code) return;
-		$$invalidate(15, oauthInProgress = true);
+		$$invalidate(16, oauthInProgress = true);
 		const codeVerifier = sessionStorage.getItem('code_verifier');
 		const clientId = sessionStorage.getItem('client_id');
 
 		if (!codeVerifier || !clientId) {
-			$$invalidate(16, oauthError = '认证参数丢失，请重新登录');
-			$$invalidate(15, oauthInProgress = false);
+			$$invalidate(17, oauthError = '认证参数丢失，请重新登录');
+			$$invalidate(16, oauthInProgress = false);
 			return;
 		}
 
@@ -8549,13 +8688,13 @@ function instance($$self, $$props, $$invalidate) {
 			githubUser = user.login;
 
 			githubToken = token;
-			$$invalidate(17, oauthUserInfo = { user, email, token });
+			$$invalidate(18, oauthUserInfo = { user, email, token });
 			oauthToken = token;
 			window.history.replaceState({}, '', window.location.pathname);
 		} catch(e) {
-			$$invalidate(16, oauthError = '认证失败: ' + e.message);
+			$$invalidate(17, oauthError = '认证失败: ' + e.message);
 		} finally {
-			$$invalidate(15, oauthInProgress = false);
+			$$invalidate(16, oauthInProgress = false);
 		}
 	}
 
@@ -8567,9 +8706,9 @@ function instance($$self, $$props, $$invalidate) {
 		sessionStorage.removeItem('client_id');
 		githubUser = '';
 		githubToken = '';
-		$$invalidate(17, oauthUserInfo = null);
+		$$invalidate(18, oauthUserInfo = null);
 		oauthToken = '';
-		$$invalidate(16, oauthError = '');
+		$$invalidate(17, oauthError = '');
 	}
 
 	// Initialize OAuth on component mount
@@ -8887,6 +9026,17 @@ function instance($$self, $$props, $$invalidate) {
 		options.set($options);
 	}
 
+	function input2_change_handler_2() {
+		$options.compiler.compiledProject = this.checked;
+		options.set($options);
+	}
+
+	const change_handler_3 = () => {
+		if ($options.compiler.compiledProject) {
+			Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_store_value"])(options, $options.compiler.enabled = true, $options);
+		}
+	};
+
 	function customextensions_extensions_binding(value) {
 		if ($$self.$$.not_equal($options.extensions, value)) {
 			$options.extensions = value;
@@ -8894,7 +9044,7 @@ function instance($$self, $$props, $$invalidate) {
 		}
 	}
 
-	function input2_change_handler_2() {
+	function input3_change_handler_3() {
 		$options.bakeExtensions = this.checked;
 		options.set($options);
 	}
@@ -8909,19 +9059,24 @@ function instance($$self, $$props, $$invalidate) {
 		options.set($options);
 	}
 
-	function input3_input_handler() {
+	function input4_input_handler() {
 		$options.projectId = this.value;
 		options.set($options);
 	}
 
-	function input4_change_handler_2() {
+	function input5_change_handler_1() {
 		$options.packagedRuntime = this.checked;
 		options.set($options);
 	}
 
-	const change_handler_3 = e => {
+	const change_handler_4 = e => {
 		Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["set_store_value"])(options, $options.maxTextureDimension = defaultOptions.maxTextureDimension * (e.target.checked ? 2 : 1), $options);
 	};
+
+	function details_toggle_handler() {
+		advancedOptionsOpen = this.open;
+		$$invalidate(8, advancedOptionsOpen);
+	}
 
 	const func_4 = () => {
 		resetOptions([
@@ -8949,17 +9104,17 @@ function instance($$self, $$props, $$invalidate) {
 		options.set($options);
 	}
 
-	function input3_change_handler_3() {
+	function input3_change_handler_4() {
 		$options.target = this.__value;
 		options.set($options);
 	}
 
-	function input4_change_handler_3() {
+	function input4_change_handler_2() {
 		$options.target = this.__value;
 		options.set($options);
 	}
 
-	function input5_change_handler_1() {
+	function input5_change_handler_2() {
 		$options.target = this.__value;
 		options.set($options);
 	}
@@ -9039,7 +9194,7 @@ function instance($$self, $$props, $$invalidate) {
 	}
 
 	const click_handler = () => {
-		$$invalidate(18, logs = []);
+		$$invalidate(19, logs = []);
 	};
 
 	const click_handler_1 = () => {
@@ -9047,7 +9202,7 @@ function instance($$self, $$props, $$invalidate) {
 	};
 
 	const click_handler_2 = () => {
-		$$invalidate(14, showReleaseModal = false);
+		$$invalidate(15, showReleaseModal = false);
 	};
 
 	function input1_input_handler_2() {
@@ -9092,11 +9247,11 @@ function instance($$self, $$props, $$invalidate) {
 
 	$$self.$$set = $$props => {
 		if ('projectData' in $$props) $$invalidate(0, projectData = $$props.projectData);
-		if ('title' in $$props) $$invalidate(41, title = $$props.title);
+		if ('title' in $$props) $$invalidate(42, title = $$props.title);
 	};
 
 	$$self.$$.update = () => {
-		if ($$self.$$.dirty[0] & /*$progress*/ 32 | $$self.$$.dirty[1] & /*previewer*/ 2048) {
+		if ($$self.$$.dirty[0] & /*$progress*/ 32 | $$self.$$.dirty[1] & /*previewer*/ 4096) {
 			$: if (previewer) {
 				previewer.setProgress($progress.progress, $progress.text);
 			}
@@ -9119,7 +9274,7 @@ function instance($$self, $$props, $$invalidate) {
 		}
 
 		if ($$self.$$.dirty[0] & /*$options*/ 2) {
-			$: $$invalidate(41, title = $options.app.windowTitle);
+			$: $$invalidate(42, title = $options.app.windowTitle);
 		}
 	};
 
@@ -9132,6 +9287,7 @@ function instance($$self, $$props, $$invalidate) {
 		$progress,
 		defaultOptions,
 		result,
+		advancedOptionsOpen,
 		uploadInProgress,
 		uploadError,
 		createdRepoUrl,
@@ -9151,7 +9307,7 @@ function instance($$self, $$props, $$invalidate) {
 		customCursorIcon,
 		loadingScreenImage,
 		otherEnvironmentsInitiallyOpen,
-		advancedOptionsInitiallyOpen,
+		scrollToCompiledProjectOption,
 		automaticallyCenterCursor,
 		pack,
 		copyLogs,
@@ -9219,20 +9375,23 @@ function instance($$self, $$props, $$invalidate) {
 		func_3,
 		input0_change_handler_4,
 		input1_change_handler_4,
-		customextensions_extensions_binding,
 		input2_change_handler_2,
+		change_handler_3,
+		customextensions_extensions_binding,
+		input3_change_handler_3,
 		textarea0_input_handler,
 		textarea1_input_handler,
-		input3_input_handler,
-		input4_change_handler_2,
-		change_handler_3,
+		input4_input_handler,
+		input5_change_handler_1,
+		change_handler_4,
+		details_toggle_handler,
 		func_4,
 		input0_change_handler_5,
 		input1_change_handler_5,
 		input2_change_handler_3,
-		input3_change_handler_3,
-		input4_change_handler_3,
-		input5_change_handler_1,
+		input3_change_handler_4,
+		input4_change_handler_2,
+		input5_change_handler_2,
 		input6_change_handler_1,
 		input7_change_handler_1,
 		input8_change_handler_2,
@@ -9266,7 +9425,7 @@ function instance($$self, $$props, $$invalidate) {
 class PackagerOptions extends svelte_internal__WEBPACK_IMPORTED_MODULE_0__["SvelteComponent"] {
 	constructor(options) {
 		super();
-		Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["init"])(this, options, instance, create_fragment, svelte_internal__WEBPACK_IMPORTED_MODULE_0__["safe_not_equal"], { projectData: 0, title: 41 }, add_css, [-1, -1, -1, -1, -1]);
+		Object(svelte_internal__WEBPACK_IMPORTED_MODULE_0__["init"])(this, options, instance, create_fragment, svelte_internal__WEBPACK_IMPORTED_MODULE_0__["safe_not_equal"], { projectData: 0, title: 42 }, add_css, [-1, -1, -1, -1, -1, -1]);
 	}
 }
 
@@ -9289,7 +9448,7 @@ __webpack_require__.r(__webpack_exports__);
  * @param {ArrayBuffer} arrayBuffer
  * @returns {string}
  */
-const encode = (arrayBuffer) => {
+const encode = arrayBuffer => {
   let string = '';
   const data = new Uint8Array(arrayBuffer);
   for (let i = 0; i < data.byteLength; i++) {
@@ -9302,7 +9461,7 @@ const encode = (arrayBuffer) => {
  * @param {string} string
  * @returns {ArrayBuffer}
  */
-const decode = (string) => {
+const decode = string => {
   const data = atob(string);
   const result = new Uint8Array(data.length);
   for (let i = 0; i < data.length; i++) {
@@ -9310,7 +9469,6 @@ const decode = (string) => {
   }
   return result.buffer;
 };
-
 
 /***/ }),
 
@@ -9329,17 +9487,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _base64__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./base64 */ "./src/p4/base64.js");
 
 
-
 const BLOB_IDENTIFIER = '__isBlob';
-
-const isObjectOrArray = (value) => value !== null && typeof value === 'object';
+const isObjectOrArray = value => value !== null && typeof value === 'object';
 
 /**
  * Generate an object where any child properties of type Blob will have their data inlined.
  * @param {unknown} object 
  * @returns {Promise<unknown>}
  */
-const recursivelySerializeBlobs = async (object) => {
+const recursivelySerializeBlobs = async object => {
   if (Array.isArray(object)) {
     return object;
   }
@@ -9348,9 +9504,8 @@ const recursivelySerializeBlobs = async (object) => {
     if (key === BLOB_IDENTIFIER) {
       // We could add special handling for this property, but nothing we export should actually
       // use this property anyways so this is fine for now.
-      throw new Error(`Can't serialize special key: ${BLOB_IDENTIFIER}`);
+      throw new Error("Can't serialize special key: ".concat(BLOB_IDENTIFIER));
     }
-
     const value = object[key];
     if (value instanceof Blob) {
       const arrayBuffer = await Object(_common_readers__WEBPACK_IMPORTED_MODULE_0__["readAsArrayBuffer"])(value);
@@ -9375,7 +9530,7 @@ const recursivelySerializeBlobs = async (object) => {
  * @param {unknown} object
  * @returns {unknown}
  */
-const recursivelyDeserializeBlobs = (object) => {
+const recursivelyDeserializeBlobs = object => {
   if (Array.isArray(object)) {
     return object;
   }
@@ -9400,8 +9555,6 @@ const recursivelyDeserializeBlobs = (object) => {
 };
 
 
-
-
 /***/ }),
 
 /***/ "./src/p4/deep-clone.js":
@@ -9413,7 +9566,7 @@ const recursivelyDeserializeBlobs = (object) => {
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-const deepClone = (obj) => {
+const deepClone = obj => {
   if (obj instanceof Blob) {
     return obj;
   }
@@ -9435,9 +9588,7 @@ const deepClone = (obj) => {
   // Primitive type
   return obj;
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (deepClone);
-
 
 /***/ }),
 
@@ -9458,9 +9609,7 @@ const downloadURL = (filename, url) => {
   link.click();
   link.remove();
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (downloadURL);
-
 
 /***/ }),
 
@@ -9479,30 +9628,30 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-
 const DATABASE_NAME = 'p4-local-settings';
 const DATABASE_VERSION = 1;
 const STORE_NAME = 'blobs';
-
 const db = new _common_idb__WEBPACK_IMPORTED_MODULE_1__["default"](DATABASE_NAME, DATABASE_VERSION, STORE_NAME);
-
 const makeNamedBlob = (buffer, type, name) => {
-  const blob = new Blob([buffer], {type});
+  const blob = new Blob([buffer], {
+    type
+  });
   blob.name = name;
   return blob;
 };
-
-const cloneBlob = async (blob) => {
+const cloneBlob = async blob => {
   const buffer = await Object(_common_readers__WEBPACK_IMPORTED_MODULE_2__["readAsArrayBuffer"])(blob);
   return makeNamedBlob(buffer, blob.type, blob.name);
 };
-
-const get = async (key) => {
-  const {transaction, store} = await db.createTransaction('readonly');
+const get = async key => {
+  const {
+    transaction,
+    store
+  } = await db.createTransaction('readonly');
   return new Promise((resolve, reject) => {
     _common_idb__WEBPACK_IMPORTED_MODULE_1__["default"].setTransactionErrorHandler(transaction, reject);
     const request = store.get(key);
-    request.onsuccess = (e) => {
+    request.onsuccess = e => {
       const result = e.target.result;
       if (result) {
         const data = result.data;
@@ -9519,10 +9668,12 @@ const get = async (key) => {
     };
   });
 };
-
 const set = async (key, file) => {
   const arrayBuffer = file ? await Object(_common_readers__WEBPACK_IMPORTED_MODULE_2__["readAsArrayBuffer"])(file) : null;
-  const {transaction, store} = await db.createTransaction('readwrite');
+  const {
+    transaction,
+    store
+  } = await db.createTransaction('readwrite');
   return new Promise((resolve, reject) => {
     _common_idb__WEBPACK_IMPORTED_MODULE_1__["default"].setTransactionErrorHandler(transaction, reject);
     const request = file ? store.put({
@@ -9536,37 +9687,31 @@ const set = async (key, file) => {
     };
   });
 };
-
 const resetAll = () => db.deleteEverything();
-
-const writableFileStore = (key) => {
+const writableFileStore = key => {
   let hasQueried = false;
   const store = Object(svelte_store__WEBPACK_IMPORTED_MODULE_0__["writable"])(null, () => {
-    const unsubscribe = store.subscribe((file) => {
+    const unsubscribe = store.subscribe(file => {
       if (hasQueried) {
-        set(key, file)
-          .catch((err) => {
-            console.warn(err);
-          });
+        set(key, file).catch(err => {
+          console.warn(err);
+        });
       }
     });
     return unsubscribe;
   });
-  get(key)
-    .then((value) => {
-      hasQueried = true;
-      if (value) {
-        store.set(value);
-      }
-    });
+  get(key).then(value => {
+    hasQueried = true;
+    if (value) {
+      store.set(value);
+    }
+  });
   return store;
 };
-
 /* harmony default export */ __webpack_exports__["default"] = ({
   writableFileStore,
   resetAll
 });
-
 
 /***/ }),
 
@@ -9580,7 +9725,8 @@ const writableFileStore = (key) => {
 "use strict";
 __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "uploadAndBuildFromTemplate", function() { return uploadAndBuildFromTemplate; });
-async function uploadAndBuildFromTemplate(opts, progressCallback = null) {
+async function uploadAndBuildFromTemplate(opts) {
+  let progressCallback = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : null;
   const {
     blob,
     name,
@@ -9593,19 +9739,15 @@ async function uploadAndBuildFromTemplate(opts, progressCallback = null) {
     pollIntervalMs = 10000,
     pollMaxAttempts = 60
   } = opts || {};
-
   if (!githubUser || !githubToken) throw new Error('Missing GitHub username or token');
   if (!blob || !name) throw new Error('Missing blob or filename');
-
   const apiBase = 'https://api.github.com';
 
   // generate a unique temporary repo name
   const rand = Math.random().toString(36).slice(2, 8);
-  const repoName = `packager-temp-${rand}`;
-
-  const genUrl = `${apiBase}/repos/${templateOwner}/${templateRepo}/generate`;
-
-  const progress = (msg) => {
+  const repoName = "packager-temp-".concat(rand);
+  const genUrl = "".concat(apiBase, "/repos/").concat(templateOwner, "/").concat(templateRepo, "/generate");
+  const progress = msg => {
     try {
       if (typeof progressCallback === 'function') progressCallback(msg);
     } catch (e) {
@@ -9614,27 +9756,24 @@ async function uploadAndBuildFromTemplate(opts, progressCallback = null) {
   };
   // First, check if the user is an organization or personal account
   progress('正在检查用户类型...');
-  const userResp = await fetch(`${apiBase}/users/${githubUser}`, {
+  const userResp = await fetch("".concat(apiBase, "/users/").concat(githubUser), {
     headers: {
-      Authorization: `token ${githubToken}`,
+      Authorization: "token ".concat(githubToken),
       Accept: 'application/vnd.github+json'
     }
   });
-
   if (!userResp.ok) {
-    throw new Error(`无法获取用户信息: ${userResp.status}`);
+    throw new Error("\u65E0\u6CD5\u83B7\u53D6\u7528\u6237\u4FE1\u606F: ".concat(userResp.status));
   }
-
   const userData = await userResp.json();
   const isOrg = userData.type === 'Organization';
 
   // Generate a new repo from the template
-  progress(`正在从模板仓库生成新仓库${isOrg ? ' (组织)' : ''}...`);
-
+  progress("\u6B63\u5728\u4ECE\u6A21\u677F\u4ED3\u5E93\u751F\u6210\u65B0\u4ED3\u5E93".concat(isOrg ? ' (组织)' : '', "..."));
   const generateResp = await fetch(genUrl, {
     method: 'POST',
     headers: {
-      Authorization: `token ${githubToken}`,
+      Authorization: "token ".concat(githubToken),
       'Content-Type': 'application/json',
       Accept: 'application/vnd.github+json'
     },
@@ -9645,115 +9784,21 @@ async function uploadAndBuildFromTemplate(opts, progressCallback = null) {
       private: false
     })
   });
-
   if (!generateResp.ok) {
     const genErr = await generateResp.text();
-    throw new Error(`无法从模板生成仓库 (status: ${generateResp.status}). 错误: ${genErr}`);
+    throw new Error("\u65E0\u6CD5\u4ECE\u6A21\u677F\u751F\u6210\u4ED3\u5E93 (status: ".concat(generateResp.status, "). \u9519\u8BEF: ").concat(genErr));
   }
-
   const genJson = await generateResp.json();
-  const createdRepoUrl = genJson.html_url || `https://github.com/${githubUser}/${repoName}`;
-  progress(`仓库已从模板生成: ${createdRepoUrl}`);
+  const createdRepoUrl = genJson.html_url || "https://github.com/".concat(githubUser, "/").concat(repoName);
+  progress("\u4ED3\u5E93\u5DF2\u4ECE\u6A21\u677F\u751F\u6210: ".concat(createdRepoUrl));
 
   // Add the GitHub Actions workflow file directly
   progress('正在添加构建工作流...');
-  const workflowContent = `name: Cordova Build
-
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-
-permissions:
-  # required to modify releases
-  contents: write
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      # Check out the repository code
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # Set up Node.js
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      # Set up Java 17
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'adopt'
-
-      # Set up Android SDK and Build Tools
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          cmdline-tools-version: 'latest'
-
-      # Install Android Build Tools
-      - name: Install Android Build Tools
-        run: |
-          sdkmanager "build-tools;30.0.3" "platform-tools" "platforms;android-33"
-        env:
-          ANDROID_HOME: \${{ env.ANDROID_HOME }}
-          ANDROID_SDK_ROOT: \${{ env.ANDROID_HOME }}
-
-      # Set up Gradle
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '7.6.5' # Specify a stable Gradle version compatible with Android builds
-
-      # Install Cordova globally
-      - name: Install Cordova
-        run: npm install -g cordova
-
-      # Find and unzip the project's zip file
-      - name: Unzip project
-        run: |
-          ZIP_FILE=\$(find . -maxdepth 1 -name "*.zip" -type f)
-          if [ -z "\$ZIP_FILE" ]; then
-            echo "No zip file found"
-            exit 1
-          fi
-          unzip "\$ZIP_FILE" -d project
-          rm "\$ZIP_FILE"
-
-      # Navigate to unzipped project directory and run npm install
-      - name: Install dependencies
-        run: |
-          cd project
-          npm install
-
-      # Run npm build
-      - name: Build project
-        run: |
-          cd project
-          npm run build
-        env:
-          ANDROID_HOME: \${{ env.ANDROID_HOME }}
-          ANDROID_SDK_ROOT: \${{ env.ANDROID_HOME }}
-
-      - name: Upload artifacts to tag
-        uses: xresloader/upload-to-github-release@2bcae85344d41e21f7fc4c47fa2ed68223afdb49
-        with:
-          file: ./project/platforms/android/app/build/outputs/apk/debug/app-debug.apk
-          draft: false
-          tag_name: "deep-sea-build"`;
-
-  const workflowResp = await fetch(`${apiBase}/repos/${githubUser}/${repoName}/contents/.github/workflows/${workflowId}`, {
+  const workflowContent = "name: Cordova Build\n\non:\n  push:\n    branches:\n      - main\n  pull_request:\n    branches:\n      - main\n\npermissions:\n  # required to modify releases\n  contents: write\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n\n    steps:\n      # Check out the repository code\n      - name: Checkout code\n        uses: actions/checkout@v4\n\n      # Set up Node.js\n      - name: Set up Node.js\n        uses: actions/setup-node@v4\n        with:\n          node-version: '20'\n\n      # Set up Java 17\n      - name: Set up JDK 17\n        uses: actions/setup-java@v4\n        with:\n          java-version: '17'\n          distribution: 'adopt'\n\n      # Set up Android SDK and Build Tools\n      - name: Set up Android SDK\n        uses: android-actions/setup-android@v3\n        with:\n          cmdline-tools-version: 'latest'\n\n      # Install Android Build Tools\n      - name: Install Android Build Tools\n        run: |\n          sdkmanager \"build-tools;30.0.3\" \"platform-tools\" \"platforms;android-33\"\n        env:\n          ANDROID_HOME: ${{ env.ANDROID_HOME }}\n          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}\n\n      # Set up Gradle\n      - name: Set up Gradle\n        uses: gradle/actions/setup-gradle@v4\n        with:\n          gradle-version: '7.6.5' # Specify a stable Gradle version compatible with Android builds\n\n      # Install Cordova globally\n      - name: Install Cordova\n        run: npm install -g cordova\n\n      # Find and unzip the project's zip file\n      - name: Unzip project\n        run: |\n          ZIP_FILE=$(find . -maxdepth 1 -name \"*.zip\" -type f)\n          if [ -z \"$ZIP_FILE\" ]; then\n            echo \"No zip file found\"\n            exit 1\n          fi\n          unzip \"$ZIP_FILE\" -d project\n          rm \"$ZIP_FILE\"\n\n      # Navigate to unzipped project directory and run npm install\n      - name: Install dependencies\n        run: |\n          cd project\n          npm install\n\n      # Run npm build\n      - name: Build project\n        run: |\n          cd project\n          npm run build\n        env:\n          ANDROID_HOME: ${{ env.ANDROID_HOME }}\n          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}\n\n      - name: Upload artifacts to tag\n        uses: xresloader/upload-to-github-release@2bcae85344d41e21f7fc4c47fa2ed68223afdb49\n        with:\n          file: ./project/platforms/android/app/build/outputs/apk/debug/app-debug.apk\n          draft: false\n          tag_name: \"deep-sea-build\"";
+  const workflowResp = await fetch("".concat(apiBase, "/repos/").concat(githubUser, "/").concat(repoName, "/contents/.github/workflows/").concat(workflowId), {
     method: 'PUT',
     headers: {
-      Authorization: `token ${githubToken}`,
+      Authorization: "token ".concat(githubToken),
       'Content-Type': 'application/json',
       Accept: 'application/vnd.github+json'
     },
@@ -9769,7 +9814,7 @@ jobs:
   }
 
   // 2) Upload the packed file to the repo via contents API
-  progress(`开始上传打包文件 ${name} 到仓库 ${githubUser}/${repoName} ...`);
+  progress("\u5F00\u59CB\u4E0A\u4F20\u6253\u5305\u6587\u4EF6 ".concat(name, " \u5230\u4ED3\u5E93 ").concat(githubUser, "/").concat(repoName, " ..."));
   const arrayBuffer = await blob.arrayBuffer();
   const bytes = new Uint8Array(arrayBuffer);
   let binary = '';
@@ -9778,50 +9823,57 @@ jobs:
     binary += String.fromCharCode.apply(null, Array.from(bytes.subarray(i, i + chunkSize)));
   }
   const base64 = btoa(binary);
-
-  const putUrl = `${apiBase}/repos/${githubUser}/${repoName}/contents/${encodeURIComponent(name)}`;
+  const putUrl = "".concat(apiBase, "/repos/").concat(githubUser, "/").concat(repoName, "/contents/").concat(encodeURIComponent(name));
   const putResp = await fetch(putUrl, {
     method: 'PUT',
     headers: {
-      Authorization: `token ${githubToken}`,
+      Authorization: "token ".concat(githubToken),
       'Content-Type': 'application/json',
       Accept: 'application/vnd.github+json'
     },
-    body: JSON.stringify({ message: `Upload ${name} via packager`, content: base64 })
+    body: JSON.stringify({
+      message: "Upload ".concat(name, " via packager"),
+      content: base64
+    })
   });
   if (!putResp.ok) {
     const err = await putResp.text();
-    throw new Error(`上传文件失败: ${putResp.status} ${err}`);
+    throw new Error("\u4E0A\u4F20\u6587\u4EF6\u5931\u8D25: ".concat(putResp.status, " ").concat(err));
   }
   progress('打包文件上传完成');
 
   // 3) Trigger workflow dispatch
-  const dispatchUrl = `${apiBase}/repos/${githubUser}/${repoName}/actions/workflows/${workflowId}/dispatches`;
+  const dispatchUrl = "".concat(apiBase, "/repos/").concat(githubUser, "/").concat(repoName, "/actions/workflows/").concat(workflowId, "/dispatches");
   const dispatchResp = await fetch(dispatchUrl, {
     method: 'POST',
     headers: {
-      Authorization: `token ${githubToken}`,
+      Authorization: "token ".concat(githubToken),
       'Content-Type': 'application/json',
       Accept: 'application/vnd.github+json'
     },
-    body: JSON.stringify({ ref: 'main' })
+    body: JSON.stringify({
+      ref: 'main'
+    })
   });
-  if (![204,201,202].includes(dispatchResp.status)) {
+  if (![204, 201, 202].includes(dispatchResp.status)) {
     const err = await dispatchResp.text();
-    throw new Error(`触发 workflow 失败: ${dispatchResp.status} ${err}`);
+    throw new Error("\u89E6\u53D1 workflow \u5931\u8D25: ".concat(dispatchResp.status, " ").concat(err));
   }
   progress('已触发 GitHub Actions workflow，开始轮询执行状态...');
 
   // 4) Poll for latest run and wait for conclusion
-  const runsUrlBase = `${apiBase}/repos/${githubUser}/${repoName}/actions/runs`;
+  const runsUrlBase = "".concat(apiBase, "/repos/").concat(githubUser, "/").concat(repoName, "/actions/runs");
   let runId = null;
   let attempt = 0;
   let runObj = null;
   while (attempt < pollMaxAttempts) {
     attempt++;
     await new Promise(r => setTimeout(r, attempt === 1 ? 2000 : pollIntervalMs));
-    const runsResp = await fetch(`${runsUrlBase}?per_page=1`, {
-      headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github+json' }
+    const runsResp = await fetch("".concat(runsUrlBase, "?per_page=1"), {
+      headers: {
+        Authorization: "token ".concat(githubToken),
+        Accept: 'application/vnd.github+json'
+      }
     });
     if (!runsResp.ok) {
       // try again
@@ -9832,33 +9884,38 @@ jobs:
     if (!wr) continue;
     runId = wr.id;
     // fetch run details
-    const runResp = await fetch(`${apiBase}/repos/${githubUser}/${repoName}/actions/runs/${runId}`, {
-      headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github+json' }
+    const runResp = await fetch("".concat(apiBase, "/repos/").concat(githubUser, "/").concat(repoName, "/actions/runs/").concat(runId), {
+      headers: {
+        Authorization: "token ".concat(githubToken),
+        Accept: 'application/vnd.github+json'
+      }
     });
     if (!runResp.ok) continue;
     runObj = await runResp.json();
     const status = runObj.status;
     const conclusion = runObj.conclusion;
-  progress(`工作流状态: ${status} 结论: ${conclusion || 'pending'}`);
+    progress("\u5DE5\u4F5C\u6D41\u72B6\u6001: ".concat(status, " \u7ED3\u8BBA: ").concat(conclusion || 'pending'));
     if (conclusion === 'success') break;
     if (conclusion && (conclusion === 'failure' || conclusion === 'cancelled' || conclusion === 'timed_out')) {
-      throw new Error(`Workflow finished with conclusion: ${conclusion}`);
+      throw new Error("Workflow finished with conclusion: ".concat(conclusion));
     }
     // otherwise keep polling
   }
   if (!runObj || runObj.conclusion !== 'success') {
     throw new Error('Workflow did not complete successfully in time');
   }
-
   progress('工作流执行成功，尝试获取 Release 及其资产...');
 
   // 5) Get latest release for the repo
-  const releaseResp = await fetch(`${apiBase}/repos/${githubUser}/${repoName}/releases/latest`, {
-    headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github+json' }
+  const releaseResp = await fetch("".concat(apiBase, "/repos/").concat(githubUser, "/").concat(repoName, "/releases/latest"), {
+    headers: {
+      Authorization: "token ".concat(githubToken),
+      Accept: 'application/vnd.github+json'
+    }
   });
   if (!releaseResp.ok) {
     const err = await releaseResp.text();
-    throw new Error(`获取 release 失败: ${releaseResp.status} ${err}`);
+    throw new Error("\u83B7\u53D6 release \u5931\u8D25: ".concat(releaseResp.status, " ").concat(err));
   }
   const releaseJson = await releaseResp.json();
   if (!releaseJson.assets || releaseJson.assets.length === 0) {
@@ -9866,8 +9923,7 @@ jobs:
   }
   const asset = releaseJson.assets[0];
   const downloadUrl = asset.browser_download_url;
-
-  progress(`找到 release 资产: ${asset.name}`);
+  progress("\u627E\u5230 release \u8D44\u4EA7: ".concat(asset.name));
 
   // Do not auto-download asset in the browser. Return the asset download URL so the UI can present it to the user.
   const assetDownloadUrl = downloadUrl;
@@ -9875,32 +9931,34 @@ jobs:
   // Optionally delete the repo only if explicitly requested (default: false)
   if (autoDelete) {
     try {
-      const delResp = await fetch(`${apiBase}/repos/${githubUser}/${repoName}`, {
+      const delResp = await fetch("".concat(apiBase, "/repos/").concat(githubUser, "/").concat(repoName), {
         method: 'DELETE',
-        headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github+json' }
+        headers: {
+          Authorization: "token ".concat(githubToken),
+          Accept: 'application/vnd.github+json'
+        }
       });
       if (!delResp.ok) {
         const errorData = await delResp.json().catch(() => ({}));
-        console.warn('删除临时仓库失败:', errorData.message || `HTTP ${delResp.status}`);
-        progress(`警告: 无法自动删除临时仓库，请手动删除: ${createdRepoUrl}`);
+        console.warn('删除临时仓库失败:', errorData.message || "HTTP ".concat(delResp.status));
+        progress("\u8B66\u544A: \u65E0\u6CD5\u81EA\u52A8\u5220\u9664\u4E34\u65F6\u4ED3\u5E93\uFF0C\u8BF7\u624B\u52A8\u5220\u9664: ".concat(createdRepoUrl));
       } else {
         progress('临时仓库已自动删除');
       }
     } catch (e) {
       console.warn('删除临时仓库时发生错误:', e);
-      progress(`警告: 无法自动删除临时仓库，请手动删除: ${createdRepoUrl}`);
+      progress("\u8B66\u544A: \u65E0\u6CD5\u81EA\u52A8\u5220\u9664\u4E34\u65F6\u4ED3\u5E93\uFF0C\u8BF7\u624B\u52A8\u5220\u9664: ".concat(createdRepoUrl));
     }
   }
 
   // Return links for UI
   return {
     createdRepoUrl,
-    releaseUrl: releaseJson.html_url || `${createdRepoUrl}/releases/latest`,
+    releaseUrl: releaseJson.html_url || "".concat(createdRepoUrl, "/releases/latest"),
     assetName: asset.name,
     assetDownloadUrl
   };
 }
-
 
 /***/ }),
 
@@ -9919,106 +9977,11 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-
 const origin = _environment__WEBPACK_IMPORTED_MODULE_0__["isStandalone"] ? '*' : location.origin;
-
-const getPreviewSource = () => `<!DOCTYPE html>
-<html>
-<head>
-  <title>${Object(_common_escape_xml__WEBPACK_IMPORTED_MODULE_1__["default"])(_locales__WEBPACK_IMPORTED_MODULE_2__["_"].translate('preview.loading'))}</title>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <style>
-  body {
-    background: black;
-    color: white;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-  }
-  .preview-message {
-    background: inherit;
-    display: flex;
-    align-items: center;
-    flex-direction: column;
-    justify-content: center;
-    text-align: center;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-  .preview-progress-outer {
-    width: 200px;
-    height: 10px;
-    border: 1px solid white;
-  }
-  .preview-progress-inner {
-    height: 100%;
-    width: 0;
-    background: white;
-  }
-  [hidden] {
-    display: none;
-  }
-  </style>
-</head>
-<body>
-  <div class="preview-message">
-    <noscript>Enable JavaScript</noscript>
-    <div class="preview-progress-outer"><div class="preview-progress-inner"></div></div>
-  </div>
-  <div class="preview-message preview-error" hidden>
-    <div class="preview-error-message"></div>
-    <div>Go back to the original tab and try again</div>
-  </div>
-  <script>
-  (function() {
-    const origin = ${JSON.stringify(origin)};
-    const err = (message) => {
-      document.querySelector(".preview-error").hidden = false;
-      document.querySelector(".preview-error-message").textContent = "Error: " + message;
-    };
-    if (!window.opener) {
-      err("Can't communicate with main page.");
-      return;
-    }
-    let hasRun = false;
-    const progressBar = document.querySelector(".preview-progress-inner");
-    const progressText = document.querySelector(".preview-progress-text");
-    window.addEventListener("message", (e) => {
-      if (origin !== "*" && e.origin !== location.origin) return;
-      if (hasRun) return;
-      if (e.data.blob) {
-        hasRun = true;
-        const fr = new FileReader();
-        fr.onload = () => {
-          document.open();
-          document.write(fr.result);
-          document.close(); // fixes poor performance in firefox
-        };
-        fr.onerror = () => {
-          err("Something went wrong reading the file: " + fr.error);
-        };
-        fr.readAsText(e.data.blob);
-      }
-      if (typeof e.data.progress === "number") {
-        progressBar.style.width = (e.data.progress * 100) + "%";
-      }
-    });
-    window.opener.postMessage({
-      preview: "hello"
-    }, origin);
-  })();
-  </script>
-</body>
-</html>
-`;
+const getPreviewSource = () => "<!DOCTYPE html>\n<html>\n<head>\n  <title>".concat(Object(_common_escape_xml__WEBPACK_IMPORTED_MODULE_1__["default"])(_locales__WEBPACK_IMPORTED_MODULE_2__["_"].translate('preview.loading')), "</title>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">\n  <style>\n  body {\n    background: black;\n    color: white;\n    font-family: \"Helvetica Neue\", Helvetica, Arial, sans-serif;\n  }\n  .preview-message {\n    background: inherit;\n    display: flex;\n    align-items: center;\n    flex-direction: column;\n    justify-content: center;\n    text-align: center;\n    position: absolute;\n    top: 0;\n    left: 0;\n    width: 100%;\n    height: 100%;\n    user-select: none;\n    -webkit-user-select: none;\n  }\n  .preview-progress-outer {\n    width: 200px;\n    height: 10px;\n    border: 1px solid white;\n  }\n  .preview-progress-inner {\n    height: 100%;\n    width: 0;\n    background: white;\n  }\n  [hidden] {\n    display: none;\n  }\n  </style>\n</head>\n<body>\n  <div class=\"preview-message\">\n    <noscript>Enable JavaScript</noscript>\n    <div class=\"preview-progress-outer\"><div class=\"preview-progress-inner\"></div></div>\n  </div>\n  <div class=\"preview-message preview-error\" hidden>\n    <div class=\"preview-error-message\"></div>\n    <div>Go back to the original tab and try again</div>\n  </div>\n  <script>\n  (function() {\n    const origin = ").concat(JSON.stringify(origin), ";\n    const err = (message) => {\n      document.querySelector(\".preview-error\").hidden = false;\n      document.querySelector(\".preview-error-message\").textContent = \"Error: \" + message;\n    };\n    if (!window.opener) {\n      err(\"Can't communicate with main page.\");\n      return;\n    }\n    let hasRun = false;\n    const progressBar = document.querySelector(\".preview-progress-inner\");\n    const progressText = document.querySelector(\".preview-progress-text\");\n    window.addEventListener(\"message\", (e) => {\n      if (origin !== \"*\" && e.origin !== location.origin) return;\n      if (hasRun) return;\n      if (e.data.blob) {\n        hasRun = true;\n        const fr = new FileReader();\n        fr.onload = () => {\n          document.open();\n          document.write(fr.result);\n          document.close(); // fixes poor performance in firefox\n        };\n        fr.onerror = () => {\n          err(\"Something went wrong reading the file: \" + fr.error);\n        };\n        fr.readAsText(e.data.blob);\n      }\n      if (typeof e.data.progress === \"number\") {\n        progressBar.style.width = (e.data.progress * 100) + \"%\";\n      }\n    });\n    window.opener.postMessage({\n      preview: \"hello\"\n    }, origin);\n  })();\n  </script>\n</body>\n</html>\n");
 const windowToBlobMap = new WeakMap();
-
 class Preview {
-  constructor () {
+  constructor() {
     const preview = getPreviewSource();
 
     // Safari does not let file: URIs used by standalone version to open blob: URIs
@@ -10039,27 +10002,23 @@ class Preview {
       throw new Error('Cannot open popup');
     }
   }
-
-  setContent (content) {
+  setContent(content) {
     windowToBlobMap.set(this.window, content);
     this.window.postMessage({
       blob: content
     }, origin);
   }
-
-  setProgress (progress, text) {
+  setProgress(progress, text) {
     this.window.postMessage({
       progress,
       text
     }, origin);
   }
-
-  close () {
+  close() {
     this.window.close();
   }
 }
-
-window.addEventListener('message', (e) => {
+window.addEventListener('message', e => {
   if (origin !== '*' && e.origin !== location.origin) {
     return;
   }
@@ -10074,9 +10033,7 @@ window.addEventListener('message', (e) => {
     }
   }
 });
-
 /* harmony default export */ __webpack_exports__["default"] = (Preview);
-
 
 /***/ }),
 
@@ -10092,11 +10049,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "Adapter", function() { return Adapter; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "setAdapter", function() { return setAdapter; });
 let Adapter = null;
-
-const setAdapter = (newAdapter) => {
+const setAdapter = newAdapter => {
   Adapter = newAdapter;
 };
-
 
 /***/ }),
 
@@ -10117,7 +10072,7 @@ __webpack_require__.r(__webpack_exports__);
 // 0x3c (<) is replaced with 0x28 (opening parenthesis) and 0x3e (>) is replaced with 0x29 (closing parenthesis),
 // which makes the encoded data safe to include in any HTML context without escapes.
 
-const getBase85EncodeCharacter = (n) => {
+const getBase85EncodeCharacter = n => {
   n += 0x2a;
   if (n === 0x3c) return 0x28;
   if (n === 0x3e) return 0x29;
@@ -10128,7 +10083,7 @@ const getBase85EncodeCharacter = (n) => {
  * @param {Uint8Array} uint8 The data to encode. No assumptions made about backing buffer.
  * @returns {string} Base 85 encoding
  */
-const encode = (uint8) => {
+const encode = uint8 => {
   const originalLength = uint8.length;
 
   // Data length needs to be a multiple of 4 so we can use getUint32.
@@ -10148,7 +10103,6 @@ const encode = (uint8) => {
   // Each set of 4 bytes is represented by 5 characters. Pad with zeros if needed.
   const result = new Uint8Array(Math.ceil(originalLength / 4) * 5);
   let resultIndex = 0;
-
   for (let i = 0; i < dataView.byteLength; i += 4) {
     let n = dataView.getUint32(i, true);
     result[resultIndex++] = getBase85EncodeCharacter(n % 85);
@@ -10161,13 +10115,12 @@ const encode = (uint8) => {
     n = Math.floor(n / 85);
     result[resultIndex++] = getBase85EncodeCharacter(n % 85);
   }
-
   return new TextDecoder().decode(result);
 };
 
 // Keep the base85 decode function up-to-date in packager.js
 
-const getBase85DecodeValue = (code) => {
+const getBase85DecodeValue = code => {
   if (code === 0x28) code = 0x3c;
   if (code === 0x29) code = 0x3e;
   return code - 0x2a;
@@ -10181,16 +10134,9 @@ const getBase85DecodeValue = (code) => {
 const decode = (str, outBuffer, outOffset) => {
   const view = new DataView(outBuffer, outOffset, Math.floor(str.length / 5 * 4));
   for (let i = 0, j = 0; i < str.length; i += 5, j += 4) {
-    view.setUint32(j, (
-      getBase85DecodeValue(str.charCodeAt(i + 4)) * 85 * 85 * 85 * 85 +
-      getBase85DecodeValue(str.charCodeAt(i + 3)) * 85 * 85 * 85 +
-      getBase85DecodeValue(str.charCodeAt(i + 2)) * 85 * 85 +
-      getBase85DecodeValue(str.charCodeAt(i + 1)) * 85 +
-      getBase85DecodeValue(str.charCodeAt(i))
-    ), true);
+    view.setUint32(j, getBase85DecodeValue(str.charCodeAt(i + 4)) * 85 * 85 * 85 * 85 + getBase85DecodeValue(str.charCodeAt(i + 3)) * 85 * 85 * 85 + getBase85DecodeValue(str.charCodeAt(i + 2)) * 85 * 85 + getBase85DecodeValue(str.charCodeAt(i + 1)) * 85 + getBase85DecodeValue(str.charCodeAt(i)), true);
   }
 };
-
 
 /***/ }),
 
@@ -10206,15 +10152,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "buildId", function() { return SCAFFOLDING_BUILD_ID; });
 /* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, "verifyBuildId", function() { return verifyBuildId; });
 const SCAFFOLDING_BUILD_ID = ("development-" + Math.random().toString().substring(2));
-
 const verifyBuildId = (buildId, source) => {
   if (source.endsWith('=^..^=')) {
-    return source.endsWith(`${buildId} =^..^=`);
+    return source.endsWith("".concat(buildId, " =^..^="));
   }
   return true;
 };
-
-
 
 
 /***/ }),
@@ -10253,11 +10196,11 @@ __webpack_require__.r(__webpack_exports__);
  * @param {string} hex
  * @returns {RGB}
  */
- const hexToRgb = (hex) => {
+const hexToRgb = hex => {
   const parsed = parseInt(hex.substring(1), 16);
   return {
-    red: (parsed >> 16) & 0xff,
-    green: (parsed >> 8) & 0xff,
+    red: parsed >> 16 & 0xff,
+    green: parsed >> 8 & 0xff,
     blue: parsed & 0xff
   };
 };
@@ -10266,20 +10209,19 @@ __webpack_require__.r(__webpack_exports__);
  * @param {RGB} color
  * @returns {string}
  */
-const rgbToHex = (color) => {
-  const format = (n) => n.toString(16).padStart(2, '0');
-  return `#${format(color.red)}${format(color.green)}${format(color.blue)}`;
+const rgbToHex = color => {
+  const format = n => n.toString(16).padStart(2, '0');
+  return "#".concat(format(color.red)).concat(format(color.green)).concat(format(color.blue));
 };
 
 /**
  * @param {RGB} color
  * @returns {HSV}
  */
-const rgbToHsv = (color) => {
+const rgbToHsv = color => {
   const r = color.red / 255;
   const g = color.green / 255;
   const b = color.blue / 255;
-
   const x = Math.min(Math.min(r, g), b);
   const v = Math.max(Math.max(r, g), b);
 
@@ -10289,10 +10231,9 @@ const rgbToHsv = (color) => {
   if (x !== v) {
     const f = r === x ? g - b : g === x ? b - r : r - g;
     const i = r === x ? 3 : g === x ? 5 : 1;
-    h = ((i - f / (v - x)) * 60) % 360;
+    h = (i - f / (v - x)) * 60 % 360;
     s = (v - x) / v;
   }
-
   return {
     hue: h,
     saturation: s,
@@ -10304,23 +10245,19 @@ const rgbToHsv = (color) => {
  * @param {HSV} color
  * @returns {RGB}
  */
-const hsvToRgb = (color) => {
+const hsvToRgb = color => {
   let h = color.hue % 360;
   if (h < 0) h += 360;
-
   const s = Math.max(0, Math.min(color.saturation, 1));
   const v = Math.max(0, Math.min(color.value, 1));
-
   const i = Math.floor(h / 60);
   const f = h / 60 - i;
   const p = v * (1 - s);
   const q = v * (1 - s * f);
   const t = v * (1 - s * (1 - f));
-
   let r;
   let g;
   let b;
-
   switch (i) {
     default:
     case 0:
@@ -10354,11 +10291,10 @@ const hsvToRgb = (color) => {
       b = q;
       break;
   }
-
   return {
     red: Math.floor(r * 255),
     green: Math.floor(g * 255),
-    blue: Math.floor(b * 255),
+    blue: Math.floor(b * 255)
   };
 };
 
@@ -10366,17 +10302,15 @@ const hsvToRgb = (color) => {
  * @param {string} hex
  * @returns {string}
  */
-const darken = (hex) => {
+const darken = hex => {
   const rgb = hexToRgb(hex);
   const hsv = rgbToHsv(rgb);
 
   // don't need to clamp value; hsvToRgb will do it for us
   hsv.value -= 0.1;
-
   const newRgb = hsvToRgb(hsv);
   return rgbToHex(newRgb);
 };
-
 
 /***/ }),
 
@@ -10404,15 +10338,11 @@ const concatInPlace = (destination, newItems) => {
  * @param {unknown} value String, number, Uint8Array, etc. or a recursive array of them
  * @returns {Uint8Array[]} UTF-8 arrays, in order
  */
-const encodeComponent = (value) => {
+const encodeComponent = value => {
   if (typeof value === 'string') {
-    return [
-      new TextEncoder().encode(value)
-    ];
+    return [new TextEncoder().encode(value)];
   } else if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'undefined' || value === null) {
-    return [
-      new TextEncoder().encode(String(value))
-    ];
+    return [new TextEncoder().encode(String(value))];
   } else if (Array.isArray(value)) {
     const result = [];
     for (const i of value) {
@@ -10420,7 +10350,7 @@ const encodeComponent = (value) => {
     }
     return result;
   } else {
-    throw new Error(`Unknown value in encodeComponent: ${value}`);
+    throw new Error("Unknown value in encodeComponent: ".concat(value));
   }
 };
 
@@ -10431,21 +10361,18 @@ const encodeComponent = (value) => {
  * @param {unknown[]} values
  * @returns {Uint8Array}
  */
-const encodeBigString = (strings, ...values) => {
+const encodeBigString = function encodeBigString(strings) {
   /** @type {Uint8Array[]} */
   const encodedChunks = [];
-
   for (let i = 0; i < strings.length - 1; i++) {
     concatInPlace(encodedChunks, encodeComponent(strings[i]));
-    concatInPlace(encodedChunks, encodeComponent(values[i]));
+    concatInPlace(encodedChunks, encodeComponent(i + 1 < 1 || arguments.length <= i + 1 ? undefined : arguments[i + 1]));
   }
   concatInPlace(encodedChunks, encodeComponent(strings[strings.length - 1]));
-
   let totalByteLength = 0;
   for (let i = 0; i < encodedChunks.length; i++) {
     totalByteLength += encodedChunks[i].byteLength;
   }
-
   const resultBuffer = new Uint8Array(totalByteLength);
   for (let i = 0, j = 0; i < encodedChunks.length; i++) {
     resultBuffer.set(encodedChunks[i], j);
@@ -10453,9 +10380,7 @@ const encodeBigString = (strings, ...values) => {
   }
   return resultBuffer;
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (encodeBigString);
-
 
 /***/ }),
 
@@ -10473,12 +10398,12 @@ const encodeBigString = (strings, ...values) => {
 // 尝试导入Node.js环境的依赖
 let JSDOM, nodeFetch;
 try {
-    // 动态导入，避免在浏览器环境中出错
-    JSDOM = __webpack_require__(/*! jsdom */ "./node_modules/jsdom/lib/api.js").JSDOM;
-    nodeFetch = __webpack_require__(/*! node-fetch */ "./node_modules/node-fetch/browser.js");
+  // 动态导入，避免在浏览器环境中出错
+  JSDOM = __webpack_require__(/*! jsdom */ "./node_modules/jsdom/lib/api.js").JSDOM;
+  nodeFetch = __webpack_require__(/*! node-fetch */ "./node_modules/node-fetch/browser.js");
 } catch (error) {
-    // 在浏览器环境中这些模块可能不可用
-    console.debug('Node.js modules not available, running in browser environment');
+  // 在浏览器环境中这些模块可能不可用
+  console.debug('Node.js modules not available, running in browser environment');
 }
 
 /**
@@ -10486,12 +10411,12 @@ try {
  * @returns {string} 'browser' | 'node' | 'standalone'
  */
 const detectEnvironment = () => {
-    if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-        // 检测是否为standalone环境
-        if (false) {}
-        return 'node';
-    }
-    return 'browser';
+  if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+    // 检测是否为standalone环境
+    if (false) {}
+    return 'node';
+  }
+  return 'browser';
 };
 
 /**
@@ -10499,18 +10424,18 @@ const detectEnvironment = () => {
  * @param {string} extensionURL - 扩展URL
  * @returns {Promise<string>} 扩展源代码
  */
-const loadExtensionBrowser = (extensionURL) => new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.onload = () => {
-        script.remove();
-        resolve(extensionURL);
-    };
-    script.onerror = () => {
-        script.remove();
-        reject(new Error(`Failed to load extension: ${extensionURL}`));
-    };
-    script.src = extensionURL;
-    document.head.appendChild(script);
+const loadExtensionBrowser = extensionURL => new Promise((resolve, reject) => {
+  const script = document.createElement('script');
+  script.onload = () => {
+    script.remove();
+    resolve(extensionURL);
+  };
+  script.onerror = () => {
+    script.remove();
+    reject(new Error("Failed to load extension: ".concat(extensionURL)));
+  };
+  script.src = extensionURL;
+  document.head.appendChild(script);
 });
 
 /**
@@ -10518,41 +10443,39 @@ const loadExtensionBrowser = (extensionURL) => new Promise((resolve, reject) => 
  * @param {string} extensionURL - 扩展URL
  * @returns {Promise<string>} 扩展源代码
  */
-const loadExtensionNode = async (extensionURL) => {
-    // 检查是否已设置全局document对象
-    if (!global.document && JSDOM) {
-        // 模拟浏览器环境核心对象
-        const dom = new JSDOM('<!DOCTYPE html><body></body>');
-        global.document = dom.window.document;
-        global.window = dom.window;
-        global.location = dom.window.location;
-        global.fetch = nodeFetch; // 使用node-fetch替换浏览器fetch
-    } else if (!global.document) {
-        throw new Error('Document object not available. Running in Node.js environment requires jsdom package.');
+const loadExtensionNode = async extensionURL => {
+  // 检查是否已设置全局document对象
+  if (!global.document && JSDOM) {
+    // 模拟浏览器环境核心对象
+    const dom = new JSDOM('<!DOCTYPE html><body></body>');
+    global.document = dom.window.document;
+    global.window = dom.window;
+    global.location = dom.window.location;
+    global.fetch = nodeFetch; // 使用node-fetch替换浏览器fetch
+  } else if (!global.document) {
+    throw new Error('Document object not available. Running in Node.js environment requires jsdom package.');
+  }
+  try {
+    // 用node-fetch下载扩展脚本
+    const response = await fetch(extensionURL);
+    if (!response.ok) {
+      throw new Error("HTTP error! status: ".concat(response.status));
     }
+    const scriptCode = await response.text();
 
-    try {
-        // 用node-fetch下载扩展脚本
-        const response = await fetch(extensionURL);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const scriptCode = await response.text();
-
-        // 在模拟的window环境中执行脚本
-        // 使用eval或vm.runInContext取决于安全性要求
-        // 这里使用window.eval确保在正确的上下文中执行
-        if (global.window && global.window.eval) {
-            global.window.eval(scriptCode);
-        } else {
-            // 降级方案
-            eval(scriptCode); // eslint-disable-line no-eval
-        }
-
-        return extensionURL;
-    } catch (err) {
-        throw new Error(`Error loading extension ${extensionURL}: ${err.message}`);
+    // 在模拟的window环境中执行脚本
+    // 使用eval或vm.runInContext取决于安全性要求
+    // 这里使用window.eval确保在正确的上下文中执行
+    if (global.window && global.window.eval) {
+      global.window.eval(scriptCode);
+    } else {
+      // 降级方案
+      eval(scriptCode); // eslint-disable-line no-eval
     }
+    return extensionURL;
+  } catch (err) {
+    throw new Error("Error loading extension ".concat(extensionURL, ": ").concat(err.message));
+  }
 };
 
 /**
@@ -10561,13 +10484,13 @@ const loadExtensionNode = async (extensionURL) => {
  * @param {string} extensionURL - 扩展URL
  * @returns {Promise<string>} 扩展源代码
  */
-const loadExtensionStandalone = async (extensionURL) => {
-    // Standalone环境中，如果可以访问浏览器的fetch，则使用浏览器逻辑
-    if (typeof fetch !== 'undefined' && typeof document !== 'undefined') {
-        return loadExtensionBrowser(extensionURL);
-    }
-    // 否则降级到Node.js逻辑
-    return loadExtensionNode(extensionURL);
+const loadExtensionStandalone = async extensionURL => {
+  // Standalone环境中，如果可以访问浏览器的fetch，则使用浏览器逻辑
+  if (typeof fetch !== 'undefined' && typeof document !== 'undefined') {
+    return loadExtensionBrowser(extensionURL);
+  }
+  // 否则降级到Node.js逻辑
+  return loadExtensionNode(extensionURL);
 };
 
 /**
@@ -10576,19 +10499,18 @@ const loadExtensionStandalone = async (extensionURL) => {
  * @param {string} extensionURL
  * @returns {Promise<string>} Resolves with extension URL if loaded successfully.
  */
-const loadExtension = (extensionURL) => {
-    const environment = detectEnvironment();
-    
-    switch (environment) {
-        case 'browser':
-            return loadExtensionBrowser(extensionURL);
-        case 'node':
-            return loadExtensionNode(extensionURL);
-        case 'standalone':
-            return loadExtensionStandalone(extensionURL);
-        default:
-            throw new Error(`Unsupported environment: ${environment}`);
-    }
+const loadExtension = extensionURL => {
+  const environment = detectEnvironment();
+  switch (environment) {
+    case 'browser':
+      return loadExtensionBrowser(extensionURL);
+    case 'node':
+      return loadExtensionNode(extensionURL);
+    case 'standalone':
+      return loadExtensionStandalone(extensionURL);
+    default:
+      throw new Error("Unsupported environment: ".concat(environment));
+  }
 };
 
 /**
@@ -10596,30 +10518,29 @@ const loadExtension = (extensionURL) => {
  * @param {string} extensionURL
  * @returns {Promise<string>} 扩展源代码文本
  */
-const fetchExtensionSource = async (extensionURL) => {
-    const environment = detectEnvironment();
-    
-    if (environment === 'browser' || environment === 'standalone') {
-        // 浏览器和standalone环境优先使用原生fetch
-        if (typeof fetch !== 'undefined') {
-            const response = await fetch(extensionURL);
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            return response.text();
-        }
+const fetchExtensionSource = async extensionURL => {
+  const environment = detectEnvironment();
+  if (environment === 'browser' || environment === 'standalone') {
+    // 浏览器和standalone环境优先使用原生fetch
+    if (typeof fetch !== 'undefined') {
+      const response = await fetch(extensionURL);
+      if (!response.ok) {
+        throw new Error("HTTP error! status: ".concat(response.status));
+      }
+      return response.text();
     }
-    
-    // Node.js环境或standalone环境的降级方案
-    const fetchImpl = nodeFetch || (global && global.fetch);
-    if (!fetchImpl) {
-        throw new Error('Fetch not available in this environment');
-    }
-    const response = await fetchImpl(extensionURL);
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return response.text();
+  }
+
+  // Node.js环境或standalone环境的降级方案
+  const fetchImpl = nodeFetch || global && global.fetch;
+  if (!fetchImpl) {
+    throw new Error('Fetch not available in this environment');
+  }
+  const response = await fetchImpl(extensionURL);
+  if (!response.ok) {
+    throw new Error("HTTP error! status: ".concat(response.status));
+  }
+  return response.text();
 };
 
 /**
@@ -10627,21 +10548,20 @@ const fetchExtensionSource = async (extensionURL) => {
  * @param {string} source - 扩展源代码
  * @returns {string} 包装后的源代码
  */
-const wrapExtensionSource = (source) => {
-    // Wrap the extension in an IIFE so that extensions written for the sandbox are less
-    // likely to cause issues in an unsandboxed environment due to global pollution or
-    // overriding Scratch.*
-    return `(function(Scratch) { ${source} })(Scratch);`;
+const wrapExtensionSource = source => {
+  // Wrap the extension in an IIFE so that extensions written for the sandbox are less
+  // likely to cause issues in an unsandboxed environment due to global pollution or
+  // overriding Scratch.*
+  return "(function(Scratch) { ".concat(source, " })(Scratch);");
 };
-
 module.exports = {
-    loadExtension,
-    fetchExtensionSource,
-    wrapExtensionSource,
-    detectEnvironment,
-    loadExtensionBrowser,
-    loadExtensionNode,
-    loadExtensionStandalone
+  loadExtension,
+  fetchExtensionSource,
+  wrapExtensionSource,
+  detectEnvironment,
+  loadExtensionBrowser,
+  loadExtensionNode,
+  loadExtensionStandalone
 };
 /* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../node_modules/process/browser.js */ "./node_modules/process/browser.js"), __webpack_require__(/*! ./../../node_modules/webpack/buildin/global.js */ "./node_modules/webpack/buildin/global.js")))
 
@@ -10658,16 +10578,14 @@ module.exports = {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _common_readers__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../common/readers */ "./src/common/readers.js");
 
-
-const loadImage = (src) => new Promise((resolve, reject) => {
+const loadImage = src => new Promise((resolve, reject) => {
   const image = new Image();
   image.onload = () => resolve(image);
-  image.onerror = () => reject(new Error(`Could not load image: ${src}`));
+  image.onerror = () => reject(new Error("Could not load image: ".concat(src)));
   image.src = src;
 });
-
-const canvasToBlob = (canvas) => new Promise((resolve, reject) => {
-  canvas.toBlob((blob) => {
+const canvasToBlob = canvas => new Promise((resolve, reject) => {
+  canvas.toBlob(blob => {
     if (blob) {
       resolve(blob);
     } else {
@@ -10675,24 +10593,39 @@ const canvasToBlob = (canvas) => new Promise((resolve, reject) => {
     }
   });
 });
-
-const pngToAppleICNS = async (pngData) => {
+const pngToAppleICNS = async pngData => {
   const {
     Icns,
     Buffer
-  } = await Promise.all(/*! import() | icns */[__webpack_require__.e("vendors~icns~sha256"), __webpack_require__.e("icns")]).then(__webpack_require__.bind(null, /*! ./icns-bundle */ "./src/packager/icns-bundle.js"));
-
-  const FORMATS = [
-    { type: 'ic04', size: 16 },
-    { type: 'ic07', size: 128 },
-    { type: 'ic08', size: 256 },
-    { type: 'ic09', size: 512 },
-    { type: 'ic10', size: 1024 },
-    { type: 'ic11', size: 32 },
-    { type: 'ic12', size: 64 },
-    { type: 'ic13', size: 256 },
-    { type: 'ic14', size: 512 },
-  ];
+  } = await Promise.all(/*! import() | icns */[__webpack_require__.e("vendors~icns~scratch-vm-compiler~sha256"), __webpack_require__.e("vendors~icns~scratch-vm-compiler"), __webpack_require__.e("icns")]).then(__webpack_require__.bind(null, /*! ./icns-bundle */ "./src/packager/icns-bundle.js"));
+  const FORMATS = [{
+    type: 'ic04',
+    size: 16
+  }, {
+    type: 'ic07',
+    size: 128
+  }, {
+    type: 'ic08',
+    size: 256
+  }, {
+    type: 'ic09',
+    size: 512
+  }, {
+    type: 'ic10',
+    size: 1024
+  }, {
+    type: 'ic11',
+    size: 32
+  }, {
+    type: 'ic12',
+    size: 64
+  }, {
+    type: 'ic13',
+    size: 256
+  }, {
+    type: 'ic14',
+    size: 512
+  }];
 
   // Read the Image.
   const pngDataBlob = new Blob([pngData], {
@@ -10702,7 +10635,7 @@ const pngToAppleICNS = async (pngData) => {
   const image = await loadImage(url);
 
   // Determine the formats to create
-  const eligibleFormats = FORMATS.filter((format) => {
+  const eligibleFormats = FORMATS.filter(format => {
     // Always include the smallest size so that tiny images will get at least 1 image.
     if (format.size === 16) {
       return true;
@@ -10717,7 +10650,6 @@ const pngToAppleICNS = async (pngData) => {
   if (!ctx) {
     throw new Error('cannot get canvas rendering context');
   }
-
   const icns = new Icns.Icns();
   for (const format of eligibleFormats) {
     // Use the canvas to scale the image.
@@ -10725,18 +10657,14 @@ const pngToAppleICNS = async (pngData) => {
     canvas.width = formatSize;
     canvas.height = formatSize;
     ctx.drawImage(image, 0, 0, formatSize, formatSize);
-
     const blob = await canvasToBlob(canvas);
     const arrayBuffer = await Object(_common_readers__WEBPACK_IMPORTED_MODULE_0__["readAsArrayBuffer"])(blob);
     const icnsImage = await Icns.IcnsImage.fromPNG(Buffer.from(arrayBuffer), format.type);
     icns.append(icnsImage);
   }
-
   return icns.data;
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (pngToAppleICNS);
-
 
 /***/ }),
 
@@ -10776,14 +10704,9 @@ __webpack_require__.r(__webpack_exports__);
 
 // useBuildId is used for various cache related things. It shouldn't be changed.
 
-const externalFile = (name) => [
-  // Hopefully one of these URLs will not be blocked.
-  `https://packagerdata.turbowarp.org/${name}`,
-  `https://blobs.turbowarp.xyz/${name}`
-];
-
-const relativeScaffolding = (name) => `scaffolding/${name}`;
-
+const externalFile = name => [// Hopefully one of these URLs will not be blocked.
+"https://packagerdata.turbowarp.org/".concat(name), "https://blobs.turbowarp.xyz/".concat(name)];
+const relativeScaffolding = name => "scaffolding/".concat(name);
 /* harmony default export */ __webpack_exports__["default"] = ({
   'nwjs-win64': {
     src: externalFile('nwjs-v0.68.1-win-x64.zip'),
@@ -10848,7 +10771,7 @@ const relativeScaffolding = (name) => `scaffolding/${name}`;
   'steamworks.js': {
     src: externalFile('steamworks.js-0.3.2.zip'),
     sha256: 'fd8bc80a97cd880d71113dfc5f81b124b6e212335393db73e3df168c5c546fbc',
-    estimatedSize: 3279554,
+    estimatedSize: 3279554
   },
   scaffolding: {
     src: relativeScaffolding('scaffolding-full.js'),
@@ -10871,7 +10794,6 @@ const relativeScaffolding = (name) => `scaffolding/${name}`;
     estimatedSize: 5000000
   }
 });
-
 
 /***/ }),
 
@@ -10900,6 +10822,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _colors__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! ./colors */ "./src/packager/colors.js");
 /* harmony import */ var _adapter__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! ./adapter */ "./src/packager/adapter.js");
 /* harmony import */ var _encode_big_string__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! ./encode-big-string */ "./src/packager/encode-big-string.js");
+var _templateObject, _templateObject2;
+function ownKeys(e, r) { var t = Object.keys(e); if (Object.getOwnPropertySymbols) { var o = Object.getOwnPropertySymbols(e); r && (o = o.filter(function (r) { return Object.getOwnPropertyDescriptor(e, r).enumerable; })), t.push.apply(t, o); } return t; }
+function _objectSpread(e) { for (var r = 1; r < arguments.length; r++) { var t = null != arguments[r] ? arguments[r] : {}; r % 2 ? ownKeys(Object(t), !0).forEach(function (r) { _defineProperty(e, r, t[r]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(e, Object.getOwnPropertyDescriptors(t)) : ownKeys(Object(t)).forEach(function (r) { Object.defineProperty(e, r, Object.getOwnPropertyDescriptor(t, r)); }); } return e; }
+function _defineProperty(e, r, t) { return (r = _toPropertyKey(r)) in e ? Object.defineProperty(e, r, { value: t, enumerable: !0, configurable: !0, writable: !0 }) : e[r] = t, e; }
+function _toPropertyKey(t) { var i = _toPrimitive(t, "string"); return "symbol" == typeof i ? i : i + ""; }
+function _toPrimitive(t, r) { if ("object" != typeof t || !t) return t; var e = t[Symbol.toPrimitive]; if (void 0 !== e) { var i = e.call(t, r || "default"); if ("object" != typeof i) return i; throw new TypeError("@@toPrimitive must return a primitive value."); } return ("string" === r ? String : Number)(t); }
+function _taggedTemplateLiteral(e, t) { return t || (t = e.slice(0)), Object.freeze(Object.defineProperties(e, { raw: { value: Object.freeze(t) } })); }
 
 
 
@@ -10914,14 +10843,12 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-
-        function compile(code) /* The "Compilation" */
-        {
-            // 注意：encodeURIComponent对应的解码函数应该是decodeURIComponent
-            // 原函数中使用unescape是不匹配的，这里修正为正确的解码方式
-            return _encode_big_string__WEBPACK_IMPORTED_MODULE_13__["default"] `<script>/*Generated By 02Engine Packager*/\n<!--\ndocument.write(decodeURIComponent("${encodeURIComponent(code)}"));\n//-->\n<\/script>`;
-        }
-
+function compile(code) /* The "Compilation" */
+{
+  // 注意：encodeURIComponent对应的解码函数应该是decodeURIComponent
+  // 原函数中使用unescape是不匹配的，这里修正为正确的解码方式
+  return Object(_encode_big_string__WEBPACK_IMPORTED_MODULE_13__["default"])(_templateObject || (_templateObject = _taggedTemplateLiteral(["<script>/*Generated By 02Engine Packager*/\n<!--\ndocument.write(decodeURIComponent(\"", "\"));\n//-->\n</script>"], ["<script>/*Generated By 02Engine Packager*/\\n<!--\\ndocument.write(decodeURIComponent(\"", "\"));\\n//-->\\n<\\/script>"])), encodeURIComponent(code));
+}
 const PROGRESS_LOADED_SCRIPTS = 0.1;
 
 // Used by environments that fetch the entire compressed project before calling loadProject()
@@ -10931,93 +10858,43 @@ const PROGRESS_EXTRACTED_COMPRESSED = 0.98;
 // Used by environments that pass a project.json into loadProject() and fetch assets separately
 const PROGRESS_FETCHED_PROJECT_JSON = 0.2;
 const PROGRESS_FETCHED_ASSETS = 0.98;
-
-const removeUnnecessaryEmptyLines = (string) => string.split('\n')
-  .filter((line, index, array) => {
-    if (index === 0 || index === array.length - 1) return true;
-    if (line.trim().length === 0 && array[index - 1].trim().length === 0) return false;
-    return true;
-  })
-  .join('\n');
-
-const getJSZip = async () => (await __webpack_require__.e(/*! import() | jszip */ "jszip").then(__webpack_require__.t.bind(null, /*! @turbowarp/jszip */ "./node_modules/@turbowarp/jszip/dist/jszip.min.js", 7))).default;
-
+const removeUnnecessaryEmptyLines = string => string.split('\n').filter((line, index, array) => {
+  if (index === 0 || index === array.length - 1) return true;
+  if (line.trim().length === 0 && array[index - 1].trim().length === 0) return false;
+  return true;
+}).join('\n');
+const getJSZip = async () => (await __webpack_require__.e(/*! import() | jszip */ "vendors~jszip~scratch-vm-compiler").then(__webpack_require__.t.bind(null, /*! @turbowarp/jszip */ "./node_modules/@turbowarp/jszip/dist/jszip.min.js", 7))).default;
 const setFileFast = (zip, path, data) => {
   zip.files[path] = data;
 };
-
 const SELF_LICENSE = {
   title: _brand__WEBPACK_IMPORTED_MODULE_9__["APP_NAME"],
   homepage: _brand__WEBPACK_IMPORTED_MODULE_9__["WEBSITE"],
   license: _brand__WEBPACK_IMPORTED_MODULE_9__["COPYRIGHT_NOTICE"]
 };
-
 const SCRATCH_LICENSE = {
   title: 'Scratch',
   homepage: 'https://scratch.mit.edu/',
-  license: `Copyright (c) 2016, Massachusetts Institute of Technology
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.`
+  license: "Copyright (c) 2016, Massachusetts Institute of Technology\nAll rights reserved.\n\nRedistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:\n\n1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.\n\n2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.\n\n3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE."
 };
-
 const ELECTRON_LICENSE = {
   title: 'Electron',
   homepage: 'https://www.electronjs.org/',
-  license: `Copyright (c) Electron contributors
-Copyright (c) 2013-2020 GitHub Inc.
-
-Permission is hereby granted, free of charge, to any person obtaining
-a copy of this software and associated documentation files (the
-"Software"), to deal in the Software without restriction, including
-without limitation the rights to use, copy, modify, merge, publish,
-distribute, sublicense, and/or sell copies of the Software, and to
-permit persons to whom the Software is furnished to do so, subject to
-the following conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
-LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
-OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
-WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.`
+  license: "Copyright (c) Electron contributors\nCopyright (c) 2013-2020 GitHub Inc.\n\nPermission is hereby granted, free of charge, to any person obtaining\na copy of this software and associated documentation files (the\n\"Software\"), to deal in the Software without restriction, including\nwithout limitation the rights to use, copy, modify, merge, publish,\ndistribute, sublicense, and/or sell copies of the Software, and to\npermit persons to whom the Software is furnished to do so, subject to\nthe following conditions:\n\nThe above copyright notice and this permission notice shall be\nincluded in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\nEXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\nMERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND\nNONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE\nLIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION\nOF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION\nWITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."
 };
-
-const COPYRIGHT_HEADER = `/*!
-Parts of this script are from the ${_brand__WEBPACK_IMPORTED_MODULE_9__["APP_NAME"]} <${_brand__WEBPACK_IMPORTED_MODULE_9__["WEBSITE"]}>, licensed as follows:
-${SELF_LICENSE.license}
-
-Parts of this script are from Scratch <https://scratch.mit.edu/>, licensed as follows:
-${SCRATCH_LICENSE.license}
-*/\n`;
-
-const generateChromiumLicenseHTML = (licenses) => {
-  const style = `<style>body { font-family: sans-serif; }</style>`;
-  const pretext = `<h2>The following entries were added by the ${_brand__WEBPACK_IMPORTED_MODULE_9__["APP_NAME"]}</h2>`;
-  const convertedLicenses = licenses.map((({title, license, homepage}, index) => `
-<div class="product">
-<span class="title">${Object(_common_escape_xml__WEBPACK_IMPORTED_MODULE_2__["default"])(title)}</span>
-<span class="homepage"><a href="${Object(_common_escape_xml__WEBPACK_IMPORTED_MODULE_2__["default"])(homepage)}">homepage</a></span>
-<input type="checkbox" hidden id="p4-${index}">
-<label class="show" for="p4-${index}" tabindex="0"></label>
-<div class="licence">
-<pre>${Object(_common_escape_xml__WEBPACK_IMPORTED_MODULE_2__["default"])(license)}</pre>
-</div>
-</div>
-`));
-  return `${style}${pretext}${convertedLicenses.join('\n')}`;
+const COPYRIGHT_HEADER = "/*!\nParts of this script are from the ".concat(_brand__WEBPACK_IMPORTED_MODULE_9__["APP_NAME"], " <").concat(_brand__WEBPACK_IMPORTED_MODULE_9__["WEBSITE"], ">, licensed as follows:\n").concat(SELF_LICENSE.license, "\n\nParts of this script are from Scratch <https://scratch.mit.edu/>, licensed as follows:\n").concat(SCRATCH_LICENSE.license, "\n*/\n");
+const generateChromiumLicenseHTML = licenses => {
+  const style = "<style>body { font-family: sans-serif; }</style>";
+  const pretext = "<h2>The following entries were added by the ".concat(_brand__WEBPACK_IMPORTED_MODULE_9__["APP_NAME"], "</h2>");
+  const convertedLicenses = licenses.map((_ref, index) => {
+    let {
+      title,
+      license,
+      homepage
+    } = _ref;
+    return "\n<div class=\"product\">\n<span class=\"title\">".concat(Object(_common_escape_xml__WEBPACK_IMPORTED_MODULE_2__["default"])(title), "</span>\n<span class=\"homepage\"><a href=\"").concat(Object(_common_escape_xml__WEBPACK_IMPORTED_MODULE_2__["default"])(homepage), "\">homepage</a></span>\n<input type=\"checkbox\" hidden id=\"p4-").concat(index, "\">\n<label class=\"show\" for=\"p4-").concat(index, "\" tabindex=\"0\"></label>\n<div class=\"licence\">\n<pre>").concat(Object(_common_escape_xml__WEBPACK_IMPORTED_MODULE_2__["default"])(license), "</pre>\n</div>\n</div>\n");
+  });
+  return "".concat(style).concat(pretext).concat(convertedLicenses.join('\n'));
 };
 
 // Unique identifier for the app. If this changes, things like local cloud variables will be lost.
@@ -11055,71 +10932,51 @@ const CFBundleShortVersionString = 'CFBundleShortVersionString';
 // Describes the category of the app
 // https://developer.apple.com/documentation/bundleresources/information_property_list/lsapplicationcategorytype
 const LSApplicationCategoryType = 'LSApplicationCategoryType';
-
-const generateMacReadme = (options) => `Due to macOS restrictions, running this app requires a few manual steps.
-
-To run the app on macOS 15 and later:
-1) Double click on the app file (${options.app.packageName} in the same folder as this document), then press "Done" when the warning appears
-2) Open macOS System Settings
-3) Go to the "Privacy & Security" section
-4) Scroll to the bottom
-5) By "${options.app.packageName} was blocked to protect your Mac", press "Open Anyway"
-6) In the prompt that appears, press "Open Anyway"
-
-To run the app on macOS 14 and earlier:
-1) Control+click on the app file (${options.app.packageName} in the same folder as this document) and select "Open".
-2) If a warning appears, select "Open" if it's an option.
-3) If a warning appears but "Open" isn't an option, press "Cancel" and repeat from step 1.
-   The open button will appear the second time the warning appears.
-
-After completing these steps, the app should run without any further warnings.
-
-Feel free to drag the app into your Applications folder.
-`;
+const generateMacReadme = options => "Due to macOS restrictions, running this app requires a few manual steps.\n\nTo run the app on macOS 15 and later:\n1) Double click on the app file (".concat(options.app.packageName, " in the same folder as this document), then press \"Done\" when the warning appears\n2) Open macOS System Settings\n3) Go to the \"Privacy & Security\" section\n4) Scroll to the bottom\n5) By \"").concat(options.app.packageName, " was blocked to protect your Mac\", press \"Open Anyway\"\n6) In the prompt that appears, press \"Open Anyway\"\n\nTo run the app on macOS 14 and earlier:\n1) Control+click on the app file (").concat(options.app.packageName, " in the same folder as this document) and select \"Open\".\n2) If a warning appears, select \"Open\" if it's an option.\n3) If a warning appears but \"Open\" isn't an option, press \"Cancel\" and repeat from step 1.\n   The open button will appear the second time the warning appears.\n\nAfter completing these steps, the app should run without any further warnings.\n\nFeel free to drag the app into your Applications folder.\n");
 
 /**
  * @param {string} packageName
  */
-const validatePackageName = (packageName) => {
+const validatePackageName = packageName => {
   // Characters considered unsafe filenames on Windows
   const BLOCKLIST = ['/', '\\', ':', '*', '?', '<', '>', '|'];
-  if (BLOCKLIST.some((i) => packageName.includes(i))) {
-    throw new Error(`Invalid package name: ${packageName}. It must not use the characters: ${BLOCKLIST.join(' ')}`)
+  if (BLOCKLIST.some(i => packageName.includes(i))) {
+    throw new Error("Invalid package name: ".concat(packageName, ". It must not use the characters: ").concat(BLOCKLIST.join(' ')));
   }
 };
-
 class Packager extends _common_event_target__WEBPACK_IMPORTED_MODULE_0__["EventTarget"] {
-  constructor () {
+  constructor() {
     super();
     this.project = null;
     this.options = Packager.DEFAULT_OPTIONS();
     this.aborted = false;
     this.used = false;
+    this._projectArchivePromise = null;
+    this._projectJSONPromise = null;
+    this._compiledProjectPromise = null;
+    this._compiledProjectArchivePromise = null;
   }
-
-  abort () {
+  abort() {
     if (!this.aborted) {
       this.aborted = true;
       this.dispatchEvent(new Event('abort'));
     }
   }
-
-  ensureNotAborted () {
+  ensureNotAborted() {
     if (this.aborted) {
       throw new Error('Aborted');
     }
   }
-
-  async fetchLargeAsset (name, type) {
+  async fetchLargeAsset(name, type) {
     this.ensureNotAborted();
     const asset = _large_assets__WEBPACK_IMPORTED_MODULE_3__["default"][name];
     if (!asset) {
-      throw new Error(`Invalid asset: ${name}`);
+      throw new Error("Invalid asset: ".concat(name));
     }
     if (typeof __ASSETS__ !== 'undefined' && __ASSETS__[asset.src]) {
       return __ASSETS__[asset.src];
     }
-    const dispatchProgress = (progress) => this.dispatchEvent(new _common_event_target__WEBPACK_IMPORTED_MODULE_0__["CustomEvent"]('large-asset-fetch', {
+    const dispatchProgress = progress => this.dispatchEvent(new _common_event_target__WEBPACK_IMPORTED_MODULE_0__["CustomEvent"]('large-asset-fetch', {
       detail: {
         asset: name,
         progress
@@ -11141,13 +10998,13 @@ class Packager extends _common_event_target__WEBPACK_IMPORTED_MODULE_0__["EventT
     if (!result) {
       let url = asset.src;
       if (asset.useBuildId) {
-        url += `?${_build_id__WEBPACK_IMPORTED_MODULE_6__["buildId"]}`;
+        url += "?".concat(_build_id__WEBPACK_IMPORTED_MODULE_6__["buildId"]);
       }
       result = await Object(_common_request__WEBPACK_IMPORTED_MODULE_4__["default"])({
         url,
         type,
         estimatedSize: asset.estimatedSize,
-        progressCallback: (progress) => {
+        progressCallback: progress => {
           dispatchProgress(progress);
         },
         abortTarget: this
@@ -11159,7 +11016,7 @@ class Packager extends _common_event_target__WEBPACK_IMPORTED_MODULE_0__["EventT
     if (asset.sha256) {
       const hash = await Object(_sha256__WEBPACK_IMPORTED_MODULE_1__["default"])(result);
       if (hash !== asset.sha256) {
-        throw new Error(`Hash mismatch for ${name}, found ${hash} but expected ${asset.sha256}`);
+        throw new Error("Hash mismatch for ".concat(name, ", found ").concat(hash, " but expected ").concat(asset.sha256));
       }
     }
     if (!cameFromCache) {
@@ -11172,76 +11029,62 @@ class Packager extends _common_event_target__WEBPACK_IMPORTED_MODULE_0__["EventT
     dispatchProgress(1);
     return result;
   }
-
-  getAddonOptions () {
-    return {
-      ...this.options.chunks,
+  getAddonOptions() {
+    return _objectSpread(_objectSpread({}, this.options.chunks), {}, {
       specialCloudBehaviors: this.options.cloudVariables.specialCloudBehaviors,
       unsafeCloudBehaviors: this.options.cloudVariables.unsafeCloudBehaviors,
       pause: this.options.controls.pause.enabled
-    };
+    });
   }
-
-  async loadResources () {
+  async loadResources() {
     const texts = [COPYRIGHT_HEADER];
     if (this.project.analysis.usesMusic) {
       texts.push(await this.fetchLargeAsset('scaffolding', 'text'));
     } else {
       texts.push(await this.fetchLargeAsset('scaffolding-min', 'text'));
     }
-    if (Object.values(this.getAddonOptions()).some((i) => i)) {
+    if (Object.values(this.getAddonOptions()).some(i => i)) {
       texts.push(await this.fetchLargeAsset('addons', 'text'));
     }
-    this.script = texts.join('\n').replace(/<\/script>/g,"</scri'+'pt>");
+    this.script = texts.join('\n').replace(/<\/script>/g, "</scri'+'pt>");
   }
-
-  computeWindowSize () {
+  computeWindowSize() {
     let width = this.options.stageWidth;
     let height = this.options.stageHeight;
-    if (
-      this.options.controls.greenFlag.enabled ||
-      this.options.controls.stopAll.enabled ||
-      this.options.controls.pause.enabled
-    ) {
+    if (this.options.controls.greenFlag.enabled || this.options.controls.stopAll.enabled || this.options.controls.pause.enabled) {
       height += 48;
     }
-    return {width, height};
-  }
-
-  getPlistPropertiesForPrimaryExecutable () {
     return {
-      [CFBundleIdentifier]: `${bundleIdentifierPrefix}${this.options.app.packageName}`,
-
+      width,
+      height
+    };
+  }
+  getPlistPropertiesForPrimaryExecutable() {
+    return {
+      [CFBundleIdentifier]: "".concat(bundleIdentifierPrefix).concat(this.options.app.packageName),
       // For simplicity, we'll set these to the same thing
       [CFBundleName]: this.options.app.windowTitle,
       [CFBundleDisplayName]: this.options.app.windowTitle,
-
       // We do rename the executable
       [CFBundleExecutable]: this.options.app.packageName,
-
       // For simplicity, we'll set these to the same thing
       [CFBundleVersion]: this.options.app.version,
       [CFBundleShortVersionString]: this.options.app.version,
-
       // Most items generated by the packager are games
       [LSApplicationCategoryType]: 'public.app-category.games'
     };
   }
-
-  async updatePlist (zip, name, newProperties) {
+  async updatePlist(zip, name, newProperties) {
     const contents = await zip.file(name).async('string');
     const plist = Object(_plist__WEBPACK_IMPORTED_MODULE_8__["parsePlist"])(contents);
     Object.assign(plist, newProperties);
     zip.file(name, Object(_plist__WEBPACK_IMPORTED_MODULE_8__["generatePlist"])(plist));
   }
-
-  async addNwJS (projectZip) {
+  async addNwJS(projectZip) {
     const packageName = this.options.app.packageName;
     validatePackageName(packageName);
-
     const nwjsBuffer = await this.fetchLargeAsset(this.options.target, 'arraybuffer');
     const nwjsZip = await (await getJSZip()).loadAsync(nwjsBuffer);
-
     const isWindows = this.options.target.startsWith('nwjs-win');
     const isMac = this.options.target === 'nwjs-mac';
     const isLinux = this.options.target.startsWith('nwjs-linux');
@@ -11270,25 +11113,21 @@ class Packager extends _common_event_target__WEBPACK_IMPORTED_MODULE_0__["EventT
 
     // the first folder, something like "nwjs-v0.49.0-win-64"
     const nwjsPrefix = Object.keys(nwjsZip.files)[0].split('/')[0];
-
-    const zip = new (await getJSZip());
+    const zip = new (await getJSZip())();
 
     // Copy NW.js files to the right place
     for (const path of Object.keys(nwjsZip.files)) {
       const file = nwjsZip.files[path];
-
       let newPath = path.replace(nwjsPrefix, packageName);
       if (isWindows) {
-        newPath = newPath.replace('nw.exe', `${packageName}.exe`);
+        newPath = newPath.replace('nw.exe', "".concat(packageName, ".exe"));
       } else if (isMac) {
-        newPath = newPath.replace('nwjs.app', `${packageName}.app`);
+        newPath = newPath.replace('nwjs.app', "".concat(packageName, ".app"));
       } else if (isLinux) {
         newPath = newPath.replace(/nw$/, packageName);
       }
-
       setFileFast(zip, newPath, file);
     }
-
     const ICON_NAME = 'icon.png';
     const icon = await _adapter__WEBPACK_IMPORTED_MODULE_12__["Adapter"].getAppIcon(this.options.app.icon);
     const manifest = {
@@ -11301,24 +11140,20 @@ class Packager extends _common_event_target__WEBPACK_IMPORTED_MODULE_0__["EventT
         icon: ICON_NAME
       }
     };
-
     let dataPrefix;
     if (isWindows) {
-      dataPrefix = `${packageName}/`;
+      dataPrefix = "".concat(packageName, "/");
     } else if (isMac) {
-      zip.file(`${packageName}/How to run ${packageName}.txt`, generateMacReadme(this.options));
-
+      zip.file("".concat(packageName, "/How to run ").concat(packageName, ".txt"), generateMacReadme(this.options));
       const icnsData = await Object(_icns__WEBPACK_IMPORTED_MODULE_5__["default"])(icon);
-      zip.file(`${packageName}/${packageName}.app/Contents/Resources/app.icns`, icnsData);
-      dataPrefix = `${packageName}/${packageName}.app/Contents/Resources/app.nw/`;
+      zip.file("".concat(packageName, "/").concat(packageName, ".app/Contents/Resources/app.icns"), icnsData);
+      dataPrefix = "".concat(packageName, "/").concat(packageName, ".app/Contents/Resources/app.nw/");
     } else if (isLinux) {
-      const startScript = `#!/bin/bash
-cd "$(dirname "$0")"
-./${packageName}`;
-      zip.file(`${packageName}/start.sh`, startScript, {
+      const startScript = "#!/bin/bash\ncd \"$(dirname \"$0\")\"\n./".concat(packageName);
+      zip.file("".concat(packageName, "/start.sh"), startScript, {
         unixPermissions: 0o100755
       });
-      dataPrefix = `${packageName}/`;
+      dataPrefix = "".concat(packageName, "/");
     }
 
     // Copy project files and extra NW.js files to the right place
@@ -11327,31 +11162,17 @@ cd "$(dirname "$0")"
     }
     zip.file(dataPrefix + ICON_NAME, icon);
     zip.file(dataPrefix + 'package.json', JSON.stringify(manifest, null, 4));
-    zip.file(dataPrefix + 'main.js', `
-    const start = () => nw.Window.open('index.html', {
-      position: 'center',
-      new_instance: true
-    });
-    nw.App.on('open', start);
-    start();`);
-
-    const creditsHtmlPath = `${packageName}/credits.html`;
+    zip.file(dataPrefix + 'main.js', "\n    const start = () => nw.Window.open('index.html', {\n      position: 'center',\n      new_instance: true\n    });\n    nw.App.on('open', start);\n    start();");
+    const creditsHtmlPath = "".concat(packageName, "/credits.html");
     const creditsHtml = await zip.file(creditsHtmlPath).async('string');
-    zip.file(creditsHtmlPath, creditsHtml + generateChromiumLicenseHTML([
-      SELF_LICENSE,
-      SCRATCH_LICENSE
-    ]));
-
+    zip.file(creditsHtmlPath, creditsHtml + generateChromiumLicenseHTML([SELF_LICENSE, SCRATCH_LICENSE]));
     return zip;
   }
-
-  async addElectron (projectZip) {
+  async addElectron(projectZip) {
     const packageName = this.options.app.packageName;
     validatePackageName(packageName);
-
     const buffer = await this.fetchLargeAsset(this.options.target, 'arraybuffer');
     const electronZip = await (await getJSZip()).loadAsync(buffer);
-
     const isWindows = this.options.target.includes('win');
     const isMac = this.options.target.includes('mac');
     const isLinux = this.options.target.includes('linux');
@@ -11395,7 +11216,7 @@ cd "$(dirname "$0")"
     //          +-- index.html and the other project files (we will create this)
     // +-- LICENSES.chromium.html and other license files
 
-    const zip = new (await getJSZip());
+    const zip = new (await getJSZip())();
     for (const path of Object.keys(electronZip.files)) {
       const file = electronZip.files[path];
 
@@ -11407,416 +11228,94 @@ cd "$(dirname "$0")"
       if (isMac) {
         newPath = path;
       } else {
-        newPath = `${packageName}/${path}`;
+        newPath = "".concat(packageName, "/").concat(path);
       }
-
       if (isWindows) {
-        newPath = newPath.replace('electron.exe', `${packageName}.exe`);
+        newPath = newPath.replace('electron.exe', "".concat(packageName, ".exe"));
       } else if (isMac) {
-        newPath = newPath.replace('Electron.app', `${packageName}.app`);
+        newPath = newPath.replace('Electron.app', "".concat(packageName, ".app"));
         newPath = newPath.replace(/Electron$/, packageName);
       } else if (isLinux) {
         newPath = newPath.replace(/electron$/, packageName);
       }
-
       setFileFast(zip, newPath, file);
     }
-
-    const rootPrefix = isMac ? '' : `${packageName}/`;
-
-    const creditsHtml = await zip.file(`${rootPrefix}LICENSES.chromium.html`).async('string');
-    zip.file(`${rootPrefix}licenses.html`, creditsHtml + generateChromiumLicenseHTML([
-      SELF_LICENSE,
-      SCRATCH_LICENSE,
-      ELECTRON_LICENSE
-    ]));
-
-    zip.remove(`${rootPrefix}LICENSE.txt`);
-    zip.remove(`${rootPrefix}LICENSES.chromium.html`);
-    zip.remove(`${rootPrefix}LICENSE`);
-    zip.remove(`${rootPrefix}version`);
-    zip.remove(`${rootPrefix}resources/default_app.asar`);
-
-    const contentsPrefix = isMac ? `${rootPrefix}${packageName}.app/Contents/` : rootPrefix;
-    const resourcesPrefix = isMac ? `${contentsPrefix}Resources/app/` : `${contentsPrefix}resources/app/`;
+    const rootPrefix = isMac ? '' : "".concat(packageName, "/");
+    const creditsHtml = await zip.file("".concat(rootPrefix, "LICENSES.chromium.html")).async('string');
+    zip.file("".concat(rootPrefix, "licenses.html"), creditsHtml + generateChromiumLicenseHTML([SELF_LICENSE, SCRATCH_LICENSE, ELECTRON_LICENSE]));
+    zip.remove("".concat(rootPrefix, "LICENSE.txt"));
+    zip.remove("".concat(rootPrefix, "LICENSES.chromium.html"));
+    zip.remove("".concat(rootPrefix, "LICENSE"));
+    zip.remove("".concat(rootPrefix, "version"));
+    zip.remove("".concat(rootPrefix, "resources/default_app.asar"));
+    const contentsPrefix = isMac ? "".concat(rootPrefix).concat(packageName, ".app/Contents/") : rootPrefix;
+    const resourcesPrefix = isMac ? "".concat(contentsPrefix, "Resources/app/") : "".concat(contentsPrefix, "resources/app/");
     const electronMainName = 'electron-main.js';
     const electronPreloadName = 'electron-preload.js';
     const iconName = 'icon.png';
-
     const icon = await _adapter__WEBPACK_IMPORTED_MODULE_12__["Adapter"].getAppIcon(this.options.app.icon);
-    zip.file(`${resourcesPrefix}${iconName}`, icon);
-
+    zip.file("".concat(resourcesPrefix).concat(iconName), icon);
     const manifest = {
       name: packageName,
       main: electronMainName,
       version: this.options.app.version
     };
-    zip.file(`${resourcesPrefix}package.json`, JSON.stringify(manifest, null, 4));
-
-    let mainJS = `'use strict';
-const {app, BrowserWindow, Menu, shell, screen, dialog, ipcMain} = require('electron');
-const path = require('path');
-
-const isWindows = process.platform === 'win32';
-const isMac = process.platform === 'darwin';
-const isLinux = process.platform === 'linux';
-
-if (isMac) {
-  Menu.setApplicationMenu(Menu.buildFromTemplate([
-    { role: 'appMenu' },
-    { role: 'fileMenu' },
-    { role: 'editMenu' },
-    { role: 'windowMenu' },
-    { role: 'help' }
-  ]));
-} else {
-  Menu.setApplicationMenu(null);
-}
-
-const resourcesURL = Object.assign(new URL('file://'), {
-  pathname: path.join(__dirname, '/')
-}).href;
-const defaultProjectURL = new URL('./index.html', resourcesURL).href;
-
-const createWindow = (windowOptions) => {
-  const options = {
-    title: ${JSON.stringify(this.options.app.windowTitle)},
-    icon: path.resolve(__dirname, ${JSON.stringify(iconName)}),
-    useContentSize: true,
-    webPreferences: {
-      sandbox: true,
-      contextIsolation: true,
-      nodeIntegration: false,
-      preload: path.resolve(__dirname, ${JSON.stringify(electronPreloadName)}),
-    },
-    frame: ${this.options.app.windowControls !== 'frameless'},
-    show: true,
-    width: ${this.options.stageWidth},
-    height: ${this.options.stageHeight},
-    ...windowOptions,
-  };
-
-  const activeScreen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());
-  const bounds = activeScreen.workArea;
-  options.x = bounds.x + ((bounds.width - options.width) / 2);
-  options.y = bounds.y + ((bounds.height - options.height) / 2);
-
-  const window = new BrowserWindow(options);
-  return window;
-};
-
-const createProjectWindow = (url) => {
-  const windowMode = ${JSON.stringify(this.options.app.windowMode)};
-  const options = {
-    show: false,
-    backgroundColor: ${JSON.stringify(this.options.appearance.background)},
-    width: ${this.computeWindowSize().width},
-    height: ${this.computeWindowSize().height},
-    minWidth: 50,
-    minHeight: 50,
-  };
-  // fullscreen === false disables fullscreen on macOS so only set this property when it's true
-  if (windowMode === 'fullscreen') {
-    options.fullscreen = true;
-  }
-  const window = createWindow(options);
-  if (windowMode === 'maximize') {
-    window.maximize();
-  }
-  window.loadURL(url);
-  window.show();
-};
-
-const createDataWindow = (dataURI) => {
-  const window = createWindow({});
-  window.loadURL(dataURI);
-};
-
-const isResourceURL = (url) => {
-  try {
-    const parsedUrl = new URL(url);
-    return parsedUrl.protocol === 'file:' && parsedUrl.href.startsWith(resourcesURL);
-  } catch (e) {
-    // ignore
-  }
-  return false;
-};
-
-const SAFE_PROTOCOLS = [
-  'https:',
-  'http:',
-  'mailto:',
-];
-
-const isSafeOpenExternal = (url) => {
-  try {
-    const parsedUrl = new URL(url);
-    return SAFE_PROTOCOLS.includes(parsedUrl.protocol);
-  } catch (e) {
-    // ignore
-  }
-  return false;
-};
-
-const isDataURL = (url) => {
-  try {
-    const parsedUrl = new URL(url);
-    return parsedUrl.protocol === 'data:';
-  } catch (e) {
-    // ignore
-  }
-  return false;
-};
-
-const openLink = (url) => {
-  if (isDataURL(url)) {
-    createDataWindow(url);
-  } else if (isResourceURL(url)) {
-    createProjectWindow(url);
-  } else if (isSafeOpenExternal(url)) {
-    shell.openExternal(url);
-  }
-};
-
-const createProcessCrashMessage = (details) => {
-  let message = details.type ? details.type + ' child process' : 'Renderer process';
-  message += ' crashed: ' + details.reason + ' (' + details.exitCode + ')\\n\\n';
-  if (process.arch === 'ia32') {
-    message += 'Usually this means the project was too big for the 32-bit Electron environment or your computer is out of memory. Ask the creator to use the 64-bit environment instead.';
-  } else {
-    message += 'Usually this means your computer is out of memory.';
-  }
-  return message;
-};
-
-app.on('render-process-gone', (event, webContents, details) => {
-  const window = BrowserWindow.fromWebContents(webContents);
-  dialog.showMessageBoxSync(window, {
-    type: 'error',
-    title: 'Error',
-    message: createProcessCrashMessage(details)
-  });
-});
-
-app.on('child-process-gone', (event, details) => {
-  dialog.showMessageBoxSync({
-    type: 'error',
-    title: 'Error',
-    message: createProcessCrashMessage(details)
-  });
-});
-
-app.on('web-contents-created', (event, contents) => {
-  contents.setWindowOpenHandler((details) => {
-    setImmediate(() => {
-      openLink(details.url);
-    });
-    return {action: 'deny'};
-  });
-  contents.on('will-navigate', (e, url) => {
-    if (!isResourceURL(url)) {
-      e.preventDefault();
-      openLink(url);
-    }
-  });
-  contents.on('before-input-event', (e, input) => {
-    const window = BrowserWindow.fromWebContents(contents);
-    if (!window || input.type !== "keyDown") return;
-    if (input.key === 'F11' || (input.key === 'Enter' && input.alt)) {
-      window.setFullScreen(!window.isFullScreen());
-    } else if (input.key === 'Escape') {
-      const behavior = ${JSON.stringify(this.options.app.escapeBehavior)};
-      if (window.isFullScreen() && (behavior === 'unfullscreen-only' || behavior === 'unfullscreen-or-exit')) {
-        window.setFullScreen(false);
-      } else if (behavior === 'unfullscreen-or-exit' || behavior === 'exit-only') {
-        window.close();
-      }
-    }
-  });
-});
-
-app.on('session-created', (session) => {
-  session.webRequest.onBeforeRequest({
-    urls: ["file://*"]
-  }, (details, callback) => {
-    callback({
-      cancel: !details.url.startsWith(resourcesURL)
-    });
-  });
-});
-
-app.on('window-all-closed', () => {
-  app.quit();
-});
-
-app.whenReady().then(() => {
-  createProjectWindow(defaultProjectURL);
-});
-`;
-
-    let preloadJS = `'use strict';
-const {contextBridge, ipcRenderer} = require('electron');
-`;
-
-    if (
-      this.project.analysis.usesSteamworks &&
-      ['electron-win64', 'electron-linux64', 'electron-mac'].includes(this.options.target)
-    ) {
-      mainJS += `
-      const enableSteamworks = () => {
-        const APP_ID = +${JSON.stringify(this.options.steamworks.appId)};
-        const steamworks = require('./steamworks.js/');
-
-        const client = steamworks.init(APP_ID);
-
-        const async = (event, callback) => ipcMain.handle(event, (e, ...args) => {
-          return callback(...args);
-        });
-        const sync = (event, callback) => ipcMain.on(event, (e, ...args) => {
-          e.returnValue = callback(...args);
-        });
-
-        async('Steamworks.achievement.activate', (achievement) => client.achievement.activate(achievement));
-        async('Steamworks.achievement.clear', (achievement) => client.achievement.clear(achievement));
-        sync('Steamworks.achievement.isActivated', (achievement) => client.achievement.isActivated(achievement));
-        sync('Steamworks.apps.isDlcInstalled', (dlc) => client.apps.isDlcInstalled(dlc));
-        sync('Steamworks.localplayer.getName', () => client.localplayer.getName());
-        sync('Steamworks.localplayer.getLevel', () => client.localplayer.getLevel());
-        sync('Steamworks.localplayer.getIpCountry', () => client.localplayer.getIpCountry());
-        sync('Steamworks.localplayer.getSteamId', () => client.localplayer.getSteamId());
-        async('Steamworks.overlay.activateToWebPage', (url) => client.overlay.activateToWebPage(url));
-
-        steamworks.electronEnableSteamOverlay();
-        sync('Steamworks.ok', () => true);
-      };
-
-      try {
-        enableSteamworks();
-      } catch (e) {
-        console.error(e);
-        ipcMain.on('Steamworks.ok', (e) => {
-          e.returnValue = false;
-        });
-        app.whenReady().then(() => {
-          const ON_ERROR = ${JSON.stringify(this.options.steamworks.onError)};
-          const window = BrowserWindow.getAllWindows()[0];
-          if (ON_ERROR === 'warning') {
-            dialog.showMessageBox(window, {
-              type: 'error',
-              message: 'Error initializing Steamworks: ' + e,
-            });
-          } else if (ON_ERROR === 'error') {
-            dialog.showMessageBoxSync(window, {
-              type: 'error',
-              message: 'Error initializing Steamworks: ' + e,
-            });
-            app.quit();
-          }
-        });
-      }`;
-
-      preloadJS += `
-      const enableSteamworks = () => {
-        const sync = (event) => (...args) => ipcRenderer.sendSync(event, ...args);
-        const async = (event) => (...args) => ipcRenderer.invoke(event, ...args);
-
-        contextBridge.exposeInMainWorld('Steamworks', {
-          ok: sync('Steamworks.ok'),
-          achievement: {
-            activate: async('Steamworks.achievement.activate'),
-            clear: async('Steamworks.achievement.clear'),
-            isActivated: sync('Steamworks.achievement.isActivated'),
-          },
-          apps: {
-            isDlcInstalled: sync('Steamworks.apps.isDlcInstalled'),
-          },
-          leaderboard: {
-            uploadScore: async('Steamworks.leaderboard.uploadScore'),
-          },
-          localplayer: {
-            getName: sync('Steamworks.localplayer.getName'),
-            getLevel: sync('Steamworks.localplayer.getLevel'),
-            getIpCountry: sync('Steamworks.localplayer.getIpCountry'),
-            getSteamId: sync('Steamworks.localplayer.getSteamId'),
-          },
-          overlay: {
-            activateToWebPage: async('Steamworks.overlay.activateToWebPage'),
-          },
-        });
-      };
-      enableSteamworks();`;
-
+    zip.file("".concat(resourcesPrefix, "package.json"), JSON.stringify(manifest, null, 4));
+    let mainJS = "'use strict';\nconst {app, BrowserWindow, Menu, shell, screen, dialog, ipcMain} = require('electron');\nconst path = require('path');\n\nconst isWindows = process.platform === 'win32';\nconst isMac = process.platform === 'darwin';\nconst isLinux = process.platform === 'linux';\n\nif (isMac) {\n  Menu.setApplicationMenu(Menu.buildFromTemplate([\n    { role: 'appMenu' },\n    { role: 'fileMenu' },\n    { role: 'editMenu' },\n    { role: 'windowMenu' },\n    { role: 'help' }\n  ]));\n} else {\n  Menu.setApplicationMenu(null);\n}\n\nconst resourcesURL = Object.assign(new URL('file://'), {\n  pathname: path.join(__dirname, '/')\n}).href;\nconst defaultProjectURL = new URL('./index.html', resourcesURL).href;\n\nconst createWindow = (windowOptions) => {\n  const options = {\n    title: ".concat(JSON.stringify(this.options.app.windowTitle), ",\n    icon: path.resolve(__dirname, ").concat(JSON.stringify(iconName), "),\n    useContentSize: true,\n    webPreferences: {\n      sandbox: true,\n      contextIsolation: true,\n      nodeIntegration: false,\n      preload: path.resolve(__dirname, ").concat(JSON.stringify(electronPreloadName), "),\n    },\n    frame: ").concat(this.options.app.windowControls !== 'frameless', ",\n    show: true,\n    width: ").concat(this.options.stageWidth, ",\n    height: ").concat(this.options.stageHeight, ",\n    ...windowOptions,\n  };\n\n  const activeScreen = screen.getDisplayNearestPoint(screen.getCursorScreenPoint());\n  const bounds = activeScreen.workArea;\n  options.x = bounds.x + ((bounds.width - options.width) / 2);\n  options.y = bounds.y + ((bounds.height - options.height) / 2);\n\n  const window = new BrowserWindow(options);\n  return window;\n};\n\nconst createProjectWindow = (url) => {\n  const windowMode = ").concat(JSON.stringify(this.options.app.windowMode), ";\n  const options = {\n    show: false,\n    backgroundColor: ").concat(JSON.stringify(this.options.appearance.background), ",\n    width: ").concat(this.computeWindowSize().width, ",\n    height: ").concat(this.computeWindowSize().height, ",\n    minWidth: 50,\n    minHeight: 50,\n  };\n  // fullscreen === false disables fullscreen on macOS so only set this property when it's true\n  if (windowMode === 'fullscreen') {\n    options.fullscreen = true;\n  }\n  const window = createWindow(options);\n  if (windowMode === 'maximize') {\n    window.maximize();\n  }\n  window.loadURL(url);\n  window.show();\n};\n\nconst createDataWindow = (dataURI) => {\n  const window = createWindow({});\n  window.loadURL(dataURI);\n};\n\nconst isResourceURL = (url) => {\n  try {\n    const parsedUrl = new URL(url);\n    return parsedUrl.protocol === 'file:' && parsedUrl.href.startsWith(resourcesURL);\n  } catch (e) {\n    // ignore\n  }\n  return false;\n};\n\nconst SAFE_PROTOCOLS = [\n  'https:',\n  'http:',\n  'mailto:',\n];\n\nconst isSafeOpenExternal = (url) => {\n  try {\n    const parsedUrl = new URL(url);\n    return SAFE_PROTOCOLS.includes(parsedUrl.protocol);\n  } catch (e) {\n    // ignore\n  }\n  return false;\n};\n\nconst isDataURL = (url) => {\n  try {\n    const parsedUrl = new URL(url);\n    return parsedUrl.protocol === 'data:';\n  } catch (e) {\n    // ignore\n  }\n  return false;\n};\n\nconst openLink = (url) => {\n  if (isDataURL(url)) {\n    createDataWindow(url);\n  } else if (isResourceURL(url)) {\n    createProjectWindow(url);\n  } else if (isSafeOpenExternal(url)) {\n    shell.openExternal(url);\n  }\n};\n\nconst createProcessCrashMessage = (details) => {\n  let message = details.type ? details.type + ' child process' : 'Renderer process';\n  message += ' crashed: ' + details.reason + ' (' + details.exitCode + ')\\n\\n';\n  if (process.arch === 'ia32') {\n    message += 'Usually this means the project was too big for the 32-bit Electron environment or your computer is out of memory. Ask the creator to use the 64-bit environment instead.';\n  } else {\n    message += 'Usually this means your computer is out of memory.';\n  }\n  return message;\n};\n\napp.on('render-process-gone', (event, webContents, details) => {\n  const window = BrowserWindow.fromWebContents(webContents);\n  dialog.showMessageBoxSync(window, {\n    type: 'error',\n    title: 'Error',\n    message: createProcessCrashMessage(details)\n  });\n});\n\napp.on('child-process-gone', (event, details) => {\n  dialog.showMessageBoxSync({\n    type: 'error',\n    title: 'Error',\n    message: createProcessCrashMessage(details)\n  });\n});\n\napp.on('web-contents-created', (event, contents) => {\n  contents.setWindowOpenHandler((details) => {\n    setImmediate(() => {\n      openLink(details.url);\n    });\n    return {action: 'deny'};\n  });\n  contents.on('will-navigate', (e, url) => {\n    if (!isResourceURL(url)) {\n      e.preventDefault();\n      openLink(url);\n    }\n  });\n  contents.on('before-input-event', (e, input) => {\n    const window = BrowserWindow.fromWebContents(contents);\n    if (!window || input.type !== \"keyDown\") return;\n    if (input.key === 'F11' || (input.key === 'Enter' && input.alt)) {\n      window.setFullScreen(!window.isFullScreen());\n    } else if (input.key === 'Escape') {\n      const behavior = ").concat(JSON.stringify(this.options.app.escapeBehavior), ";\n      if (window.isFullScreen() && (behavior === 'unfullscreen-only' || behavior === 'unfullscreen-or-exit')) {\n        window.setFullScreen(false);\n      } else if (behavior === 'unfullscreen-or-exit' || behavior === 'exit-only') {\n        window.close();\n      }\n    }\n  });\n});\n\napp.on('session-created', (session) => {\n  session.webRequest.onBeforeRequest({\n    urls: [\"file://*\"]\n  }, (details, callback) => {\n    callback({\n      cancel: !details.url.startsWith(resourcesURL)\n    });\n  });\n});\n\napp.on('window-all-closed', () => {\n  app.quit();\n});\n\napp.whenReady().then(() => {\n  createProjectWindow(defaultProjectURL);\n});\n");
+    let preloadJS = "'use strict';\nconst {contextBridge, ipcRenderer} = require('electron');\n";
+    if (this.project.analysis.usesSteamworks && ['electron-win64', 'electron-linux64', 'electron-mac'].includes(this.options.target)) {
+      mainJS += "\n      const enableSteamworks = () => {\n        const APP_ID = +".concat(JSON.stringify(this.options.steamworks.appId), ";\n        const steamworks = require('./steamworks.js/');\n\n        const client = steamworks.init(APP_ID);\n\n        const async = (event, callback) => ipcMain.handle(event, (e, ...args) => {\n          return callback(...args);\n        });\n        const sync = (event, callback) => ipcMain.on(event, (e, ...args) => {\n          e.returnValue = callback(...args);\n        });\n\n        async('Steamworks.achievement.activate', (achievement) => client.achievement.activate(achievement));\n        async('Steamworks.achievement.clear', (achievement) => client.achievement.clear(achievement));\n        sync('Steamworks.achievement.isActivated', (achievement) => client.achievement.isActivated(achievement));\n        sync('Steamworks.apps.isDlcInstalled', (dlc) => client.apps.isDlcInstalled(dlc));\n        sync('Steamworks.localplayer.getName', () => client.localplayer.getName());\n        sync('Steamworks.localplayer.getLevel', () => client.localplayer.getLevel());\n        sync('Steamworks.localplayer.getIpCountry', () => client.localplayer.getIpCountry());\n        sync('Steamworks.localplayer.getSteamId', () => client.localplayer.getSteamId());\n        async('Steamworks.overlay.activateToWebPage', (url) => client.overlay.activateToWebPage(url));\n\n        steamworks.electronEnableSteamOverlay();\n        sync('Steamworks.ok', () => true);\n      };\n\n      try {\n        enableSteamworks();\n      } catch (e) {\n        console.error(e);\n        ipcMain.on('Steamworks.ok', (e) => {\n          e.returnValue = false;\n        });\n        app.whenReady().then(() => {\n          const ON_ERROR = ").concat(JSON.stringify(this.options.steamworks.onError), ";\n          const window = BrowserWindow.getAllWindows()[0];\n          if (ON_ERROR === 'warning') {\n            dialog.showMessageBox(window, {\n              type: 'error',\n              message: 'Error initializing Steamworks: ' + e,\n            });\n          } else if (ON_ERROR === 'error') {\n            dialog.showMessageBoxSync(window, {\n              type: 'error',\n              message: 'Error initializing Steamworks: ' + e,\n            });\n            app.quit();\n          }\n        });\n      }");
+      preloadJS += "\n      const enableSteamworks = () => {\n        const sync = (event) => (...args) => ipcRenderer.sendSync(event, ...args);\n        const async = (event) => (...args) => ipcRenderer.invoke(event, ...args);\n\n        contextBridge.exposeInMainWorld('Steamworks', {\n          ok: sync('Steamworks.ok'),\n          achievement: {\n            activate: async('Steamworks.achievement.activate'),\n            clear: async('Steamworks.achievement.clear'),\n            isActivated: sync('Steamworks.achievement.isActivated'),\n          },\n          apps: {\n            isDlcInstalled: sync('Steamworks.apps.isDlcInstalled'),\n          },\n          leaderboard: {\n            uploadScore: async('Steamworks.leaderboard.uploadScore'),\n          },\n          localplayer: {\n            getName: sync('Steamworks.localplayer.getName'),\n            getLevel: sync('Steamworks.localplayer.getLevel'),\n            getIpCountry: sync('Steamworks.localplayer.getIpCountry'),\n            getSteamId: sync('Steamworks.localplayer.getSteamId'),\n          },\n          overlay: {\n            activateToWebPage: async('Steamworks.overlay.activateToWebPage'),\n          },\n        });\n      };\n      enableSteamworks();";
       const steamworksBuffer = await this.fetchLargeAsset('steamworks.js', 'arraybuffer');
       const steamworksZip = await (await getJSZip()).loadAsync(steamworksBuffer);
       for (const [path, file] of Object.entries(steamworksZip.files)) {
         const newPath = path.replace(/^package\//, 'steamworks.js/');
-        setFileFast(zip, `${resourcesPrefix}${newPath}`, file);
+        setFileFast(zip, "".concat(resourcesPrefix).concat(newPath), file);
       }
     }
-
-    zip.file(`${resourcesPrefix}${electronMainName}`, mainJS);
-    zip.file(`${resourcesPrefix}${electronPreloadName}`, preloadJS);
-
+    zip.file("".concat(resourcesPrefix).concat(electronMainName), mainJS);
+    zip.file("".concat(resourcesPrefix).concat(electronPreloadName), preloadJS);
     for (const [path, data] of Object.entries(projectZip.files)) {
-      setFileFast(zip, `${resourcesPrefix}${path}`, data);
+      setFileFast(zip, "".concat(resourcesPrefix).concat(path), data);
     }
-
     if (isWindows) {
-      const readme = [
-        '1) Extract the whole zip',
-        `2) Open "${packageName}.exe" to start the app.`,
-        'Open "licenses.html" for information regarding open source software used by the app.',
-      ].join('\n\n');
-      zip.file(`${rootPrefix}README.txt`, readme);
+      const readme = ['1) Extract the whole zip', "2) Open \"".concat(packageName, ".exe\" to start the app."), 'Open "licenses.html" for information regarding open source software used by the app.'].join('\n\n');
+      zip.file("".concat(rootPrefix, "README.txt"), readme);
     } else if (isMac) {
-      zip.file(`How to run ${this.options.app.packageName}.txt`, generateMacReadme(this.options));
-
+      zip.file("How to run ".concat(this.options.app.packageName, ".txt"), generateMacReadme(this.options));
       const plist = this.getPlistPropertiesForPrimaryExecutable();
-      await this.updatePlist(zip, `${contentsPrefix}Info.plist`, plist);
+      await this.updatePlist(zip, "".concat(contentsPrefix, "Info.plist"), plist);
 
       // macOS Electron apps also contain several helper apps that we should update.
-      const HELPERS = [
-        'Electron Helper',
-        'Electron Helper (GPU)',
-        'Electron Helper (Renderer)',
-        'Electron Helper (Plugin)',
-      ];
+      const HELPERS = ['Electron Helper', 'Electron Helper (GPU)', 'Electron Helper (Renderer)', 'Electron Helper (Plugin)'];
       for (const name of HELPERS) {
-        await this.updatePlist(zip, `${contentsPrefix}Frameworks/${name}.app/Contents/Info.plist`, {
+        await this.updatePlist(zip, "".concat(contentsPrefix, "Frameworks/").concat(name, ".app/Contents/Info.plist"), {
           // In the prebuilt Electron binaries on GitHub, the original app has a CFBundleIdentifier of
           // com.github.Electron and all the helpers have com.github.Electron.helper
-          [CFBundleIdentifier]: `${plist[CFBundleIdentifier]}.helper`,
-
+          [CFBundleIdentifier]: "".concat(plist[CFBundleIdentifier], ".helper"),
           // We shouldn't change the actual name of the helpers because we don't actually rename their .app
           // We also don't rename the executable
           [CFBundleDisplayName]: name.replace('Electron', this.options.app.packageName),
-
           // electron-builder always updates the helpers to use the same version as the app itself
           [CFBundleVersion]: this.options.app.version,
-          [CFBundleShortVersionString]: this.options.app.version,
+          [CFBundleShortVersionString]: this.options.app.version
         });
       }
-
       const icns = await Object(_icns__WEBPACK_IMPORTED_MODULE_5__["default"])(icon);
-      zip.file(`${contentsPrefix}Resources/electron.icns`, icns);
+      zip.file("".concat(contentsPrefix, "Resources/electron.icns"), icns);
     } else if (isLinux) {
       // Some Linux distributions can't easily open the executable file from the GUI, so we'll add a simple wrapper that people can use instead.
-      const startScript = `#!/bin/bash
-cd "$(dirname "$0")"
-./${packageName}`;
-      zip.file(`${rootPrefix}start.sh`, startScript, {
+      const startScript = "#!/bin/bash\ncd \"$(dirname \"$0\")\"\n./".concat(packageName);
+      zip.file("".concat(rootPrefix, "start.sh"), startScript, {
         unixPermissions: 0o100755
       });
     }
-
     return zip;
   }
-
-  async addNodeCLI (projectZip) {
+  async addNodeCLI(projectZip) {
     const packageName = this.options.app.packageName;
     validatePackageName(packageName);
-
-    const zip = new (await getJSZip());
+    const zip = new (await getJSZip())();
 
     // Get the SB3 file from the original project array buffer
     const sb3Buffer = this.project.arrayBuffer;
@@ -11838,7 +11337,7 @@ cd "$(dirname "$0")"
     const packageJson = {
       name: packageName,
       version: this.options.app.version,
-      description: `${packageName} - Scratch CLI Application`,
+      description: "".concat(packageName, " - Scratch CLI Application"),
       main: 'main.js',
       bin: {
         [packageName]: 'main.js'
@@ -11859,161 +11358,16 @@ cd "$(dirname "$0")"
     zip.file('package.json', JSON.stringify(packageJson, null, 2));
 
     // Create main.js with CLI API and scratch-vm integration
-    const mainJS = `#!/usr/bin/env node
-const fs = require('fs');
-const path = require('path');
-const readline = require('readline');
-const VirtualMachine = require('scratch-vm');
-
-// Create readline interface for user input
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-// Parse command line arguments
-const parseArgs = () => {
-  const args = process.argv.slice(2);
-  const parsed = {};
-  for (let i = 0; i < args.length; i++) {
-    if (args[i].startsWith('--')) {
-      const key = args[i].slice(2);
-      if (i + 1 < args.length && !args[i + 1].startsWith('--')) {
-        parsed[key] = args[i + 1];
-        i++;
-      } else {
-        parsed[key] = true;
-      }
-    }
-  }
-  return parsed;
-};
-
-const commandLineArgs = parseArgs();
-
-// CLI API
-const cli = {
-  log: (...args) => {
-    console.log(...args);
-  },
-  error: (...args) => {
-    console.error('[CLI ERROR]', ...args);
-  },
-  warn: (...args) => {
-    console.warn('[CLI WARNING]', ...args);
-  },
-  info: (...args) => {
-    console.info('[CLI INFO]', ...args);
-  },
-  exit: (code) => {
-    console.log('[CLI] Exiting with code:', code || 0);
-    rl.close();
-    process.exit(code || 0);
-  },
-  getArgs: () => {
-    return commandLineArgs;
-  },
-  getArg: (key) => {
-    return commandLineArgs[key];
-  }
-};
-
-// Expose CLI API globally for Scratch projects
-global.cli = cli;
-
-// Wait for all threads to complete
-const waitForCompletion = (vm) => {
-  return new Promise((resolve) => {
-    const checkInterval = setInterval(() => {
-      const activeThreads = vm.runtime.threads.filter(thread => !thread.updateMonitor);
-      if (activeThreads.length === 0) {
-        clearInterval(checkInterval);
-        vm.stopAll();
-        vm.quit();
-        rl.close();
-        resolve();
-      }
-    }, 100);
-  });
-};
-
-async function runSB3(base64Data) {
-  // Decode base64 to buffer
-  const buffer = Buffer.from(base64Data, 'base64');
-
-  // Initialize VM
-  const vm = new VirtualMachine();
-
-  // Listen to Scratch events
-  vm.runtime.on('SAY', (target, type, text) => {
-    cli.log(\`\${text}\`);
-  });
-
-  vm.runtime.on('QUESTION', () => {
-    rl.question('', (answer) => {
-      vm.runtime.emit('ANSWER', answer);
-    });
-  });
-
-  // Load project
-  await vm.loadProject(buffer);
-
-  // Start VM and trigger green flag
-  vm.start();
-  vm.greenFlag();
-
-  // Wait for all threads to complete
-  await waitForCompletion(vm);
-}
-
-// Embedded SB3 project (base64 encoded)
-const embeddedProject = '${sb3Base64}';
-
-// Run the embedded project
-runSB3(embeddedProject).catch(err => {
-  cli.error('Execution failed:', err);
-  rl.close();
-  cli.exit(1);
-});
-`;
-
+    const mainJS = "#!/usr/bin/env node\nconst fs = require('fs');\nconst path = require('path');\nconst readline = require('readline');\nconst VirtualMachine = require('scratch-vm');\n\n// Create readline interface for user input\nconst rl = readline.createInterface({\n  input: process.stdin,\n  output: process.stdout\n});\n\n// Parse command line arguments\nconst parseArgs = () => {\n  const args = process.argv.slice(2);\n  const parsed = {};\n  for (let i = 0; i < args.length; i++) {\n    if (args[i].startsWith('--')) {\n      const key = args[i].slice(2);\n      if (i + 1 < args.length && !args[i + 1].startsWith('--')) {\n        parsed[key] = args[i + 1];\n        i++;\n      } else {\n        parsed[key] = true;\n      }\n    }\n  }\n  return parsed;\n};\n\nconst commandLineArgs = parseArgs();\n\n// CLI API\nconst cli = {\n  log: (...args) => {\n    console.log(...args);\n  },\n  error: (...args) => {\n    console.error('[CLI ERROR]', ...args);\n  },\n  warn: (...args) => {\n    console.warn('[CLI WARNING]', ...args);\n  },\n  info: (...args) => {\n    console.info('[CLI INFO]', ...args);\n  },\n  exit: (code) => {\n    console.log('[CLI] Exiting with code:', code || 0);\n    rl.close();\n    process.exit(code || 0);\n  },\n  getArgs: () => {\n    return commandLineArgs;\n  },\n  getArg: (key) => {\n    return commandLineArgs[key];\n  }\n};\n\n// Expose CLI API globally for Scratch projects\nglobal.cli = cli;\n\n// Wait for all threads to complete\nconst waitForCompletion = (vm) => {\n  return new Promise((resolve) => {\n    const checkInterval = setInterval(() => {\n      const activeThreads = vm.runtime.threads.filter(thread => !thread.updateMonitor);\n      if (activeThreads.length === 0) {\n        clearInterval(checkInterval);\n        vm.stopAll();\n        vm.quit();\n        rl.close();\n        resolve();\n      }\n    }, 100);\n  });\n};\n\nasync function runSB3(base64Data) {\n  // Decode base64 to buffer\n  const buffer = Buffer.from(base64Data, 'base64');\n\n  // Initialize VM\n  const vm = new VirtualMachine();\n\n  // Listen to Scratch events\n  vm.runtime.on('SAY', (target, type, text) => {\n    cli.log(`${text}`);\n  });\n\n  vm.runtime.on('QUESTION', () => {\n    rl.question('', (answer) => {\n      vm.runtime.emit('ANSWER', answer);\n    });\n  });\n\n  // Load project\n  await vm.loadProject(buffer);\n\n  // Start VM and trigger green flag\n  vm.start();\n  vm.greenFlag();\n\n  // Wait for all threads to complete\n  await waitForCompletion(vm);\n}\n\n// Embedded SB3 project (base64 encoded)\nconst embeddedProject = '".concat(sb3Base64, "';\n\n// Run the embedded project\nrunSB3(embeddedProject).catch(err => {\n  cli.error('Execution failed:', err);\n  rl.close();\n  cli.exit(1);\n});\n");
     zip.file('main.js', mainJS);
 
     // Add README
-    const readme = `${packageName} - Scratch CLI Application
-
-Usage:
-  ${packageName} [options]
-
-Options:
-  --arg value    Pass arguments to the application
-  --flag         Enable a flag
-
-CLI API:
-  cli.log(message)        - Output text to console
-  cli.error(message)      - Output error to console
-  cli.warn(message)       - Output warning to console
-  cli.info(message)       - Output info to console
-  cli.exit(code)          - Exit the application
-  cli.getArgs()            - Get all command line arguments
-  cli.getArg(key)         - Get specific command line argument
-
-Example:
-  ${packageName} --mode test --verbose
-
-Important Notes:
-- The SB3 project is embedded in the executable, no external files needed
-- After running 'npm run build', the executable will be created in the same folder
-- Simply run the executable to start your project
-`;
+    const readme = "".concat(packageName, " - Scratch CLI Application\n\nUsage:\n  ").concat(packageName, " [options]\n\nOptions:\n  --arg value    Pass arguments to the application\n  --flag         Enable a flag\n\nCLI API:\n  cli.log(message)        - Output text to console\n  cli.error(message)      - Output error to console\n  cli.warn(message)       - Output warning to console\n  cli.info(message)       - Output info to console\n  cli.exit(code)          - Exit the application\n  cli.getArgs()            - Get all command line arguments\n  cli.getArg(key)         - Get specific command line argument\n\nExample:\n  ").concat(packageName, " --mode test --verbose\n\nImportant Notes:\n- The SB3 project is embedded in the executable, no external files needed\n- After running 'npm run build', the executable will be created in the same folder\n- Simply run the executable to start your project\n");
     zip.file('README.txt', readme);
-
     return zip;
   }
-
-  async addWebViewMac (projectZip) {
+  async addWebViewMac(projectZip) {
     validatePackageName(this.options.app.packageName);
-
     const buffer = await this.fetchLargeAsset(this.options.target, 'arraybuffer');
     const appZip = await (await getJSZip()).loadAsync(buffer);
 
@@ -12027,59 +11381,49 @@ Important Notes:
     //       +-- application_config.json
     //       +-- AppIcon.icns
 
-    const newAppName = `${this.options.app.packageName}.app`;
-    const contentsPrefix = `${newAppName}/Contents/`;
-    const resourcesPrefix = `${newAppName}/Contents/Resources/`;
-
-    const zip = new (await getJSZip());
+    const newAppName = "".concat(this.options.app.packageName, ".app");
+    const contentsPrefix = "".concat(newAppName, "/Contents/");
+    const resourcesPrefix = "".concat(newAppName, "/Contents/Resources/");
+    const zip = new (await getJSZip())();
     for (const [path, data] of Object.entries(appZip.files)) {
       const newPath = path
-        // Rename the .app itself
-        .replace('WebView.app', newAppName)
-        // Rename the executable
-        .replace(/WebView$/, this.options.app.packageName);
+      // Rename the .app itself
+      .replace('WebView.app', newAppName)
+      // Rename the executable
+      .replace(/WebView$/, this.options.app.packageName);
       setFileFast(zip, newPath, data);
     }
     for (const [path, data] of Object.entries(projectZip.files)) {
-      setFileFast(zip, `${resourcesPrefix}${path}`, data);
+      setFileFast(zip, "".concat(resourcesPrefix).concat(path), data);
     }
-
     const icon = await _adapter__WEBPACK_IMPORTED_MODULE_12__["Adapter"].getAppIcon(this.options.app.icon);
     const icns = await Object(_icns__WEBPACK_IMPORTED_MODULE_5__["default"])(icon);
-    zip.file(`${resourcesPrefix}AppIcon.icns`, icns);
-    zip.remove(`${resourcesPrefix}Assets.car`);
-
+    zip.file("".concat(resourcesPrefix, "AppIcon.icns"), icns);
+    zip.remove("".concat(resourcesPrefix, "Assets.car"));
     const parsedBackgroundColor = parseInt(this.options.appearance.background.substr(1), 16);
     const applicationConfig = {
       title: this.options.app.windowTitle,
       background: [
-        // R, G, B [0-255]
-        parsedBackgroundColor >> 16 & 0xff,
-        parsedBackgroundColor >> 8 & 0xff,
-        parsedBackgroundColor & 0xff,
-        // A [0-1]
-        1
-      ],
+      // R, G, B [0-255]
+      parsedBackgroundColor >> 16 & 0xff, parsedBackgroundColor >> 8 & 0xff, parsedBackgroundColor & 0xff,
+      // A [0-1]
+      1],
       width: this.computeWindowSize().width,
       height: this.computeWindowSize().height
     };
-    zip.file(`${resourcesPrefix}application_config.json`, JSON.stringify(applicationConfig));
-
-    await this.updatePlist(zip, `${contentsPrefix}Info.plist`, this.getPlistPropertiesForPrimaryExecutable());
-
-    zip.file(`How to run ${this.options.app.packageName}.txt`, generateMacReadme(this.options));
-
+    zip.file("".concat(resourcesPrefix, "application_config.json"), JSON.stringify(applicationConfig));
+    await this.updatePlist(zip, "".concat(contentsPrefix, "Info.plist"), this.getPlistPropertiesForPrimaryExecutable());
+    zip.file("How to run ".concat(this.options.app.packageName, ".txt"), generateMacReadme(this.options));
     return zip;
   }
-
-  async addCordovaAndroid (projectZip) {
+  async addCordovaAndroid(projectZip) {
     // Generate a basic Cordova project structure that can be used to build an APK
-    const zip = new (await getJSZip());
-    
+    const zip = new (await getJSZip())();
+
     // Create the Cordova project structure
     const packageName = this.options.app.packageName || 'org.turbowarp.packaged';
     const appName = this.options.app.windowTitle || 'Packaged Project';
-    
+
     // Get the app icon if available
     let iconPath = '';
     if (this.options.app.icon) {
@@ -12091,45 +11435,17 @@ Important Notes:
         console.warn('Failed to process app icon for Cordova Android', e);
       }
     }
-    
+
     // Create a basic Cordova config.xml
-    let configXml = `<?xml version='1.0' encoding='utf-8'?>
-<widget id="${packageName}" version="${this.options.app.version}" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
-    <name>${Object(_common_escape_xml__WEBPACK_IMPORTED_MODULE_2__["default"])(appName)}</name>
-    <description>
-        02Engine Packager
-    </description>
-    <content src="index.html" />
-    <access origin="*" />
-    <allow-intent href="http://*/*" />
-    <allow-intent href="https://*/*" />
-    <allow-intent href="tel:*" />
-    <allow-intent href="sms:*" />
-    <allow-intent href="mailto:*" />
-    <allow-intent href="geo:*" />
-    <platform name="android">
-        <allow-intent href="market:*" />
-        <resource-file src="./cdv-gradle-config.json" target="cdv-gradle-config.json" />
-        <resource-file src="./gradle.properties" target="gradle.properties" />`;
-    
+    let configXml = "<?xml version='1.0' encoding='utf-8'?>\n<widget id=\"".concat(packageName, "\" version=\"").concat(this.options.app.version, "\" xmlns=\"http://www.w3.org/ns/widgets\" xmlns:cdv=\"http://cordova.apache.org/ns/1.0\">\n    <name>").concat(Object(_common_escape_xml__WEBPACK_IMPORTED_MODULE_2__["default"])(appName), "</name>\n    <description>\n        02Engine Packager\n    </description>\n    <content src=\"index.html\" />\n    <access origin=\"*\" />\n    <allow-intent href=\"http://*/*\" />\n    <allow-intent href=\"https://*/*\" />\n    <allow-intent href=\"tel:*\" />\n    <allow-intent href=\"sms:*\" />\n    <allow-intent href=\"mailto:*\" />\n    <allow-intent href=\"geo:*\" />\n    <platform name=\"android\">\n        <allow-intent href=\"market:*\" />\n        <resource-file src=\"./cdv-gradle-config.json\" target=\"cdv-gradle-config.json\" />\n        <resource-file src=\"./gradle.properties\" target=\"gradle.properties\" />");
+
     // Add icon definition if icon is available
     if (iconPath) {
-      configXml += `
-        <icon density="ldpi" src="${iconPath}" />
-        <icon density="mdpi" src="${iconPath}" />
-        <icon density="hdpi" src="${iconPath}" />
-        <icon density="xhdpi" src="${iconPath}" />
-        <icon density="xxhdpi" src="${iconPath}" />
-        <icon density="xxxhdpi" src="${iconPath}" />`;
+      configXml += "\n        <icon density=\"ldpi\" src=\"".concat(iconPath, "\" />\n        <icon density=\"mdpi\" src=\"").concat(iconPath, "\" />\n        <icon density=\"hdpi\" src=\"").concat(iconPath, "\" />\n        <icon density=\"xhdpi\" src=\"").concat(iconPath, "\" />\n        <icon density=\"xxhdpi\" src=\"").concat(iconPath, "\" />\n        <icon density=\"xxxhdpi\" src=\"").concat(iconPath, "\" />");
     }
-    
-    configXml += `
-    </platform>
-    <engine name="android" />
-</widget>`;
-    
+    configXml += "\n    </platform>\n    <engine name=\"android\" />\n</widget>";
     zip.file('config.xml', configXml);
-    
+
     // Create package.json
     const packageJson = {
       name: packageName,
@@ -12150,7 +11466,6 @@ Important Notes:
         "prepare": "cordova prepare android"
       }
     };
-    
     zip.file('package.json', JSON.stringify(packageJson, null, 2));
 
     // Create cdv-gradle-config.json
@@ -12167,153 +11482,228 @@ Important Notes:
       "IS_GRADLE_PLUGIN_GOOGLE_SERVICES_ENABLED": false,
       "IS_GRADLE_PLUGIN_KOTLIN_ENABLED": false
     };
-
     zip.file('cdv-gradle-config.json', JSON.stringify(cdvgradleconfig, null));
 
     // Create gradle.properties
-    const gradlepro = `org.gradle.jvmargs=-Xmx2048m --add-opens java.base/java.io=ALL-UNNAMED
-android.useAndroidX=true
-android.enableJetifier=true`
-
+    const gradlepro = "org.gradle.jvmargs=-Xmx2048m --add-opens java.base/java.io=ALL-UNNAMED\nandroid.useAndroidX=true\nandroid.enableJetifier=true";
     zip.file('gradle.properties', gradlepro);
 
     // Create README with instructions
-    const readme = `# Cordova Android Project
-
-This is a Cordova project that can be used to build an Android APK.
-
-## Setup Instructions
-
-1. Extract this zip file to a folder
-2. Install Node.js and npm if you haven't already
-3. Install project dependencies:
-   npm install
-4. Build the APK:
-   npm run build
-
-## Requirements
-
-- Node.js and npm
-- Android Studio or Android SDK
-- JAVA_HOME environment variable set to JDK path
-- ANDROID_HOME environment variable set to Android SDK path
-
-## Additional Notes
-
-You may need to install additional dependencies depending on your system.
-For detailed setup instructions, refer to the Cordova documentation.`;
-    
+    const readme = "# Cordova Android Project\n\nThis is a Cordova project that can be used to build an Android APK.\n\n## Setup Instructions\n\n1. Extract this zip file to a folder\n2. Install Node.js and npm if you haven't already\n3. Install project dependencies:\n   npm install\n4. Build the APK:\n   npm run build\n\n## Requirements\n\n- Node.js and npm\n- Android Studio or Android SDK\n- JAVA_HOME environment variable set to JDK path\n- ANDROID_HOME environment variable set to Android SDK path\n\n## Additional Notes\n\nYou may need to install additional dependencies depending on your system.\nFor detailed setup instructions, refer to the Cordova documentation.";
     zip.file('README.txt', readme);
-    
+
     // Copy project files to www directory
     for (const [path, data] of Object.entries(projectZip.files)) {
-      setFileFast(zip, `www/${path}`, data);
+      setFileFast(zip, "www/".concat(path), data);
     }
-    
     return zip;
   }
-
-  makeWebSocketProvider () {
+  makeWebSocketProvider() {
     // If using the default turbowarp.org server, we'll add a fallback for the turbowarp.xyz alias.
     // This helps work around web filters as turbowarp.org can be blocked for games and turbowarp.xyz uses
     // a problematic TLD. These are the same server and same variables, just different domain.
-    const cloudHost = this.options.cloudVariables.cloudHost === 'wss://clouddata.turbowarp.org' ? [
-      'wss://clouddata.turbowarp.org',
-      'wss://clouddata.turbowarp.xyz'
-    ] : this.options.cloudVariables.cloudHost;
-    return `new Scaffolding.Cloud.WebSocketProvider(${JSON.stringify(cloudHost)}, ${JSON.stringify(this.options.projectId)})`;
+    const cloudHost = this.options.cloudVariables.cloudHost === 'wss://clouddata.turbowarp.org' ? ['wss://clouddata.turbowarp.org', 'wss://clouddata.turbowarp.xyz'] : this.options.cloudVariables.cloudHost;
+    return "new Scaffolding.Cloud.WebSocketProvider(".concat(JSON.stringify(cloudHost), ", ").concat(JSON.stringify(this.options.projectId), ")");
   }
-
-  makeLocalStorageProvider () {
-    return `new Scaffolding.Cloud.LocalStorageProvider(${JSON.stringify(`cloudvariables:${this.options.projectId}`)})`;
+  makeLocalStorageProvider() {
+    return "new Scaffolding.Cloud.LocalStorageProvider(".concat(JSON.stringify("cloudvariables:".concat(this.options.projectId)), ")");
   }
-
-  makeCustomProvider () {
+  makeCustomProvider() {
     const variables = this.options.cloudVariables.custom;
     let result = '{const providers = {};\n';
     for (const provider of new Set(Object.values(variables))) {
       if (provider === 'ws') {
-        result += `providers.ws = ${this.makeWebSocketProvider()};\n`;
+        result += "providers.ws = ".concat(this.makeWebSocketProvider(), ";\n");
       } else if (provider === 'local') {
-        result += `providers.local = ${this.makeLocalStorageProvider()};\n`;
+        result += "providers.local = ".concat(this.makeLocalStorageProvider(), ";\n");
       }
     }
     result += 'for (const provider of Object.values(providers)) scaffolding.addCloudProvider(provider);\n';
     for (const variableName of Object.keys(variables)) {
       const providerToUse = variables[variableName];
-      result += `scaffolding.addCloudProviderOverride(${JSON.stringify(variableName)}, providers[${JSON.stringify(providerToUse)}] || null);\n`;
+      result += "scaffolding.addCloudProviderOverride(".concat(JSON.stringify(variableName), ", providers[").concat(JSON.stringify(providerToUse), "] || null);\n");
     }
     result += '}';
     return result;
   }
-
-  generateFilename (extension) {
-    return `${this.options.app.windowTitle}.${extension}`;
+  generateFilename(extension) {
+    return "".concat(this.options.app.windowTitle, ".").concat(extension);
   }
-
-  async generateGetProjectData () {
+  async getProjectArchive() {
+    if (!this._projectArchivePromise) {
+      this._projectArchivePromise = getJSZip().then(JSZip => JSZip.loadAsync(this.project.arrayBuffer));
+    }
+    return this._projectArchivePromise;
+  }
+  async getProjectJSON() {
+    if (!this._projectJSONPromise) {
+      this._projectJSONPromise = (async () => {
+        const zip = await this.getProjectArchive();
+        const projectFile = zip.file('project.json') || zip.file(/^([^/]*\/)?project\.json$/)[0];
+        if (!projectFile) {
+          throw new Error('project.json is not in zip');
+        }
+        return JSON.parse(await projectFile.async('text'));
+      })();
+    }
+    return this._projectJSONPromise;
+  }
+  async getCompiledProjectData() {
+    if (!this._compiledProjectPromise) {
+      this._compiledProjectPromise = (async () => {
+        const [projectJSON, projectArchive, scratchLibrariesModule] = await Promise.all([this.getProjectJSON(), this.getProjectArchive(), Promise.all(/*! import() | scratch-vm-compiler */[__webpack_require__.e("vendors~icns~scratch-vm-compiler~sha256"), __webpack_require__.e("vendors~jszip~scratch-vm-compiler"), __webpack_require__.e("vendors~icns~scratch-vm-compiler"), __webpack_require__.e("scratch-vm-compiler")]).then(__webpack_require__.bind(null, /*! ../scaffolding/scratch-libraries */ "./src/scaffolding/scratch-libraries.js"))]);
+        const scratchLibraries = scratchLibrariesModule.default || scratchLibrariesModule;
+        const VM = scratchLibraries.VM || scratchLibraries.default && scratchLibraries.default.VM || scratchLibraries;
+        const ScratchStorage = scratchLibraries.ScratchStorage || scratchLibraries.default && scratchLibraries.default.ScratchStorage;
+        const Renderer = scratchLibraries.Renderer || scratchLibraries.default && scratchLibraries.default.Renderer;
+        const BitmapAdapter = scratchLibraries.BitmapAdapter || scratchLibraries.default && scratchLibraries.default.BitmapAdapter;
+        const AudioEngine = scratchLibraries.AudioEngine || scratchLibraries.default && scratchLibraries.default.AudioEngine;
+        class CompileTimeVideoProvider {
+          enableVideo() {
+            return Promise.resolve(this);
+          }
+          disableVideo() {}
+          getFrame() {
+            return null;
+          }
+        }
+        const vm = new VM();
+        let renderer = null;
+        let audioEngine = null;
+        let videoProvider = null;
+        let compileCanvas = null;
+        try {
+          if (typeof vm.attachStorage === 'function') {
+            vm.attachStorage(new ScratchStorage());
+          }
+          if (typeof document !== 'undefined' && typeof vm.attachRenderer === 'function' && Renderer) {
+            compileCanvas = document.createElement('canvas');
+            compileCanvas.width = 480;
+            compileCanvas.height = 360;
+            compileCanvas.style.display = 'none';
+            renderer = new Renderer(compileCanvas, -240, 240, -180, 180);
+            vm.attachRenderer(renderer);
+          }
+          if (typeof vm.attachAudioEngine === 'function' && AudioEngine && (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined')) {
+            audioEngine = new AudioEngine();
+            vm.attachAudioEngine(audioEngine);
+          }
+          if (BitmapAdapter && typeof vm.attachV2BitmapAdapter === 'function') {
+            vm.attachV2BitmapAdapter(new BitmapAdapter());
+          }
+          if (typeof vm.setVideoProvider === 'function') {
+            videoProvider = new CompileTimeVideoProvider();
+            vm.setVideoProvider(videoProvider);
+          }
+          if (vm.securityManager) {
+            vm.securityManager.getSandboxMode = () => 'unsandboxed';
+            vm.securityManager.canLoadExtensionFromProject = () => true;
+          }
+          vm.setCompilerOptions({
+            enabled: true,
+            warpTimer: this.options.compiler.warpTimer
+          });
+          return await vm.compileProjectFromJSON(projectJSON, projectArchive);
+        } finally {
+          if (videoProvider && typeof videoProvider.disableVideo === 'function') {
+            videoProvider.disableVideo();
+          }
+          if (audioEngine && typeof audioEngine.dispose === 'function') {
+            audioEngine.dispose();
+          }
+          if (renderer && typeof renderer.destroy === 'function') {
+            renderer.destroy();
+          }
+          if (compileCanvas && typeof compileCanvas.remove === 'function') {
+            compileCanvas.remove();
+          }
+          if (typeof vm.quit === 'function') {
+            vm.quit();
+          }
+        }
+      })();
+    }
+    return this._compiledProjectPromise;
+  }
+  async getCompiledProjectArchiveData() {
+    if (!this._compiledProjectArchivePromise) {
+      this._compiledProjectArchivePromise = (async () => {
+        const [JSZip, compiledProject, projectJSON] = await Promise.all([getJSZip(), this.getCompiledProjectData(), this.getProjectJSON()]);
+        const zip = await JSZip.loadAsync(this.project.arrayBuffer);
+        const projectFile = zip.file('project.json') || zip.file(/^([^/]*\/)?project\.json$/)[0];
+        if (!projectFile) {
+          throw new Error('project.json is not in zip');
+        }
+        const strippedProjectJSON = JSON.parse(JSON.stringify(projectJSON));
+        strippedProjectJSON.targets = JSON.parse(JSON.stringify(compiledProject.targets || []));
+        strippedProjectJSON.monitors = JSON.parse(JSON.stringify(compiledProject.monitors || []));
+        strippedProjectJSON.meta = JSON.parse(JSON.stringify(compiledProject.meta || strippedProjectJSON.meta || {}));
+        strippedProjectJSON.extensionURLs = Object.assign({}, compiledProject.extensionURLs || strippedProjectJSON.extensionURLs || {});
+        if (compiledProject.customFonts) {
+          strippedProjectJSON.customFonts = JSON.parse(JSON.stringify(compiledProject.customFonts));
+        } else {
+          delete strippedProjectJSON.customFonts;
+        }
+        if (compiledProject.extensionStorage) {
+          strippedProjectJSON.extensionStorage = JSON.parse(JSON.stringify(compiledProject.extensionStorage));
+        } else {
+          delete strippedProjectJSON.extensionStorage;
+        }
+        zip.file(projectFile.name, JSON.stringify(strippedProjectJSON));
+        return zip.generateAsync({
+          type: 'uint8array',
+          compression: 'DEFLATE'
+        });
+      })();
+    }
+    return this._compiledProjectArchivePromise;
+  }
+  async generateGetProjectData() {
     const result = [];
     let getProjectDataFunction = '';
     let isZip = false;
     let storageProgressStart;
     let storageProgressEnd;
-
+    if (this.options.compiler.compiledProject) {
+      const compiledProject = await this.getCompiledProjectData();
+      const compiledProjectArchive = await this.getCompiledProjectArchiveData();
+      const compiledProjectString = JSON.stringify(compiledProject);
+      isZip = true;
+      storageProgressStart = PROGRESS_FETCHED_COMPRESSED;
+      storageProgressEnd = PROGRESS_EXTRACTED_COMPRESSED;
+      if (this.options.target === 'html') {
+        const projectData = new Uint8Array(compiledProjectArchive);
+        result.push("\n        <script>\n        const getBase85DecodeValue = (code) => {\n          if (code === 0x28) code = 0x3c;\n          if (code === 0x29) code = 0x3e;\n          return code - 0x2a;\n        };\n        const base85decode = (str, outBuffer, outOffset) => {\n          const view = new DataView(outBuffer, outOffset, Math.floor(str.length / 5 * 4));\n          for (let i = 0, j = 0; i < str.length; i += 5, j += 4) {\n            view.setUint32(j, (\n              getBase85DecodeValue(str.charCodeAt(i + 4)) * 85 * 85 * 85 * 85 +\n              getBase85DecodeValue(str.charCodeAt(i + 3)) * 85 * 85 * 85 +\n              getBase85DecodeValue(str.charCodeAt(i + 2)) * 85 * 85 +\n              getBase85DecodeValue(str.charCodeAt(i + 1)) * 85 +\n              getBase85DecodeValue(str.charCodeAt(i))\n            ), true);\n          }\n        };\n        let projectDecodeBuffer = new ArrayBuffer(".concat(Math.ceil(projectData.length / 4) * 4, ");\n        let projectDecodeIndex = 0;\n        const decodeChunk = (size) => {\n          try {\n            if (document.currentScript.tagName.toUpperCase() !== 'SCRIPT') throw new Error('document.currentScript is not a script');\n            base85decode(document.currentScript.getAttribute(\"data\"), projectDecodeBuffer, projectDecodeIndex);\n            document.currentScript.remove();\n            projectDecodeIndex += size;\n            setProgress(interpolate(").concat(PROGRESS_LOADED_SCRIPTS, ", ").concat(PROGRESS_FETCHED_COMPRESSED, ", projectDecodeIndex / ").concat(projectData.length, "));\n          } catch (e) {\n            handleError(e);\n          }\n        };\n        </script>"));
+        const CHUNK_SIZE = 1024 * 64;
+        for (let i = 0; i < projectData.length; i += CHUNK_SIZE) {
+          const projectChunk = projectData.subarray(i, i + CHUNK_SIZE);
+          const base85 = Object(_base85__WEBPACK_IMPORTED_MODULE_7__["encode"])(projectChunk);
+          result.push("<script data=\"".concat(base85, "\">/*Generated By 02Engine Packager*/decodeChunk(/*Generated By 02Engine Packager*/").concat(projectChunk.length, "/*Generated By 02Engine Packager*/)</script>\n"));
+        }
+        getProjectDataFunction = "() => {\n          const buffer = projectDecodeBuffer;\n          projectDecodeBuffer = null;\n          return Promise.resolve({\n            projectData: JSON.parse(decodeURIComponent(\"".concat(encodeURIComponent(compiledProjectString), "\")),\n            projectArchive: new Uint8Array(buffer, 0, ").concat(projectData.length, ")\n          });\n        }");
+      } else {
+        getProjectDataFunction = "() => Promise.all([\n          new Promise((resolve, reject) => {\n            const xhr = new XMLHttpRequest();\n            xhr.onload = () => {\n              resolve(JSON.parse(xhr.responseText));\n            };\n            xhr.onerror = () => {\n              reject(new Error('Request to load compiled project data failed.'));\n            };\n            xhr.responseType = 'text';\n            xhr.open('GET', './compiled-project.json');\n            xhr.send();\n          }),\n          new Promise((resolve, reject) => {\n            const xhr = new XMLHttpRequest();\n            xhr.onload = () => {\n              resolve(new Uint8Array(xhr.response));\n            };\n            xhr.onerror = () => {\n              if (location.protocol === 'file:') {\n                reject(new Error('Zip environment must be used on a website, not on a local file. To fix this error, use the \"Plain HTML\" environment instead.'));\n              } else {\n                reject(new Error('Request to load project archive failed.'));\n              }\n            };\n            xhr.onprogress = (e) => {\n              if (e.lengthComputable) {\n                setProgress(interpolate(".concat(PROGRESS_LOADED_SCRIPTS, ", ").concat(PROGRESS_FETCHED_COMPRESSED, ", e.loaded / e.total));\n              }\n            };\n            xhr.responseType = 'arraybuffer';\n            xhr.open('GET', './project.zip');\n            xhr.send();\n          })\n        ]).then(([projectData, projectArchive]) => ({projectData, projectArchive}))");
+      }
+      result.push("\n      <script>\n        const getProjectData = (function() {\n          const storage = scaffolding.storage;\n          storage.onprogress = (total, loaded) => {\n            setProgress(interpolate(".concat(storageProgressStart, ", ").concat(storageProgressEnd, ", loaded / total));\n          };\n\n          let zip;\n          vm.runtime.on('PROJECT_LOADED', () => (zip = null));\n          const findFileInZip = (path) => zip.file(path) || zip.file(new RegExp(\"^([^/]*/)?\" + path + \"$\"))[0];\n\n          storage.addHelper({\n            load: (assetType, assetId, dataFormat) => {\n              if (!zip) {\n                throw new Error('Zip is not loaded or has been closed');\n              }\n              const path = assetId + '.' + dataFormat;\n              const file = findFileInZip(path);\n              if (!file) {\n                throw new Error('Asset is not in zip: ' + path);\n              }\n              return file\n                .async('uint8array')\n                .then((data) => storage.createAsset(assetType, dataFormat, data, assetId));\n            }\n          });\n\n          return () => (").concat(getProjectDataFunction, ")().then(async ({projectData, projectArchive}) => {\n            zip = await Scaffolding.JSZip.loadAsync(projectArchive);\n            return {\n              projectData,\n              assetArchive: zip\n            };\n          });\n        })();\n      </script>"));
+      return result;
+    }
     if (this.options.target === 'html') {
       isZip = this.project.type !== 'blob';
       storageProgressStart = PROGRESS_FETCHED_COMPRESSED;
       storageProgressEnd = PROGRESS_EXTRACTED_COMPRESSED;
-
       const projectData = new Uint8Array(this.project.arrayBuffer);
 
       // keep this up-to-date with base85.js
-      result.push(`
-      <script>
-      const getBase85DecodeValue = (code) => {
-        if (code === 0x28) code = 0x3c;
-        if (code === 0x29) code = 0x3e;
-        return code - 0x2a;
-      };
-      const base85decode = (str, outBuffer, outOffset) => {
-        const view = new DataView(outBuffer, outOffset, Math.floor(str.length / 5 * 4));
-        for (let i = 0, j = 0; i < str.length; i += 5, j += 4) {
-          view.setUint32(j, (
-            getBase85DecodeValue(str.charCodeAt(i + 4)) * 85 * 85 * 85 * 85 +
-            getBase85DecodeValue(str.charCodeAt(i + 3)) * 85 * 85 * 85 +
-            getBase85DecodeValue(str.charCodeAt(i + 2)) * 85 * 85 +
-            getBase85DecodeValue(str.charCodeAt(i + 1)) * 85 +
-            getBase85DecodeValue(str.charCodeAt(i))
-          ), true);
-        }
-      };
-      let projectDecodeBuffer = new ArrayBuffer(${Math.ceil(projectData.length / 4) * 4});
-      let projectDecodeIndex = 0;
-      const decodeChunk = (size) => {
-        try {
-          if (document.currentScript.tagName.toUpperCase() !== 'SCRIPT') throw new Error('document.currentScript is not a script');
-          base85decode(document.currentScript.getAttribute("data"), projectDecodeBuffer, projectDecodeIndex);
-          document.currentScript.remove();
-          projectDecodeIndex += size;
-          setProgress(interpolate(${PROGRESS_LOADED_SCRIPTS}, ${PROGRESS_FETCHED_COMPRESSED}, projectDecodeIndex / ${projectData.length}));
-        } catch (e) {
-          handleError(e);
-        }
-      };
-      </script>`);
+      result.push("\n      <script>\n      const getBase85DecodeValue = (code) => {\n        if (code === 0x28) code = 0x3c;\n        if (code === 0x29) code = 0x3e;\n        return code - 0x2a;\n      };\n      const base85decode = (str, outBuffer, outOffset) => {\n        const view = new DataView(outBuffer, outOffset, Math.floor(str.length / 5 * 4));\n        for (let i = 0, j = 0; i < str.length; i += 5, j += 4) {\n          view.setUint32(j, (\n            getBase85DecodeValue(str.charCodeAt(i + 4)) * 85 * 85 * 85 * 85 +\n            getBase85DecodeValue(str.charCodeAt(i + 3)) * 85 * 85 * 85 +\n            getBase85DecodeValue(str.charCodeAt(i + 2)) * 85 * 85 +\n            getBase85DecodeValue(str.charCodeAt(i + 1)) * 85 +\n            getBase85DecodeValue(str.charCodeAt(i))\n          ), true);\n        }\n      };\n      let projectDecodeBuffer = new ArrayBuffer(".concat(Math.ceil(projectData.length / 4) * 4, ");\n      let projectDecodeIndex = 0;\n      const decodeChunk = (size) => {\n        try {\n          if (document.currentScript.tagName.toUpperCase() !== 'SCRIPT') throw new Error('document.currentScript is not a script');\n          base85decode(document.currentScript.getAttribute(\"data\"), projectDecodeBuffer, projectDecodeIndex);\n          document.currentScript.remove();\n          projectDecodeIndex += size;\n          setProgress(interpolate(").concat(PROGRESS_LOADED_SCRIPTS, ", ").concat(PROGRESS_FETCHED_COMPRESSED, ", projectDecodeIndex / ").concat(projectData.length, "));\n        } catch (e) {\n          handleError(e);\n        }\n      };\n      </script>"));
 
       // To avoid unnecessary padding, this should be a multiple of 4.
       const CHUNK_SIZE = 1024 * 64;
-
       for (let i = 0; i < projectData.length; i += CHUNK_SIZE) {
         const projectChunk = projectData.subarray(i, i + CHUNK_SIZE);
         const base85 = Object(_base85__WEBPACK_IMPORTED_MODULE_7__["encode"])(projectChunk);
-        result.push(`<script data="${base85}">/*Generated By 02Engine Packager*/decodeChunk(/*Generated By 02Engine Packager*/${projectChunk.length}/*Generated By 02Engine Packager*/)</script>\n`);
+        result.push("<script data=\"".concat(base85, "\">/*Generated By 02Engine Packager*/decodeChunk(/*Generated By 02Engine Packager*/").concat(projectChunk.length, "/*Generated By 02Engine Packager*/)</script>\n"));
       }
-
-      getProjectDataFunction = `() => {
-        const buffer = projectDecodeBuffer;
-        projectDecodeBuffer = null; // Allow GC
-        return Promise.resolve(new Uint8Array(buffer, 0, ${projectData.length}));
-      }`;
+      getProjectDataFunction = "() => {\n        const buffer = projectDecodeBuffer;\n        projectDecodeBuffer = null; // Allow GC\n        return Promise.resolve(new Uint8Array(buffer, 0, ".concat(projectData.length, "));\n      }");
     } else {
       let src;
       if (this.project.type === 'blob' || this.options.target === 'zip-one-asset') {
@@ -12326,90 +11716,19 @@ For detailed setup instructions, refer to the Cordova documentation.`;
         storageProgressStart = PROGRESS_FETCHED_PROJECT_JSON;
         storageProgressEnd = PROGRESS_FETCHED_ASSETS;
       }
-
-      getProjectDataFunction = `() => new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.onload = () => {
-          resolve(xhr.response);
-        };
-        xhr.onerror = () => {
-          if (location.protocol === 'file:') {
-            reject(new Error('Zip environment must be used on a website, not on a local file. To fix this error, use the "Plain HTML" environment instead.'));
-          } else {
-            reject(new Error('Request to load project data failed.'));
-          }
-        };
-        xhr.onprogress = (e) => {
-          if (e.lengthComputable) {
-            setProgress(interpolate(${PROGRESS_LOADED_SCRIPTS}, ${storageProgressStart}, e.loaded / e.total));
-          }
-        };
-        xhr.responseType = 'arraybuffer';
-        xhr.open('GET', ${JSON.stringify(src)});
-        xhr.send();
-      })`;
+      getProjectDataFunction = "() => new Promise((resolve, reject) => {\n        const xhr = new XMLHttpRequest();\n        xhr.onload = () => {\n          resolve(xhr.response);\n        };\n        xhr.onerror = () => {\n          if (location.protocol === 'file:') {\n            reject(new Error('Zip environment must be used on a website, not on a local file. To fix this error, use the \"Plain HTML\" environment instead.'));\n          } else {\n            reject(new Error('Request to load project data failed.'));\n          }\n        };\n        xhr.onprogress = (e) => {\n          if (e.lengthComputable) {\n            setProgress(interpolate(".concat(PROGRESS_LOADED_SCRIPTS, ", ").concat(storageProgressStart, ", e.loaded / e.total));\n          }\n        };\n        xhr.responseType = 'arraybuffer';\n        xhr.open('GET', ").concat(JSON.stringify(src), ");\n        xhr.send();\n      })");
     }
-
-    result.push(`
-    <script>
-      const getProjectData = (function() {
-        const storage = scaffolding.storage;
-        storage.onprogress = (total, loaded) => {
-          setProgress(interpolate(${storageProgressStart}, ${storageProgressEnd}, loaded / total));
-        };
-        ${isZip ? `
-        let zip;
-        // Allow zip to be GC'd after project loads
-        vm.runtime.on('PROJECT_LOADED', () => (zip = null));
-        const findFileInZip = (path) => zip.file(path) || zip.file(new RegExp("^([^/]*/)?" + path + "$"))[0];
-        storage.addHelper({
-          load: (assetType, assetId, dataFormat) => {
-            if (!zip) {
-              throw new Error('Zip is not loaded or has been closed');
-            }
-            const path = assetId + '.' + dataFormat;
-            const file = findFileInZip(path);
-            if (!file) {
-              throw new Error('Asset is not in zip: ' + path)
-            }
-            return file
-              .async('uint8array')
-              .then((data) => storage.createAsset(assetType, dataFormat, data, assetId));
-          }
-        });
-        return () => (${getProjectDataFunction})().then(async (data) => {
-          zip = await Scaffolding.JSZip.loadAsync(data);
-          const file = findFileInZip('project.json');
-          if (!file) {
-            throw new Error('project.json is not in zip');
-          }
-          return file.async('arraybuffer');
-        });` : `
-        storage.addWebStore(
-          [
-            storage.AssetType.ImageVector,
-            storage.AssetType.ImageBitmap,
-            storage.AssetType.Sound,
-            storage.AssetType.Font
-          ].filter(i => i),
-          (asset) => new URL('./assets/' + asset.assetId + '.' + asset.dataFormat, location).href
-        );
-        return ${getProjectDataFunction};`}
-      })();
-    </script>`);
-
+    result.push("\n    <script>\n      const getProjectData = (function() {\n        const storage = scaffolding.storage;\n        storage.onprogress = (total, loaded) => {\n          setProgress(interpolate(".concat(storageProgressStart, ", ").concat(storageProgressEnd, ", loaded / total));\n        };\n        ").concat(isZip ? "\n        let zip;\n        // Allow zip to be GC'd after project loads\n        vm.runtime.on('PROJECT_LOADED', () => (zip = null));\n        const findFileInZip = (path) => zip.file(path) || zip.file(new RegExp(\"^([^/]*/)?\" + path + \"$\"))[0];\n        storage.addHelper({\n          load: (assetType, assetId, dataFormat) => {\n            if (!zip) {\n              throw new Error('Zip is not loaded or has been closed');\n            }\n            const path = assetId + '.' + dataFormat;\n            const file = findFileInZip(path);\n            if (!file) {\n              throw new Error('Asset is not in zip: ' + path)\n            }\n            return file\n              .async('uint8array')\n              .then((data) => storage.createAsset(assetType, dataFormat, data, assetId));\n          }\n        });\n        return () => (".concat(getProjectDataFunction, ")().then(async (data) => {\n          zip = await Scaffolding.JSZip.loadAsync(data);\n          const file = findFileInZip('project.json');\n          if (!file) {\n            throw new Error('project.json is not in zip');\n          }\n          return file.async('arraybuffer');\n        });") : "\n        storage.addWebStore(\n          [\n            storage.AssetType.ImageVector,\n            storage.AssetType.ImageBitmap,\n            storage.AssetType.Sound,\n            storage.AssetType.Font\n          ].filter(i => i),\n          (asset) => new URL('./assets/' + asset.assetId + '.' + asset.dataFormat, location).href\n        );\n        return ".concat(getProjectDataFunction, ";"), "\n      })();\n    </script>"));
     return result;
   }
-
-  async generateFavicon () {
+  async generateFavicon() {
     if (this.options.app.icon === null) {
       return '';
     }
     const data = await _adapter__WEBPACK_IMPORTED_MODULE_12__["Adapter"].readAsURL(this.options.app.icon, 'app icon');
-    return `<link rel="icon" href="${data}">`;
+    return "<link rel=\"icon\" href=\"".concat(data, "\">");
   }
-
-  async generateCursor () {
+  async generateCursor() {
     if (this.options.cursor.type !== 'custom') {
       return this.options.cursor.type;
     }
@@ -12418,17 +11737,15 @@ For detailed setup instructions, refer to the Cordova documentation.`;
       return 'auto';
     }
     const data = await _adapter__WEBPACK_IMPORTED_MODULE_12__["Adapter"].readAsURL(this.options.cursor.custom, 'custom cursor');
-    return `url(${data}) ${this.options.cursor.center.x} ${this.options.cursor.center.y}, auto`;
+    return "url(".concat(data, ") ").concat(this.options.cursor.center.x, " ").concat(this.options.cursor.center.y, ", auto");
   }
-
-  async generateExtensionURLs () {
-    const dispatchProgress = (progress) => this.dispatchEvent(new _common_event_target__WEBPACK_IMPORTED_MODULE_0__["CustomEvent"]('fetch-extensions', {
+  async generateExtensionURLs() {
+    const dispatchProgress = progress => this.dispatchEvent(new _common_event_target__WEBPACK_IMPORTED_MODULE_0__["CustomEvent"]('fetch-extensions', {
       detail: {
         progress
       }
     }));
-
-    const shouldTryToFetch = (url) => {
+    const shouldTryToFetch = url => {
       if (!this.options.bakeExtensions) {
         return false;
       }
@@ -12442,17 +11759,16 @@ For detailed setup instructions, refer to the Cordova documentation.`;
 
     /** @type {string[]} */
     const allURLs = this.options.extensions;
-    const unfetchableURLs = allURLs.filter((url) => !shouldTryToFetch(url));
-    const urlsToFetch = allURLs.filter((url) => shouldTryToFetch(url));
+    const unfetchableURLs = allURLs.filter(url => !shouldTryToFetch(url));
+    const urlsToFetch = allURLs.filter(url => shouldTryToFetch(url));
     const finalURLs = [...unfetchableURLs];
-
     if (urlsToFetch.length !== 0) {
       for (let i = 0; i < urlsToFetch.length; i++) {
         dispatchProgress(i / urlsToFetch.length);
         const url = urlsToFetch[i];
         try {
           const wrappedSource = await _adapter__WEBPACK_IMPORTED_MODULE_12__["Adapter"].fetchExtensionScript(url);
-          const dataURI = `data:text/javascript;,${encodeURIComponent(wrappedSource)}`;
+          const dataURI = "data:text/javascript;,".concat(encodeURIComponent(wrappedSource));
           finalURLs.push(dataURI);
         } catch (e) {
           console.warn('Could not bake extension', url, e);
@@ -12461,11 +11777,9 @@ For detailed setup instructions, refer to the Cordova documentation.`;
       }
       dispatchProgress(1);
     }
-
     return finalURLs;
   }
-
-  async package () {
+  async package() {
     if (!_adapter__WEBPACK_IMPORTED_MODULE_12__["Adapter"]) {
       throw new Error('Missing adapter');
     }
@@ -12476,465 +11790,28 @@ For detailed setup instructions, refer to the Cordova documentation.`;
     this.ensureNotAborted();
     await this.loadResources();
     this.ensureNotAborted();
-    const html =_encode_big_string__WEBPACK_IMPORTED_MODULE_13__["default"] `<!DOCTYPE html>
-<!-- Created with ${_brand__WEBPACK_IMPORTED_MODULE_9__["WEBSITE"]} -->
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <!-- We only include this to explicitly loosen the CSP of various packager environments. It does not provide any security. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:">
-  <title>${Object(_common_escape_xml__WEBPACK_IMPORTED_MODULE_2__["default"])(this.options.app.windowTitle)}</title>
-  <style>
-    body {
-      color: ${this.options.appearance.foreground};
-      font-family: sans-serif;
-      overflow: hidden;
-      margin: 0;
-      padding: 0;
-    }
-    :root, body.is-fullscreen {
-      background-color: ${this.options.appearance.background};
-    }
-    [hidden] {
-      display: none !important;
-    }
-    h1 {
-      font-weight: normal;
-    }
-    a {
-      color: inherit;
-      text-decoration: underline;
-      cursor: pointer;
-    }
-
-    #app, #loading, #error, #launch {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-    }
-    .screen {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      cursor: default;
-      user-select: none;
-      -webkit-user-select: none;
-      background-color: ${this.options.appearance.background};
-    }
-    #launch {
-      background-color: rgba(0, 0, 0, 0.7);
-      cursor: pointer;
-    }
-    .green-flag {
-      width: 80px;
-      height: 80px;
-      padding: 16px;
-      border-radius: 100%;
-      background: rgba(255, 255, 255, 0.75);
-      border: 3px solid hsla(0, 100%, 100%, 1);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      box-sizing: border-box;
-    }
-    #loading {
-      ${this.options.loadingScreen.image && this.options.loadingScreen.imageMode === 'stretch'
-        ? `background-image: url(${await _adapter__WEBPACK_IMPORTED_MODULE_12__["Adapter"].readAsURL(this.options.loadingScreen.image, 'stretched loading screen')});
-      background-repeat: no-repeat;
-      background-size: contain;
-      background-position: center;`
-        : ''}
-    }
-    .progress-bar-outer {
-      border: 1px solid currentColor;
-      height: 10px;
-      width: 200px;
-      max-width: 200px;
-    }
-    .progress-bar-inner {
-      height: 100%;
-      width: 0;
-      background-color: currentColor;
-    }
-    .loading-text, noscript {
-      font-weight: normal;
-      font-size: 36px;
-      margin: 0 0 16px;
-    }
-    .loading-image {
-      margin: 0 0 16px;
-    }
-    #error-message, #error-stack {
-      font-family: monospace;
-      max-width: 600px;
-      white-space: pre-wrap;
-      user-select: text;
-      -webkit-user-select: text;
-    }
-    #error-stack {
-      text-align: left;
-      max-height: 200px;
-      overflow: auto;
-    }
-    .control-button {
-      width: 2rem;
-      height: 2rem;
-      padding: 0.375rem;
-      margin-top: 0.5rem;
-      margin-bottom: 0.5rem;
-      user-select: none;
-      -webkit-user-select: none;
-      cursor: pointer;
-      border: 0;
-      border-radius: 4px;
-    }
-    .control-button-highlight:hover {
-      background: ${this.options.appearance.accent}26;
-    }
-    .control-button-highlight.active {
-      background: ${this.options.appearance.accent}59;
-    }
-    .fullscreen-button {
-      background: white;
-    }
-    .standalone-fullscreen-button {
-      position: absolute;
-      top: 0;
-      right: 0;
-      background-color: rgba(0, 0, 0, 0.5);
-      border-radius: 0 0 0 4px;
-      padding: 4px;
-      cursor: pointer;
-    }
-    .sc-canvas {
-      cursor: ${await this.generateCursor()};
-    }
-    .sc-monitor-root[data-opcode^="data_"] .sc-monitor-value-color {
-      background-color: ${this.options.monitors.variableColor};
-    }
-    .sc-monitor-row-value-outer {
-      background-color: ${this.options.monitors.listColor};
-    }
-    .sc-monitor-row-value-editing .sc-monitor-row-value-outer {
-      background-color: ${Object(_colors__WEBPACK_IMPORTED_MODULE_11__["darken"])(this.options.monitors.listColor)};
-    }
-    ${this.options.custom.css}
-  </style>
-  <meta name="theme-color" content="${this.options.appearance.background}">
-  ${await this.generateFavicon()}
-</head>
-<body>
-  <div id="app"></div>
-
-  <div id="launch" class="screen" hidden title="Click to start">
-    <div class="green-flag">
-      <svg viewBox="0 0 16.63 17.5" width="42" height="44">
-        <defs><style>.cls-1,.cls-2{fill:#4cbf56;stroke:#45993d;stroke-linecap:round;stroke-linejoin:round;}.cls-2{stroke-width:1.5px;}</style></defs>
-        <path class="cls-1" d="M.75,2A6.44,6.44,0,0,1,8.44,2h0a6.44,6.44,0,0,0,7.69,0V12.4a6.44,6.44,0,0,1-7.69,0h0a6.44,6.44,0,0,0-7.69,0"/>
-        <line class="cls-2" x1="0.75" y1="16.75" x2="0.75" y2="0.75"/>
-      </svg>
-    </div>
-  </div>
-
-  <div id="loading" class="screen">
-    <noscript>Enable JavaScript</noscript>
-    ${this.options.loadingScreen.text ? `<h1 class="loading-text">${Object(_common_escape_xml__WEBPACK_IMPORTED_MODULE_2__["default"])(this.options.loadingScreen.text)}</h1>` : ''}
-    ${this.options.loadingScreen.image && this.options.loadingScreen.imageMode === 'normal' ? `<div class="loading-image"><img src="${await _adapter__WEBPACK_IMPORTED_MODULE_12__["Adapter"].readAsURL(this.options.loadingScreen.image, 'loading-screen')}"></div>` : ''}
-    ${this.options.loadingScreen.progressBar ? '<div class="progress-bar-outer"><div class="progress-bar-inner" id="loading-inner"></div></div>' : ''}
-  </div>
-
-  <div id="error" class="screen" hidden>
-    <h1>Error</h1>
-    <details>
-      <summary id="error-message"></summary>
-      <p id="error-stack"></p>
-    </details>
-  </div>
-
-  ${this.options.target === 'html' ? `<script>${this.script}</script>` : '<script src="script.js"></script>'}
-  <script>${removeUnnecessaryEmptyLines(`
-    const appElement = document.getElementById('app');
-    const launchScreen = document.getElementById('launch');
-    const loadingScreen = document.getElementById('loading');
-    const loadingInner = document.getElementById('loading-inner');
-    const errorScreen = document.getElementById('error');
-    const errorScreenMessage = document.getElementById('error-message');
-    const errorScreenStack = document.getElementById('error-stack');
-
-    const handleError = (error) => {
-      console.error(error);
-      if (!errorScreen.hidden) return;
-      errorScreen.hidden = false;
-      errorScreenMessage.textContent = '' + error;
-      let debug = error && error.stack || 'no stack';
-      debug += '\\nUser agent: ' + navigator.userAgent;
-      errorScreenStack.textContent = debug;
-    };
-    const setProgress = (progress) => {
-      if (loadingInner) loadingInner.style.width = progress * 100 + '%';
-    };
-    const interpolate = (a, b, t) => a + t * (b - a);
-
-    try {
-      setProgress(${PROGRESS_LOADED_SCRIPTS});
-
-      const scaffolding = new Scaffolding.Scaffolding();
-      scaffolding.width = ${this.options.stageWidth};
-      scaffolding.height = ${this.options.stageHeight};
-      scaffolding.resizeMode = ${JSON.stringify(this.options.resizeMode)};
-      scaffolding.editableLists = ${this.options.monitors.editableLists};
-      scaffolding.usePackagedRuntime = ${this.options.packagedRuntime};
-      scaffolding.setup();
-      scaffolding.appendTo(appElement);
-
-      const vm = scaffolding.vm;
-      window.scaffolding = scaffolding;
-      window.vm = scaffolding.vm;
-      window.Scratch = {
-        vm,
-        renderer: vm.renderer,
-        audioEngine: vm.runtime.audioEngine,
-        bitmapAdapter: vm.runtime.v2BitmapAdapter,
-        videoProvider: vm.runtime.ioDevices.video.provider
-      };
-
-      scaffolding.setUsername(${JSON.stringify(this.options.username)}.replace(/#/g, () => Math.floor(Math.random() * 10)));
-      scaffolding.setAccentColor(${JSON.stringify(this.options.appearance.accent)});
-
-      try {
-        ${this.options.cloudVariables.mode === 'ws' ?
-          `scaffolding.addCloudProvider(${this.makeWebSocketProvider()})` :
-          this.options.cloudVariables.mode === 'local' ?
-          `scaffolding.addCloudProvider(${this.makeLocalStorageProvider()})` :
-          this.options.cloudVariables.mode === 'custom' ?
-          this.makeCustomProvider() :
-          ''
-        };
-      } catch (error) {
-        console.error(error);
-      }
-
-      ${this.options.controls.greenFlag.enabled ? `
-      const greenFlagButton = document.createElement('img');
-      greenFlagButton.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16.63 17.5"><path d="M.75 2a6.44 6.44 0 017.69 0h0a6.44 6.44 0 007.69 0v10.4a6.44 6.44 0 01-7.69 0h0a6.44 6.44 0 00-7.69 0" fill="#4cbf56" stroke="#45993d" stroke-linecap="round" stroke-linejoin="round"/><path stroke-width="1.5" fill="#4cbf56" stroke="#45993d" stroke-linecap="round" stroke-linejoin="round" d="M.75 16.75v-16"/></svg>');
-      greenFlagButton.className = 'control-button control-button-highlight green-flag-button';
-      greenFlagButton.draggable = false;
-      greenFlagButton.addEventListener('click', () => {
-        scaffolding.greenFlag();
-      });
-      scaffolding.addEventListener('PROJECT_RUN_START', () => {
-        greenFlagButton.classList.add('active');
-      });
-      scaffolding.addEventListener('PROJECT_RUN_STOP', () => {
-        greenFlagButton.classList.remove('active');
-      });
-      scaffolding.addControlButton({
-        element: greenFlagButton,
-        where: 'top-left'
-      });` : ''}
-
-      ${this.options.controls.pause.enabled ? `
-      const pauseButton = document.createElement('img');
-      pauseButton.className = 'control-button control-button-highlight pause-button';
-      pauseButton.draggable = false;
-      let isPaused = false;
-      pauseButton.addEventListener('click', () => {
-        vm.setPaused(!isPaused);
-      });
-      const updatePause = () => {
-        if (isPaused) {
-          pauseButton.src = 'data:image/svg+xml,' + encodeURIComponent('<svg width="16" height="16" viewBox="0 0 4.2333332 4.2333335" xmlns="http://www.w3.org/2000/svg"><path d="m3.95163484 2.02835365-1.66643921.9621191-1.66643913.96211911V.10411543l1.66643922.9621191z" fill="#ffae00"/></svg>');
-        } else {
-          pauseButton.src = 'data:image/svg+xml,' + encodeURIComponent('<svg width="16" height="16" viewBox="0 0 4.2333332 4.2333335" xmlns="http://www.w3.org/2000/svg"><g fill="#ffae00"><path d="M.389.19239126h1.2631972v3.8485508H.389zM2.5810001.19239126h1.2631972v3.8485508H2.5810001z"/></g></svg>');
-        }
-      };
-      vm.runtime.on('RUNTIME_PAUSED', () => {
-        isPaused = true;
-        updatePause();
-      });
-      vm.runtime.on('RUNTIME_UNPAUSED', () => {
-        isPaused = false;
-        updatePause();
-      });
-      updatePause();
-      scaffolding.addControlButton({
-        element: pauseButton,
-        where: 'top-left'
-      });` : ''}
-
-      ${this.options.controls.stopAll.enabled ? `
-      const stopAllButton = document.createElement('img');
-      stopAllButton.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14"><path fill="#ec5959" stroke="#b84848" stroke-linecap="round" stroke-linejoin="round" stroke-miterlimit="10" d="M4.3.5h5.4l3.8 3.8v5.4l-3.8 3.8H4.3L.5 9.7V4.3z"/></svg>');
-      stopAllButton.className = 'control-button control-button-highlight stop-all-button';
-      stopAllButton.draggable = false;
-      stopAllButton.addEventListener('click', () => {
-        scaffolding.stopAll();
-      });
-      scaffolding.addControlButton({
-        element: stopAllButton,
-        where: 'top-left'
-      });` : ''}
-
-      ${this.options.controls.fullscreen.enabled ? `
-      if (document.fullscreenEnabled || document.webkitFullscreenEnabled) {
-        let isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
-        const fullscreenButton = document.createElement('img');
-        fullscreenButton.draggable = false;
-        fullscreenButton.className = 'control-button fullscreen-button';
-        fullscreenButton.addEventListener('click', () => {
-          if (isFullScreen) {
-            if (document.exitFullscreen) {
-              document.exitFullscreen();
-            } else if (document.webkitExitFullscreen) {
-              document.webkitExitFullscreen();
-            }
-          } else {
-            if (document.body.requestFullscreen) {
-              document.body.requestFullscreen();
-            } else if (document.body.webkitRequestFullscreen) {
-              document.body.webkitRequestFullscreen();
-            }
-          }
-        });
-        const otherControlsExist = ${this.options.controls.greenFlag.enabled || this.options.controls.stopAll.enabled};
-        const fillColor = otherControlsExist ? '#575E75' : '${this.options.appearance.foreground}';
-        const updateFullScreen = () => {
-          isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement);
-          document.body.classList.toggle('is-fullscreen', isFullScreen);
-          if (isFullScreen) {
-            fullscreenButton.src = 'data:image/svg+xml,' + encodeURIComponent('<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><g fill="' + fillColor + '" fill-rule="evenodd"><path d="M12.662 3.65l.89.891 3.133-2.374a.815.815 0 011.15.165.819.819 0 010 .986L15.467 6.46l.867.871c.25.25.072.664-.269.664L12.388 8A.397.397 0 0112 7.611V3.92c0-.341.418-.514.662-.27M7.338 16.35l-.89-.89-3.133 2.374a.817.817 0 01-1.15-.166.819.819 0 010-.985l2.37-3.143-.87-.871a.387.387 0 01.27-.664L7.612 12a.397.397 0 01.388.389v3.692a.387.387 0 01-.662.27M7.338 3.65l-.89.891-3.133-2.374a.815.815 0 00-1.15.165.819.819 0 000 .986l2.37 3.142-.87.871a.387.387 0 00.27.664L7.612 8A.397.397 0 008 7.611V3.92a.387.387 0 00-.662-.27M12.662 16.35l.89-.89 3.133 2.374a.817.817 0 001.15-.166.819.819 0 000-.985l-2.368-3.143.867-.871a.387.387 0 00-.269-.664L12.388 12a.397.397 0 00-.388.389v3.692c0 .342.418.514.662.27"/></g></svg>');
-          } else {
-            fullscreenButton.src = 'data:image/svg+xml,' + encodeURIComponent('<svg width="20" height="20" xmlns="http://www.w3.org/2000/svg"><g fill="' + fillColor + '" fill-rule="evenodd"><path d="M16.338 7.35l-.89-.891-3.133 2.374a.815.815 0 01-1.15-.165.819.819 0 010-.986l2.368-3.142-.867-.871a.387.387 0 01.269-.664L16.612 3a.397.397 0 01.388.389V7.08a.387.387 0 01-.662.27M3.662 12.65l.89.89 3.133-2.374a.817.817 0 011.15.166.819.819 0 010 .985l-2.37 3.143.87.871c.248.25.071.664-.27.664L3.388 17A.397.397 0 013 16.611V12.92c0-.342.418-.514.662-.27M3.662 7.35l.89-.891 3.133 2.374a.815.815 0 001.15-.165.819.819 0 000-.986L6.465 4.54l.87-.871a.387.387 0 00-.27-.664L3.388 3A.397.397 0 003 3.389V7.08c0 .341.418.514.662.27M16.338 12.65l-.89.89-3.133-2.374a.817.817 0 00-1.15.166.819.819 0 000 .985l2.368 3.143-.867.871a.387.387 0 00.269.664l3.677.005a.397.397 0 00.388-.389V12.92a.387.387 0 00-.662-.27"/></g></svg>');
-          }
-        };
-        updateFullScreen();
-        document.addEventListener('fullscreenchange', updateFullScreen);
-        document.addEventListener('webkitfullscreenchange', updateFullScreen);
-        if (otherControlsExist) {
-          fullscreenButton.className = 'control-button fullscreen-button';
-          scaffolding.addControlButton({
-            element: fullscreenButton,
-            where: 'top-right'
-          });
-        } else {
-          fullscreenButton.className = 'standalone-fullscreen-button';
-          document.body.appendChild(fullscreenButton);
-        }
-      }` : ''}
-
-      vm.setTurboMode(${this.options.turbo});
-      if (vm.setInterpolation) vm.setInterpolation(${this.options.interpolation});
-      if (vm.setFramerate) vm.setFramerate(${this.options.framerate});
-      if (vm.renderer.setUseHighQualityRender) vm.renderer.setUseHighQualityRender(${this.options.highQualityPen});
-      if (vm.setRuntimeOptions) vm.setRuntimeOptions({
-        fencing: ${this.options.fencing},
-        miscLimits: ${this.options.miscLimits},
-        maxClones: ${this.options.maxClones},
-      });
-      if (vm.setCompilerOptions) vm.setCompilerOptions({
-        enabled: ${this.options.compiler.enabled},
-        warpTimer: ${this.options.compiler.warpTimer}
-      });
-      if (vm.renderer.setMaxTextureDimension) vm.renderer.setMaxTextureDimension(${this.options.maxTextureDimension});
-
-      // enforcePrivacy threat model only makes sense in the editor
-      if (vm.runtime.setEnforcePrivacy) vm.runtime.setEnforcePrivacy(false);
-
-      if (typeof ScaffoldingAddons !== 'undefined') {
-        ScaffoldingAddons.run(scaffolding, ${JSON.stringify(this.getAddonOptions())});
-      }
-
-      scaffolding.setExtensionSecurityManager({
-        getSandboxMode: () => 'unsandboxed',
-        canLoadExtensionFromProject: () => true
-      });
-      for (const extension of ${JSON.stringify(await this.generateExtensionURLs())}) {
-        vm.extensionManager.loadExtensionURL(extension);
-      }
-
-      ${this.options.closeWhenStopped ? `
-      vm.runtime.on('PROJECT_RUN_STOP', () => {
-        if (!vm.isPaused || !vm.isPaused()) {
-          window.close();
-        }
-      });` : ''}
-
-      ${this.options.target.startsWith('nwjs-') ? `
-      if (typeof nw !== 'undefined') {
-        const win = nw.Window.get();
-        win.on('new-win-policy', (frame, url, policy) => {
-          policy.ignore();
-          nw.Shell.openExternal(url);
-        });
-        win.on('navigation', (frame, url, policy) => {
-          policy.ignore();
-          nw.Shell.openExternal(url);
-        });
-        document.addEventListener('keydown', (e) => {
-          if (e.key === 'Escape' && document.fullscreenElement) {
-            document.exitFullscreen();
-          }
-        });
-      }` : ''}
-    } catch (e) {
-      handleError(e);
-    }
-  `)}</script>
-  ${this.options.custom.js ? `<script>
-    try {
-      ${this.options.custom.js}
-    } catch (e) {
-      handleError(e);
-    }
-  </script>` : ''}
-  ${await this.generateGetProjectData()}
-  <script>
-    const run = async () => {
-      const projectData = await getProjectData();
-      await scaffolding.loadProject(projectData);
-      setProgress(1);
-      loadingScreen.hidden = true;
-      if (${this.options.autoplay}) {
-        scaffolding.start();
-      } else {
-        launchScreen.hidden = false;
-        launchScreen.addEventListener('click', () => {
-          launchScreen.hidden = true;
-          scaffolding.start();
-        });
-        launchScreen.focus();
-      }
-    };
-    run().catch(handleError);
-  </script>
-</body>
-</html>
-`;
-//html=encodeBigString ` ${html} `;
+    const html = Object(_encode_big_string__WEBPACK_IMPORTED_MODULE_13__["default"])(_templateObject2 || (_templateObject2 = _taggedTemplateLiteral(["<!DOCTYPE html>\n<!-- Created with ", " -->\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">\n  <!-- We only include this to explicitly loosen the CSP of various packager environments. It does not provide any security. -->\n  <meta http-equiv=\"Content-Security-Policy\" content=\"default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: blob:\">\n  <title>", "</title>\n  <style>\n    body {\n      color: ", ";\n      font-family: sans-serif;\n      overflow: hidden;\n      margin: 0;\n      padding: 0;\n    }\n    :root, body.is-fullscreen {\n      background-color: ", ";\n    }\n    [hidden] {\n      display: none !important;\n    }\n    h1 {\n      font-weight: normal;\n    }\n    a {\n      color: inherit;\n      text-decoration: underline;\n      cursor: pointer;\n    }\n\n    #app, #loading, #error, #launch {\n      position: absolute;\n      top: 0;\n      left: 0;\n      width: 100%;\n      height: 100%;\n    }\n    .screen {\n      display: flex;\n      flex-direction: column;\n      align-items: center;\n      justify-content: center;\n      text-align: center;\n      cursor: default;\n      user-select: none;\n      -webkit-user-select: none;\n      background-color: ", ";\n    }\n    #launch {\n      background-color: rgba(0, 0, 0, 0.7);\n      cursor: pointer;\n    }\n    .green-flag {\n      width: 80px;\n      height: 80px;\n      padding: 16px;\n      border-radius: 100%;\n      background: rgba(255, 255, 255, 0.75);\n      border: 3px solid hsla(0, 100%, 100%, 1);\n      display: flex;\n      justify-content: center;\n      align-items: center;\n      box-sizing: border-box;\n    }\n    #loading {\n      ", "\n    }\n    .progress-bar-outer {\n      border: 1px solid currentColor;\n      height: 10px;\n      width: 200px;\n      max-width: 200px;\n    }\n    .progress-bar-inner {\n      height: 100%;\n      width: 0;\n      background-color: currentColor;\n    }\n    .loading-text, noscript {\n      font-weight: normal;\n      font-size: 36px;\n      margin: 0 0 16px;\n    }\n    .loading-image {\n      margin: 0 0 16px;\n    }\n    #error-message, #error-stack {\n      font-family: monospace;\n      max-width: 600px;\n      white-space: pre-wrap;\n      user-select: text;\n      -webkit-user-select: text;\n    }\n    #error-stack {\n      text-align: left;\n      max-height: 200px;\n      overflow: auto;\n    }\n    .control-button {\n      width: 2rem;\n      height: 2rem;\n      padding: 0.375rem;\n      margin-top: 0.5rem;\n      margin-bottom: 0.5rem;\n      user-select: none;\n      -webkit-user-select: none;\n      cursor: pointer;\n      border: 0;\n      border-radius: 4px;\n    }\n    .control-button-highlight:hover {\n      background: ", "26;\n    }\n    .control-button-highlight.active {\n      background: ", "59;\n    }\n    .fullscreen-button {\n      background: white;\n    }\n    .standalone-fullscreen-button {\n      position: absolute;\n      top: 0;\n      right: 0;\n      background-color: rgba(0, 0, 0, 0.5);\n      border-radius: 0 0 0 4px;\n      padding: 4px;\n      cursor: pointer;\n    }\n    .sc-canvas {\n      cursor: ", ";\n    }\n    .sc-monitor-root[data-opcode^=\"data_\"] .sc-monitor-value-color {\n      background-color: ", ";\n    }\n    .sc-monitor-row-value-outer {\n      background-color: ", ";\n    }\n    .sc-monitor-row-value-editing .sc-monitor-row-value-outer {\n      background-color: ", ";\n    }\n    ", "\n  </style>\n  <meta name=\"theme-color\" content=\"", "\">\n  ", "\n</head>\n<body>\n  <div id=\"app\"></div>\n\n  <div id=\"launch\" class=\"screen\" hidden title=\"Click to start\">\n    <div class=\"green-flag\">\n      <svg viewBox=\"0 0 16.63 17.5\" width=\"42\" height=\"44\">\n        <defs><style>.cls-1,.cls-2{fill:#4cbf56;stroke:#45993d;stroke-linecap:round;stroke-linejoin:round;}.cls-2{stroke-width:1.5px;}</style></defs>\n        <path class=\"cls-1\" d=\"M.75,2A6.44,6.44,0,0,1,8.44,2h0a6.44,6.44,0,0,0,7.69,0V12.4a6.44,6.44,0,0,1-7.69,0h0a6.44,6.44,0,0,0-7.69,0\"/>\n        <line class=\"cls-2\" x1=\"0.75\" y1=\"16.75\" x2=\"0.75\" y2=\"0.75\"/>\n      </svg>\n    </div>\n  </div>\n\n  <div id=\"loading\" class=\"screen\">\n    <noscript>Enable JavaScript</noscript>\n    ", "\n    ", "\n    ", "\n  </div>\n\n  <div id=\"error\" class=\"screen\" hidden>\n    <h1>Error</h1>\n    <details>\n      <summary id=\"error-message\"></summary>\n      <p id=\"error-stack\"></p>\n    </details>\n  </div>\n\n  ", "\n  <script>", "</script>\n  ", "\n  ", "\n  <script>\n    const run = async () => {\n      const projectData = await getProjectData();\n      await scaffolding.", "(projectData);\n      setProgress(1);\n      loadingScreen.hidden = true;\n      if (", ") {\n        scaffolding.start();\n      } else {\n        launchScreen.hidden = false;\n        launchScreen.addEventListener('click', () => {\n          launchScreen.hidden = true;\n          scaffolding.start();\n        });\n        launchScreen.focus();\n      }\n    };\n    run().catch(handleError);\n  </script>\n</body>\n</html>\n"])), _brand__WEBPACK_IMPORTED_MODULE_9__["WEBSITE"], Object(_common_escape_xml__WEBPACK_IMPORTED_MODULE_2__["default"])(this.options.app.windowTitle), this.options.appearance.foreground, this.options.appearance.background, this.options.appearance.background, this.options.loadingScreen.image && this.options.loadingScreen.imageMode === 'stretch' ? "background-image: url(".concat(await _adapter__WEBPACK_IMPORTED_MODULE_12__["Adapter"].readAsURL(this.options.loadingScreen.image, 'stretched loading screen'), ");\n      background-repeat: no-repeat;\n      background-size: contain;\n      background-position: center;") : '', this.options.appearance.accent, this.options.appearance.accent, await this.generateCursor(), this.options.monitors.variableColor, this.options.monitors.listColor, Object(_colors__WEBPACK_IMPORTED_MODULE_11__["darken"])(this.options.monitors.listColor), this.options.custom.css, this.options.appearance.background, await this.generateFavicon(), this.options.loadingScreen.text ? "<h1 class=\"loading-text\">".concat(Object(_common_escape_xml__WEBPACK_IMPORTED_MODULE_2__["default"])(this.options.loadingScreen.text), "</h1>") : '', this.options.loadingScreen.image && this.options.loadingScreen.imageMode === 'normal' ? "<div class=\"loading-image\"><img src=\"".concat(await _adapter__WEBPACK_IMPORTED_MODULE_12__["Adapter"].readAsURL(this.options.loadingScreen.image, 'loading-screen'), "\"></div>") : '', this.options.loadingScreen.progressBar ? '<div class="progress-bar-outer"><div class="progress-bar-inner" id="loading-inner"></div></div>' : '', this.options.target === 'html' ? "<script>".concat(this.script, "</script>") : '<script src="script.js"></script>', removeUnnecessaryEmptyLines("\n    const appElement = document.getElementById('app');\n    const launchScreen = document.getElementById('launch');\n    const loadingScreen = document.getElementById('loading');\n    const loadingInner = document.getElementById('loading-inner');\n    const errorScreen = document.getElementById('error');\n    const errorScreenMessage = document.getElementById('error-message');\n    const errorScreenStack = document.getElementById('error-stack');\n\n    const handleError = (error) => {\n      console.error(error);\n      if (!errorScreen.hidden) return;\n      errorScreen.hidden = false;\n      errorScreenMessage.textContent = '' + error;\n      let debug = error && error.stack || 'no stack';\n      debug += '\\nUser agent: ' + navigator.userAgent;\n      errorScreenStack.textContent = debug;\n    };\n    const setProgress = (progress) => {\n      if (loadingInner) loadingInner.style.width = progress * 100 + '%';\n    };\n    const interpolate = (a, b, t) => a + t * (b - a);\n\n    try {\n      setProgress(".concat(PROGRESS_LOADED_SCRIPTS, ");\n\n      const scaffolding = new Scaffolding.Scaffolding();\n      scaffolding.width = ").concat(this.options.stageWidth, ";\n      scaffolding.height = ").concat(this.options.stageHeight, ";\n      scaffolding.resizeMode = ").concat(JSON.stringify(this.options.resizeMode), ";\n      scaffolding.editableLists = ").concat(this.options.monitors.editableLists, ";\n      scaffolding.usePackagedRuntime = ").concat(this.options.packagedRuntime, ";\n      scaffolding.setup();\n      scaffolding.appendTo(appElement);\n\n      const vm = scaffolding.vm;\n      window.scaffolding = scaffolding;\n      window.vm = scaffolding.vm;\n      window.Scratch = {\n        vm,\n        renderer: vm.renderer,\n        audioEngine: vm.runtime.audioEngine,\n        bitmapAdapter: vm.runtime.v2BitmapAdapter,\n        videoProvider: vm.runtime.ioDevices.video.provider\n      };\n\n      scaffolding.setUsername(").concat(JSON.stringify(this.options.username), ".replace(/#/g, () => Math.floor(Math.random() * 10)));\n      scaffolding.setAccentColor(").concat(JSON.stringify(this.options.appearance.accent), ");\n\n      try {\n        ").concat(this.options.cloudVariables.mode === 'ws' ? "scaffolding.addCloudProvider(".concat(this.makeWebSocketProvider(), ")") : this.options.cloudVariables.mode === 'local' ? "scaffolding.addCloudProvider(".concat(this.makeLocalStorageProvider(), ")") : this.options.cloudVariables.mode === 'custom' ? this.makeCustomProvider() : '', ";\n      } catch (error) {\n        console.error(error);\n      }\n\n      ").concat(this.options.controls.greenFlag.enabled ? "\n      const greenFlagButton = document.createElement('img');\n      greenFlagButton.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16.63 17.5\"><path d=\"M.75 2a6.44 6.44 0 017.69 0h0a6.44 6.44 0 007.69 0v10.4a6.44 6.44 0 01-7.69 0h0a6.44 6.44 0 00-7.69 0\" fill=\"#4cbf56\" stroke=\"#45993d\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path stroke-width=\"1.5\" fill=\"#4cbf56\" stroke=\"#45993d\" stroke-linecap=\"round\" stroke-linejoin=\"round\" d=\"M.75 16.75v-16\"/></svg>');\n      greenFlagButton.className = 'control-button control-button-highlight green-flag-button';\n      greenFlagButton.draggable = false;\n      greenFlagButton.addEventListener('click', () => {\n        scaffolding.greenFlag();\n      });\n      scaffolding.addEventListener('PROJECT_RUN_START', () => {\n        greenFlagButton.classList.add('active');\n      });\n      scaffolding.addEventListener('PROJECT_RUN_STOP', () => {\n        greenFlagButton.classList.remove('active');\n      });\n      scaffolding.addControlButton({\n        element: greenFlagButton,\n        where: 'top-left'\n      });" : '', "\n\n      ").concat(this.options.controls.pause.enabled ? "\n      const pauseButton = document.createElement('img');\n      pauseButton.className = 'control-button control-button-highlight pause-button';\n      pauseButton.draggable = false;\n      let isPaused = false;\n      pauseButton.addEventListener('click', () => {\n        vm.setPaused(!isPaused);\n      });\n      const updatePause = () => {\n        if (isPaused) {\n          pauseButton.src = 'data:image/svg+xml,' + encodeURIComponent('<svg width=\"16\" height=\"16\" viewBox=\"0 0 4.2333332 4.2333335\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"m3.95163484 2.02835365-1.66643921.9621191-1.66643913.96211911V.10411543l1.66643922.9621191z\" fill=\"#ffae00\"/></svg>');\n        } else {\n          pauseButton.src = 'data:image/svg+xml,' + encodeURIComponent('<svg width=\"16\" height=\"16\" viewBox=\"0 0 4.2333332 4.2333335\" xmlns=\"http://www.w3.org/2000/svg\"><g fill=\"#ffae00\"><path d=\"M.389.19239126h1.2631972v3.8485508H.389zM2.5810001.19239126h1.2631972v3.8485508H2.5810001z\"/></g></svg>');\n        }\n      };\n      vm.runtime.on('RUNTIME_PAUSED', () => {\n        isPaused = true;\n        updatePause();\n      });\n      vm.runtime.on('RUNTIME_UNPAUSED', () => {\n        isPaused = false;\n        updatePause();\n      });\n      updatePause();\n      scaffolding.addControlButton({\n        element: pauseButton,\n        where: 'top-left'\n      });" : '', "\n\n      ").concat(this.options.controls.stopAll.enabled ? "\n      const stopAllButton = document.createElement('img');\n      stopAllButton.src = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 14 14\"><path fill=\"#ec5959\" stroke=\"#b84848\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-miterlimit=\"10\" d=\"M4.3.5h5.4l3.8 3.8v5.4l-3.8 3.8H4.3L.5 9.7V4.3z\"/></svg>');\n      stopAllButton.className = 'control-button control-button-highlight stop-all-button';\n      stopAllButton.draggable = false;\n      stopAllButton.addEventListener('click', () => {\n        scaffolding.stopAll();\n      });\n      scaffolding.addControlButton({\n        element: stopAllButton,\n        where: 'top-left'\n      });" : '', "\n\n      ").concat(this.options.controls.fullscreen.enabled ? "\n      if (document.fullscreenEnabled || document.webkitFullscreenEnabled) {\n        let isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement);\n        const fullscreenButton = document.createElement('img');\n        fullscreenButton.draggable = false;\n        fullscreenButton.className = 'control-button fullscreen-button';\n        fullscreenButton.addEventListener('click', () => {\n          if (isFullScreen) {\n            if (document.exitFullscreen) {\n              document.exitFullscreen();\n            } else if (document.webkitExitFullscreen) {\n              document.webkitExitFullscreen();\n            }\n          } else {\n            if (document.body.requestFullscreen) {\n              document.body.requestFullscreen();\n            } else if (document.body.webkitRequestFullscreen) {\n              document.body.webkitRequestFullscreen();\n            }\n          }\n        });\n        const otherControlsExist = ".concat(this.options.controls.greenFlag.enabled || this.options.controls.stopAll.enabled, ";\n        const fillColor = otherControlsExist ? '#575E75' : '").concat(this.options.appearance.foreground, "';\n        const updateFullScreen = () => {\n          isFullScreen = !!(document.fullscreenElement || document.webkitFullscreenElement);\n          document.body.classList.toggle('is-fullscreen', isFullScreen);\n          if (isFullScreen) {\n            fullscreenButton.src = 'data:image/svg+xml,' + encodeURIComponent('<svg width=\"20\" height=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><g fill=\"' + fillColor + '\" fill-rule=\"evenodd\"><path d=\"M12.662 3.65l.89.891 3.133-2.374a.815.815 0 011.15.165.819.819 0 010 .986L15.467 6.46l.867.871c.25.25.072.664-.269.664L12.388 8A.397.397 0 0112 7.611V3.92c0-.341.418-.514.662-.27M7.338 16.35l-.89-.89-3.133 2.374a.817.817 0 01-1.15-.166.819.819 0 010-.985l2.37-3.143-.87-.871a.387.387 0 01.27-.664L7.612 12a.397.397 0 01.388.389v3.692a.387.387 0 01-.662.27M7.338 3.65l-.89.891-3.133-2.374a.815.815 0 00-1.15.165.819.819 0 000 .986l2.37 3.142-.87.871a.387.387 0 00.27.664L7.612 8A.397.397 0 008 7.611V3.92a.387.387 0 00-.662-.27M12.662 16.35l.89-.89 3.133 2.374a.817.817 0 001.15-.166.819.819 0 000-.985l-2.368-3.143.867-.871a.387.387 0 00-.269-.664L12.388 12a.397.397 0 00-.388.389v3.692c0 .342.418.514.662.27\"/></g></svg>');\n          } else {\n            fullscreenButton.src = 'data:image/svg+xml,' + encodeURIComponent('<svg width=\"20\" height=\"20\" xmlns=\"http://www.w3.org/2000/svg\"><g fill=\"' + fillColor + '\" fill-rule=\"evenodd\"><path d=\"M16.338 7.35l-.89-.891-3.133 2.374a.815.815 0 01-1.15-.165.819.819 0 010-.986l2.368-3.142-.867-.871a.387.387 0 01.269-.664L16.612 3a.397.397 0 01.388.389V7.08a.387.387 0 01-.662.27M3.662 12.65l.89.89 3.133-2.374a.817.817 0 011.15.166.819.819 0 010 .985l-2.37 3.143.87.871c.248.25.071.664-.27.664L3.388 17A.397.397 0 013 16.611V12.92c0-.342.418-.514.662-.27M3.662 7.35l.89-.891 3.133 2.374a.815.815 0 001.15-.165.819.819 0 000-.986L6.465 4.54l.87-.871a.387.387 0 00-.27-.664L3.388 3A.397.397 0 003 3.389V7.08c0 .341.418.514.662.27M16.338 12.65l-.89.89-3.133-2.374a.817.817 0 00-1.15.166.819.819 0 000 .985l2.368 3.143-.867.871a.387.387 0 00.269.664l3.677.005a.397.397 0 00.388-.389V12.92a.387.387 0 00-.662-.27\"/></g></svg>');\n          }\n        };\n        updateFullScreen();\n        document.addEventListener('fullscreenchange', updateFullScreen);\n        document.addEventListener('webkitfullscreenchange', updateFullScreen);\n        if (otherControlsExist) {\n          fullscreenButton.className = 'control-button fullscreen-button';\n          scaffolding.addControlButton({\n            element: fullscreenButton,\n            where: 'top-right'\n          });\n        } else {\n          fullscreenButton.className = 'standalone-fullscreen-button';\n          document.body.appendChild(fullscreenButton);\n        }\n      }") : '', "\n\n      vm.setTurboMode(").concat(this.options.turbo, ");\n      if (vm.setInterpolation) vm.setInterpolation(").concat(this.options.interpolation, ");\n      if (vm.setFramerate) vm.setFramerate(").concat(this.options.framerate, ");\n      if (vm.renderer.setUseHighQualityRender) vm.renderer.setUseHighQualityRender(").concat(this.options.highQualityPen, ");\n      if (vm.setRuntimeOptions) vm.setRuntimeOptions({\n        fencing: ").concat(this.options.fencing, ",\n        miscLimits: ").concat(this.options.miscLimits, ",\n        maxClones: ").concat(this.options.maxClones, ",\n      });\n      if (vm.setCompilerOptions) vm.setCompilerOptions({\n        enabled: ").concat(this.options.compiler.enabled, ",\n        warpTimer: ").concat(this.options.compiler.warpTimer, "\n      });\n      if (vm.renderer.setMaxTextureDimension) vm.renderer.setMaxTextureDimension(").concat(this.options.maxTextureDimension, ");\n\n      // enforcePrivacy threat model only makes sense in the editor\n      if (vm.runtime.setEnforcePrivacy) vm.runtime.setEnforcePrivacy(false);\n\n      if (typeof ScaffoldingAddons !== 'undefined') {\n        ScaffoldingAddons.run(scaffolding, ").concat(JSON.stringify(this.getAddonOptions()), ");\n      }\n\n      scaffolding.setExtensionSecurityManager({\n        getSandboxMode: () => 'unsandboxed',\n        canLoadExtensionFromProject: () => true\n      });\n      for (const extension of ").concat(JSON.stringify(await this.generateExtensionURLs()), ") {\n        vm.extensionManager.loadExtensionURL(extension);\n      }\n\n      ").concat(this.options.closeWhenStopped ? "\n      vm.runtime.on('PROJECT_RUN_STOP', () => {\n        if (!vm.isPaused || !vm.isPaused()) {\n          window.close();\n        }\n      });" : '', "\n\n      ").concat(this.options.target.startsWith('nwjs-') ? "\n      if (typeof nw !== 'undefined') {\n        const win = nw.Window.get();\n        win.on('new-win-policy', (frame, url, policy) => {\n          policy.ignore();\n          nw.Shell.openExternal(url);\n        });\n        win.on('navigation', (frame, url, policy) => {\n          policy.ignore();\n          nw.Shell.openExternal(url);\n        });\n        document.addEventListener('keydown', (e) => {\n          if (e.key === 'Escape' && document.fullscreenElement) {\n            document.exitFullscreen();\n          }\n        });\n      }" : '', "\n    } catch (e) {\n      handleError(e);\n    }\n  ")), this.options.custom.js ? "<script>\n    try {\n      ".concat(this.options.custom.js, "\n    } catch (e) {\n      handleError(e);\n    }\n  </script>") : '', await this.generateGetProjectData(), this.options.compiler.compiledProject ? 'loadCompiledProject' : 'loadProject', this.options.autoplay);
+    //html=encodeBigString ` ${html} `;
 
     this.ensureNotAborted();
-
-
     if (this.options.target !== 'html') {
       let zip;
-      if (this.project.type === 'sb3' && this.options.target !== 'zip-one-asset') {
+      if (this.options.compiler.compiledProject) {
+        zip = new (await getJSZip())();
+        zip.file('project.zip', await this.getCompiledProjectArchiveData());
+        zip.file('compiled-project.json', JSON.stringify(await this.getCompiledProjectData()));
+      } else if (this.project.type === 'sb3' && this.options.target !== 'zip-one-asset') {
         zip = await (await getJSZip()).loadAsync(this.project.arrayBuffer);
         for (const file of Object.keys(zip.files)) {
-          zip.files[`assets/${file}`] = zip.files[file];
+          zip.files["assets/".concat(file)] = zip.files[file];
           delete zip.files[file];
         }
       } else {
-        zip = new (await getJSZip());
+        zip = new (await getJSZip())();
         zip.file('project.zip', this.project.arrayBuffer);
       }
       zip.file('index.html', html);
       zip.file('script.js', this.script);
-
       if (this.options.target.startsWith('nwjs-')) {
         zip = await this.addNwJS(zip);
       } else if (this.options.target.startsWith('electron-')) {
@@ -12946,7 +11823,6 @@ For detailed setup instructions, refer to the Cordova documentation.`;
       } else if (this.options.target.startsWith('node-cli-')) {
         zip = await this.addNodeCLI(zip);
       }
-
       this.ensureNotAborted();
       return {
         data: await zip.generateAsync({
@@ -12954,7 +11830,7 @@ For detailed setup instructions, refer to the Cordova documentation.`;
           compression: 'DEFLATE',
           // Use UNIX permissions so that executable bits are properly set for macOS and Linux
           platform: 'UNIX'
-        }, (meta) => {
+        }, meta => {
           this.dispatchEvent(new _common_event_target__WEBPACK_IMPORTED_MODULE_0__["CustomEvent"]('zip-progress', {
             detail: {
               progress: meta.percent / 100
@@ -12972,8 +11848,7 @@ For detailed setup instructions, refer to the Cordova documentation.`;
     };
   }
 }
-
-Packager.getDefaultPackageNameFromFileName = (title) => {
+Packager.getDefaultPackageNameFromFileName = title => {
   // Note: Changing this logic is very dangerous because changing the defaults will cause already packaged projects
   // to loose any data when they are updated.
   title = title.split('.')[0];
@@ -12982,8 +11857,7 @@ Packager.getDefaultPackageNameFromFileName = (title) => {
   title = title.replace(/ /g, '-');
   return title.toLowerCase() || 'packaged-project';
 };
-
-Packager.getWindowTitleFromFileName = (title) => {
+Packager.getWindowTitleFromFileName = title => {
   const split = title.split('.');
   if (split.length > 1) {
     split.pop();
@@ -12991,17 +11865,11 @@ Packager.getWindowTitleFromFileName = (title) => {
   title = split.join('.').trim();
   return title || 'Packaged Project';
 };
-
-Packager.usesUnsafeOptions = (options) => {
+Packager.usesUnsafeOptions = options => {
   const defaultOptions = Packager.DEFAULT_OPTIONS();
-  const getUnsafeOptions = (options) => [
-    options.custom,
-    options.extensions,
-    options.cloudVariables.unsafeCloudBehaviors
-  ];
+  const getUnsafeOptions = options => [options.custom, options.extensions, options.cloudVariables.unsafeCloudBehaviors];
   return JSON.stringify(getUnsafeOptions(defaultOptions)) !== JSON.stringify(getUnsafeOptions(options));
 };
-
 Packager.DEFAULT_OPTIONS = () => ({
   turbo: false,
   interpolation: false,
@@ -13034,10 +11902,10 @@ Packager.DEFAULT_OPTIONS = () => ({
   },
   controls: {
     greenFlag: {
-      enabled: false,
+      enabled: false
     },
     stopAll: {
-      enabled: false,
+      enabled: false
     },
     fullscreen: {
       enabled: false
@@ -13053,7 +11921,8 @@ Packager.DEFAULT_OPTIONS = () => ({
   },
   compiler: {
     enabled: true,
-    warpTimer: false
+    warpTimer: false,
+    compiledProject: false
   },
   packagedRuntime: true,
   target: 'html',
@@ -13068,14 +11937,14 @@ Packager.DEFAULT_OPTIONS = () => ({
   },
   chunks: {
     gamepad: false,
-    pointerlock: false,
+    pointerlock: false
   },
   cloudVariables: {
     mode: 'ws',
     cloudHost: 'wss://clouddata.turbowarp.org',
     custom: {},
     specialCloudBehaviors: false,
-    unsafeCloudBehaviors: false,
+    unsafeCloudBehaviors: false
   },
   cursor: {
     type: 'auto',
@@ -13098,9 +11967,7 @@ Packager.DEFAULT_OPTIONS = () => ({
   bakeExtensions: true,
   maxTextureDimension: 2048
 });
-
 /* harmony default export */ __webpack_exports__["default"] = (Packager);
-
 /* WEBPACK VAR INJECTION */}.call(this, __webpack_require__(/*! ./../../node_modules/buffer/index.js */ "./node_modules/buffer/index.js").Buffer))
 
 /***/ }),
@@ -13181,7 +12048,7 @@ __webpack_require__.r(__webpack_exports__);
 </plist>
 */
 
-const xmlToValue = (node) => {
+const xmlToValue = node => {
   if (node.tagName === 'dict') {
     const result = {};
     for (const child of node.children) {
@@ -13202,7 +12069,6 @@ const xmlToValue = (node) => {
   console.warn('unknown plist xml', node);
   return null;
 };
-
 const valueToXml = (doc, value) => {
   if (Array.isArray(value)) {
     const node = doc.createElement('array');
@@ -13229,27 +12095,22 @@ const valueToXml = (doc, value) => {
     return node;
   }
   console.warn('unknown plist value', value);
-  return valueToXml(doc, `${value}`);
+  return valueToXml(doc, "".concat(value));
 };
-
-const parsePlist = (string) => {
+const parsePlist = string => {
   const xml = new DOMParser().parseFromString(string, 'text/xml');
   const rootNode = xml.children[0];
   const rootDict = rootNode.children[0];
   return xmlToValue(rootDict);
 };
-
-const generatePlist = (values) => {
+const generatePlist = values => {
   const xml = document.implementation.createDocument(null, "plist");
   const rootNode = xml.documentElement;
   rootNode.setAttribute('version', '1.0');
   rootNode.appendChild(valueToXml(xml, values));
   const serialized = new XMLSerializer().serializeToString(xml);
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-${serialized}`;
+  return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n".concat(serialized);
 };
-
 
 /***/ }),
 
@@ -13262,7 +12123,7 @@ ${serialized}`;
 
 "use strict";
 __webpack_require__.r(__webpack_exports__);
-const sha256 = async (arrayBuffer) => {
+const sha256 = async arrayBuffer => {
   // Use the browser's builtin SHA-256 if possible.
   // This API might not exist if we're not a secure context or in versions of Node that aren't even that old,
   // so we also have a pure JS fallback.
@@ -13272,15 +12133,13 @@ const sha256 = async (arrayBuffer) => {
   }
 
   // The checksum will be performed on the main thread and may take a while.
-  const SHA256 = (await Promise.all(/*! import() | sha256 */[__webpack_require__.e("vendors~icns~sha256"), __webpack_require__.e("sha256")]).then(__webpack_require__.t.bind(null, /*! sha.js/sha256 */ "./node_modules/sha.js/sha256.js", 7))).default;
+  const SHA256 = (await Promise.all(/*! import() | sha256 */[__webpack_require__.e("vendors~icns~scratch-vm-compiler~sha256"), __webpack_require__.e("sha256")]).then(__webpack_require__.t.bind(null, /*! sha.js/sha256 */ "./node_modules/sha.js/sha256.js", 7))).default;
   const hash = new SHA256();
   // new Uint8Array() is necessary to make this work in Node
   hash.update(new Uint8Array(arrayBuffer));
   return hash.digest('hex');
 };
-
 /* harmony default export */ __webpack_exports__["default"] = (sha256);
-
 
 /***/ }),
 
@@ -13304,17 +12163,14 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-
 class WebAdapter {
-  getCachedAsset (asset) {
-    return _cache__WEBPACK_IMPORTED_MODULE_0__["default"].get(asset)
+  getCachedAsset(asset) {
+    return _cache__WEBPACK_IMPORTED_MODULE_0__["default"].get(asset);
   }
-
-  async cacheAsset (asset, result) {
+  async cacheAsset(asset, result) {
     await _cache__WEBPACK_IMPORTED_MODULE_0__["default"].set(asset, result);
   }
-
-  getAppIcon (file) {
+  getAppIcon(file) {
     if (!file) {
       return Object(_common_request__WEBPACK_IMPORTED_MODULE_1__["default"])({
         url: _images_default_icon_png__WEBPACK_IMPORTED_MODULE_3__["default"],
@@ -13340,7 +12196,7 @@ class WebAdapter {
         canvas.width = image.width;
         canvas.height = image.height;
         ctx.drawImage(image, 0, 0);
-        canvas.toBlob((blob) => {
+        canvas.toBlob(blob => {
           URL.revokeObjectURL(url);
           resolve(Object(_common_readers__WEBPACK_IMPORTED_MODULE_2__["readAsArrayBuffer"])(blob));
         });
@@ -13353,15 +12209,12 @@ class WebAdapter {
       image.src = url;
     });
   }
-
-  readAsURL (file, debugInfo) {
-    return Object(_common_readers__WEBPACK_IMPORTED_MODULE_2__["readAsURL"])(file)
-      .catch((err) => {
-        throw new Error(`${debugInfo}: ${err}`);
-      });
+  readAsURL(file, debugInfo) {
+    return Object(_common_readers__WEBPACK_IMPORTED_MODULE_2__["readAsURL"])(file).catch(err => {
+      throw new Error("".concat(debugInfo, ": ").concat(err));
+    });
   }
-
-  async fetchExtensionScript (url) {
+  async fetchExtensionScript(url) {
     try {
       const source = await Object(_extension_loader__WEBPACK_IMPORTED_MODULE_4__["fetchExtensionSource"])(url);
       return Object(_extension_loader__WEBPACK_IMPORTED_MODULE_4__["wrapExtensionSource"])(source);
@@ -13374,9 +12227,7 @@ class WebAdapter {
     }
   }
 }
-
 /* harmony default export */ __webpack_exports__["default"] = (WebAdapter);
-
 
 /***/ }),
 
@@ -13395,22 +12246,21 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-
 const DATABASE_NAME = 'p4-large-assets';
 const DATABASE_VERSION = 1;
 const STORE_NAME = 'assets';
-
 const db = new _common_idb__WEBPACK_IMPORTED_MODULE_2__["default"](DATABASE_NAME, DATABASE_VERSION, STORE_NAME);
-
-const getAssetId = (asset) => {
+const getAssetId = asset => {
   if (asset.sha256) {
     return asset.sha256;
   }
-  return `${_build_id__WEBPACK_IMPORTED_MODULE_1__["buildId"]}-${JSON.stringify(asset.src)}`;
+  return "".concat(_build_id__WEBPACK_IMPORTED_MODULE_1__["buildId"], "-").concat(JSON.stringify(asset.src));
 };
-
 const removeExtraneous = async () => {
-  const {transaction, store} = await db.createTransaction('readwrite');
+  const {
+    transaction,
+    store
+  } = await db.createTransaction('readwrite');
   return new Promise((resolve, reject) => {
     _common_idb__WEBPACK_IMPORTED_MODULE_2__["default"].setTransactionErrorHandler(transaction, reject);
     const keyRequest = store.getAllKeys();
@@ -13418,7 +12268,6 @@ const removeExtraneous = async () => {
       const keys = e.target.result;
       const allValidAssetIds = Object.values(_large_assets__WEBPACK_IMPORTED_MODULE_0__["default"]).map(getAssetId);
       const keysToDelete = keys.filter(i => !allValidAssetIds.includes(i));
-
       for (const key of keysToDelete) {
         await new Promise(resolveDelete => {
           const deleteRequest = store.delete(key);
@@ -13427,19 +12276,20 @@ const removeExtraneous = async () => {
           };
         });
       }
-
       resolve();
     };
   });
 };
-
-const get = async (asset) => {
-  const {transaction, store} = await db.createTransaction('readonly');
+const get = async asset => {
+  const {
+    transaction,
+    store
+  } = await db.createTransaction('readonly');
   return new Promise((resolve, reject) => {
     _common_idb__WEBPACK_IMPORTED_MODULE_2__["default"].setTransactionErrorHandler(transaction, reject);
     const assetId = getAssetId(asset);
     const request = store.get(assetId);
-    request.onsuccess = (e) => {
+    request.onsuccess = e => {
       const result = e.target.result;
       if (result) {
         resolve(result.data);
@@ -13449,9 +12299,11 @@ const get = async (asset) => {
     };
   });
 };
-
 const set = async (asset, content) => {
-  const {transaction, store} = await db.createTransaction('readwrite');
+  const {
+    transaction,
+    store
+  } = await db.createTransaction('readwrite');
   return new Promise((resolve, reject) => {
     _common_idb__WEBPACK_IMPORTED_MODULE_2__["default"].setTransactionErrorHandler(transaction, reject);
     const assetId = getAssetId(asset);
@@ -13464,17 +12316,13 @@ const set = async (asset, content) => {
     };
   });
 };
-
 const resetAll = () => db.deleteEverything();
-
 removeExtraneous();
-
 /* harmony default export */ __webpack_exports__["default"] = ({
   get,
   set,
   resetAll
 });
-
 
 /***/ }),
 
@@ -13493,11 +12341,8 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-
 Object(_adapter__WEBPACK_IMPORTED_MODULE_0__["setAdapter"])(new _adapter__WEBPACK_IMPORTED_MODULE_2__["default"]());
-
 /* harmony default export */ __webpack_exports__["default"] = (_packager__WEBPACK_IMPORTED_MODULE_1__["default"]);
-
 
 /***/ })
 
