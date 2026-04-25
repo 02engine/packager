@@ -60,16 +60,18 @@ class WebAdapter {
       });
   }
 
-  async fetchExtensionScript (url) {
+  async fetchExtensionScript (url, options = {}) {
+    const wrap = options.wrap !== false;
     try {
       const source = await fetchExtensionSource(url);
-      return wrapExtensionSource(source);
+      return wrap ? wrapExtensionSource(source) : source;
     } catch (error) {
       // 降级到原来的实现
-      return request({
+      const source = await request({
         type: 'text',
         url: url
       });
+      return wrap ? wrapExtensionSource(source) : source;
     }
   }
 }

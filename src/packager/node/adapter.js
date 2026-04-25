@@ -96,10 +96,11 @@ class NodeAdapter {
     return file.readAsURL();
   }
 
-  async fetchExtensionScript (url) {
+  async fetchExtensionScript (url, options = {}) {
+    const wrap = options.wrap !== false;
     try {
       const source = await fetchExtensionSource(url);
-      return wrapExtensionSource(source);
+      return wrap ? wrapExtensionSource(source) : source;
     } catch (error) {
       // 降级到原来的实现
       return fetch(url)
@@ -108,7 +109,8 @@ class NodeAdapter {
             return res.text();
           }
           throw new Error(`Unexpected status code: ${res.status}`);
-        });
+        })
+        .then(source => (wrap ? wrapExtensionSource(source) : source));
     }
   }
 }

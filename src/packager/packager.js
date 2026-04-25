@@ -1712,7 +1712,7 @@ For detailed setup instructions, refer to the Cordova documentation.`;
     return this._compiledProjectArchivePromise;
   }
 
-  async generateGetProjectData () {
+  async generateGetProjectData (hostStateProperty = null) {
     const result = [];
     let getProjectDataFunction = '';
     let isZip = false;
@@ -1820,14 +1820,15 @@ For detailed setup instructions, refer to the Cordova documentation.`;
 
       result.push(`
       <script>
-        const getProjectData = (function() {
-          const storage = scaffolding.storage;
+        globalThis[${JSON.stringify(hostStateProperty)}].getProjectData = (function() {
+          const __o2HostState = globalThis[${JSON.stringify(hostStateProperty)}];
+          const storage = __o2HostState.scaffolding.storage;
           storage.onprogress = (total, loaded) => {
             setProgress(interpolate(${storageProgressStart}, ${storageProgressEnd}, loaded / total));
           };
 
           let zip;
-          vm.runtime.on('PROJECT_LOADED', () => (zip = null));
+          __o2HostState.vm.runtime.on('PROJECT_LOADED', () => (zip = null));
           const findFileInZip = (path) => zip.file(path) || zip.file(new RegExp("^([^/]*/)?" + path + "$"))[0];
 
           storage.addHelper({
@@ -1951,17 +1952,18 @@ For detailed setup instructions, refer to the Cordova documentation.`;
       })`;
     }
 
-    result.push(`
+      result.push(`
     <script>
-      const getProjectData = (function() {
-        const storage = scaffolding.storage;
+      globalThis[${JSON.stringify(hostStateProperty)}].getProjectData = (function() {
+        const __o2HostState = globalThis[${JSON.stringify(hostStateProperty)}];
+        const storage = __o2HostState.scaffolding.storage;
         storage.onprogress = (total, loaded) => {
           setProgress(interpolate(${storageProgressStart}, ${storageProgressEnd}, loaded / total));
         };
         ${isZip ? `
         let zip;
         // Allow zip to be GC'd after project loads
-        vm.runtime.on('PROJECT_LOADED', () => (zip = null));
+        __o2HostState.vm.runtime.on('PROJECT_LOADED', () => (zip = null));
         const findFileInZip = (path) => zip.file(path) || zip.file(new RegExp("^([^/]*/)?" + path + "$"))[0];
         storage.addHelper({
           load: (assetType, assetId, dataFormat) => {
@@ -2029,13 +2031,13 @@ For detailed setup instructions, refer to the Cordova documentation.`;
       }
     }));
 
-    const shouldTryToFetch = (url) => {
-      if (!this.options.bakeExtensions) {
-        return false;
-      }
-      try {
-        const parsed = new URL(url);
-        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      const shouldTryToFetch = (url) => {
+        if (!this.options.bakeExtensions && !this.options.extensionsPrivateScratchContext) {
+          return false;
+        }
+        try {
+          const parsed = new URL(url);
+          return parsed.protocol === 'http:' || parsed.protocol === 'https:';
       } catch (e) {
         return false;
       }
@@ -2047,20 +2049,25 @@ For detailed setup instructions, refer to the Cordova documentation.`;
     const urlsToFetch = allURLs.filter((url) => shouldTryToFetch(url));
     const finalURLs = [...unfetchableURLs];
 
-    if (urlsToFetch.length !== 0) {
-      for (let i = 0; i < urlsToFetch.length; i++) {
-        dispatchProgress(i / urlsToFetch.length);
-        const url = urlsToFetch[i];
-        try {
-          const wrappedSource = await Adapter.fetchExtensionScript(url);
-          const dataURI = `data:text/javascript;,${encodeURIComponent(wrappedSource)}`;
-          finalURLs.push(dataURI);
-        } catch (e) {
-          console.warn('Could not bake extension', url, e);
-          finalURLs.push(url);
+      if (urlsToFetch.length !== 0) {
+        for (let i = 0; i < urlsToFetch.length; i++) {
+          dispatchProgress(i / urlsToFetch.length);
+          const url = urlsToFetch[i];
+          try {
+            const extensionSource = await Adapter.fetchExtensionScript(url, {
+              wrap: !this.options.extensionsPrivateScratchContext
+            });
+            const dataURI = `data:text/javascript;,${encodeURIComponent(extensionSource)}`;
+            finalURLs.push(dataURI);
+          } catch (e) {
+            if (this.options.extensionsPrivateScratchContext) {
+              throw new Error(`Private Scratch context mode could not embed extension source: ${url}`);
+            }
+            console.warn('Could not bake extension', url, e);
+            finalURLs.push(url);
+          }
         }
-      }
-      dispatchProgress(1);
+        dispatchProgress(1);
     }
 
     return finalURLs;
@@ -2077,6 +2084,7 @@ For detailed setup instructions, refer to the Cordova documentation.`;
     this.ensureNotAborted();
     await this.loadResources();
     this.ensureNotAborted();
+    const hostStateProperty = `__o2_host_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
     const html =encodeBigString `<!DOCTYPE html>
 <!-- Created with ${WEBSITE} -->
 <html>
@@ -2294,6 +2302,13 @@ For detailed setup instructions, refer to the Cordova documentation.`;
       scaffolding.appendTo(appElement);
 
       const vm = scaffolding.vm;
+      Object.defineProperty(globalThis, ${JSON.stringify(hostStateProperty)}, {
+        configurable: false,
+        enumerable: false,
+        writable: false,
+        value: {scaffolding, vm}
+      });
+      ${this.options.extensionsPrivateScratchContext ? `` : `
       window.scaffolding = scaffolding;
       window.vm = scaffolding.vm;
       window.Scratch = {
@@ -2302,7 +2317,7 @@ For detailed setup instructions, refer to the Cordova documentation.`;
         audioEngine: vm.runtime.audioEngine,
         bitmapAdapter: vm.runtime.v2BitmapAdapter,
         videoProvider: vm.runtime.ioDevices.video.provider
-      };
+      };`}
 
       scaffolding.setUsername(${JSON.stringify(this.options.username)}.replace(/#/g, () => Math.floor(Math.random() * 10)));
       scaffolding.setAccentColor(${JSON.stringify(this.options.appearance.accent)});
@@ -2452,7 +2467,8 @@ For detailed setup instructions, refer to the Cordova documentation.`;
 
       scaffolding.setExtensionSecurityManager({
         getSandboxMode: () => 'unsandboxed',
-        canLoadExtensionFromProject: () => true
+        canLoadExtensionFromProject: () => true,
+        usePrivateUnsandboxedExtensionAPI: () => ${this.options.extensionsPrivateScratchContext}
       });
       for (const extension of ${JSON.stringify(await this.generateExtensionURLs())}) {
         vm.extensionManager.loadExtensionURL(extension);
@@ -2493,20 +2509,21 @@ For detailed setup instructions, refer to the Cordova documentation.`;
       handleError(e);
     }
   </script>` : ''}
-  ${await this.generateGetProjectData()}
+  ${await this.generateGetProjectData(hostStateProperty)}
   <script>
     const run = async () => {
-      const projectData = await getProjectData();
-      await scaffolding.${this.options.compiler.compiledProject ? 'loadCompiledProject' : 'loadProject'}(projectData);
+      const __o2HostState = globalThis[${JSON.stringify(hostStateProperty)}];
+      const projectData = await __o2HostState.getProjectData();
+      await __o2HostState.scaffolding.${this.options.compiler.compiledProject ? 'loadCompiledProject' : 'loadProject'}(projectData);
       setProgress(1);
       loadingScreen.hidden = true;
       if (${this.options.autoplay}) {
-        scaffolding.start();
+        __o2HostState.scaffolding.start();
       } else {
         launchScreen.hidden = false;
         launchScreen.addEventListener('click', () => {
           launchScreen.hidden = true;
-          scaffolding.start();
+          __o2HostState.scaffolding.start();
         });
         launchScreen.focus();
       }
@@ -2703,6 +2720,7 @@ Packager.DEFAULT_OPTIONS = () => ({
     exposeSystemAPIs: false
   },
   extensions: [],
+  extensionsPrivateScratchContext: false,
   bakeExtensions: true,
   maxTextureDimension: 2048
 });
