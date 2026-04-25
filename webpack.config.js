@@ -159,7 +159,8 @@ const makeWebsite = () => ({
         include: [
           path.resolve(__dirname, 'src'),
           /node_modules[\\/]scratch-[^\\/]+[\\/]src/,
-          /node_modules[\\/]@turbowarp[\\/]scratch-[^\\/]+[\\/](src|dist)/
+          /node_modules[\\/]@turbowarp[\\/]scratch-[^\\/]+[\\/](src|dist)/,
+          /node_modules[\\/]javascript-obfuscator[\\/]dist/
         ],
         options: {
           babelrc: false,

@@ -151,26 +151,19 @@ const loadJavaScriptObfuscatorBrowserBundle = () => {
     }
 
     const browserBundleModule = await import(
-      /* webpackChunkName: "javascript-obfuscator-browser-source" */
-      'raw-loader!javascript-obfuscator/dist/index.browser.js'
+      /* webpackChunkName: "javascript-obfuscator-browser" */
+      'javascript-obfuscator'
     );
-    const browserBundleSource = browserBundleModule.default || browserBundleModule;
-    if (typeof browserBundleSource !== 'string' || browserBundleSource.length === 0) {
-      throw new Error('Failed to load javascript-obfuscator browser source');
-    }
-
-    const script = document.createElement('script');
-    script.text = browserBundleSource;
-    document.head.appendChild(script);
-    script.remove();
-
-    const JavaScriptObfuscator = globalObject.JavaScriptObfuscator;
+    const JavaScriptObfuscator =
+      browserBundleModule.default ||
+      browserBundleModule.JavaScriptObfuscator ||
+      browserBundleModule;
 
     if (JavaScriptObfuscator && typeof JavaScriptObfuscator.obfuscate === 'function') {
       return JavaScriptObfuscator;
     }
 
-    throw new Error('Failed to initialize javascript-obfuscator browser bundle');
+    throw new Error('Failed to initialize javascript-obfuscator module');
   });
 
   return javaScriptObfuscatorPromise;
