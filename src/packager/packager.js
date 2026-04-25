@@ -150,24 +150,24 @@ const loadJavaScriptObfuscatorBrowserBundle = () => {
       return globalObject.JavaScriptObfuscator;
     }
 
-    const {default: javaScriptObfuscatorBrowserURL} = await import(
-      /* webpackChunkName: "javascript-obfuscator-browser-url" */
-      'file-loader?name=assets/[name].[contenthash].[ext]!javascript-obfuscator/dist/index.browser.js'
+    const browserBundleModule = await import(
+      /* webpackChunkName: "javascript-obfuscator-browser-source" */
+      'raw-loader!javascript-obfuscator/dist/index.browser.js'
     );
+    const browserBundleSource = browserBundleModule.default || browserBundleModule;
+    if (typeof browserBundleSource !== 'string' || browserBundleSource.length === 0) {
+      throw new Error('Failed to load javascript-obfuscator browser source');
+    }
 
-    await new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.async = true;
-      script.src = javaScriptObfuscatorBrowserURL;
-      script.onload = resolve;
-      script.onerror = () => {
-        reject(new Error('Failed to load javascript-obfuscator browser bundle'));
-      };
-      document.head.appendChild(script);
-    });
+    const script = document.createElement('script');
+    script.text = browserBundleSource;
+    document.head.appendChild(script);
+    script.remove();
 
-    if (globalObject.JavaScriptObfuscator && typeof globalObject.JavaScriptObfuscator.obfuscate === 'function') {
-      return globalObject.JavaScriptObfuscator;
+    const JavaScriptObfuscator = globalObject.JavaScriptObfuscator;
+
+    if (JavaScriptObfuscator && typeof JavaScriptObfuscator.obfuscate === 'function') {
+      return JavaScriptObfuscator;
     }
 
     throw new Error('Failed to initialize javascript-obfuscator browser bundle');
