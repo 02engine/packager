@@ -112,6 +112,10 @@
     "downloadingExtensions": {
       "string": "Downloading custom extensions",
       "developer_comment": "Loading message that appears while downloading custom extensions"
+    },
+    "obfuscatingCompiledScripts": {
+      "string": "Obfuscating precompiled scripts ({current}/{total}, {level})",
+      "developer_comment": "Loading message that appears while optional obfuscation is running for precompiled project scripts"
     }
   },
   "select": {
@@ -417,6 +421,21 @@
     },
     "compiledProject": {
       "string": "Precompile scripts into package (experimental)"
+    },
+    "obfuscateCompiledProject": {
+      "string": "Obfuscate precompiled JavaScript (slower packaging)"
+    },
+    "obfuscateCompiledProjectLevel": {
+      "string": "Obfuscation strength"
+    },
+    "obfuscationLevelLight": {
+      "string": "Light"
+    },
+    "obfuscationLevelBalanced": {
+      "string": "Balanced"
+    },
+    "obfuscationLevelStrong": {
+      "string": "Strong"
     },
     "newIn300Title": {
       "string": "New in v3.0.0"

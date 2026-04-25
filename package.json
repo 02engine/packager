@@ -41,6 +41,7 @@
     "jsdom": "^22.0.0",
     "node-fetch": "^2.6.7",
     "scratch-render-fonts": "github:02engine/scratch-render-fonts#main",
+    "javascript-obfuscator": "^4.1.1",
     "sha.js": "^2.4.11"
   },
   "devDependencies": {

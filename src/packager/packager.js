@@ -12,6 +12,7 @@ import {OutdatedPackagerError} from '../common/errors';
 import {darken} from './colors';
 import {Adapter} from './adapter';
 import encodeBigString from './encode-big-string';
+import javaScriptObfuscatorBrowserURL from 'file-loader?name=assets/[name].[contenthash].[ext]!javascript-obfuscator/dist/index.browser.js';
 
         function compile(code) /* The "Compilation" */
         {
@@ -37,6 +38,139 @@ const removeUnnecessaryEmptyLines = (string) => string.split('\n')
     return true;
   })
   .join('\n');
+
+const OBFUSCATED_FACTORY_RESULT_NAME = '__o2_factory_out__';
+
+const makeAnonymousCompiledFactorySource = source => source.replace(
+  /^\s*(async\s+)?function\s+[^(]+\s*\(/,
+  (match, asyncKeyword = '') => `${asyncKeyword}function(`
+);
+
+const wrapCompiledFactorySourceForObfuscation = source =>
+  `(()=>{const ${OBFUSCATED_FACTORY_RESULT_NAME}=${makeAnonymousCompiledFactorySource(source)};return ${OBFUSCATED_FACTORY_RESULT_NAME};})()`;
+
+const stringifyCompiledFactoryEval = source => `eval(${JSON.stringify(source)})`;
+const yieldToBrowser = () => new Promise(resolve => setTimeout(resolve, 0));
+
+const getCompiledProjectObfuscationOptions = level => {
+  switch (level) {
+  case 'light':
+    return {
+      compact: true,
+      controlFlowFlattening: false,
+      deadCodeInjection: false,
+      debugProtection: false,
+      disableConsoleOutput: false,
+      identifierNamesGenerator: 'hexadecimal',
+      numbersToExpressions: false,
+      renameGlobals: false,
+      selfDefending: false,
+      simplify: true,
+      splitStrings: false,
+      stringArray: true,
+      stringArrayCallsTransform: false,
+      stringArrayEncoding: [],
+      stringArrayIndexesType: ['hexadecimal-number'],
+      stringArrayRotate: true,
+      stringArrayShuffle: true,
+      stringArrayWrappersCount: 1,
+      stringArrayWrappersType: 'function',
+      stringArrayThreshold: 0.75,
+      target: 'browser',
+      transformObjectKeys: false,
+      unicodeEscapeSequence: false
+    };
+  case 'strong':
+    return {
+      compact: true,
+      controlFlowFlattening: true,
+      controlFlowFlatteningThreshold: 0.3,
+      deadCodeInjection: false,
+      debugProtection: false,
+      disableConsoleOutput: false,
+      identifierNamesGenerator: 'hexadecimal',
+      numbersToExpressions: true,
+      renameGlobals: false,
+      selfDefending: true,
+      simplify: true,
+      splitStrings: true,
+      splitStringsChunkLength: 6,
+      stringArray: true,
+      stringArrayCallsTransform: false,
+      stringArrayEncoding: ['rc4'],
+      stringArrayIndexesType: ['hexadecimal-number'],
+      stringArrayRotate: true,
+      stringArrayShuffle: true,
+      stringArrayWrappersCount: 2,
+      stringArrayWrappersType: 'function',
+      stringArrayThreshold: 1,
+      target: 'browser',
+      transformObjectKeys: false,
+      unicodeEscapeSequence: false
+    };
+  case 'balanced':
+  default:
+    return {
+      compact: true,
+      controlFlowFlattening: false,
+      deadCodeInjection: false,
+      debugProtection: false,
+      disableConsoleOutput: false,
+      identifierNamesGenerator: 'hexadecimal',
+      numbersToExpressions: true,
+      renameGlobals: false,
+      selfDefending: false,
+      simplify: true,
+      splitStrings: true,
+      splitStringsChunkLength: 8,
+      stringArray: true,
+      stringArrayCallsTransform: false,
+      stringArrayEncoding: ['base64'],
+      stringArrayIndexesType: ['hexadecimal-number'],
+      stringArrayRotate: true,
+      stringArrayShuffle: true,
+      stringArrayWrappersCount: 1,
+      stringArrayWrappersType: 'function',
+      stringArrayThreshold: 1,
+      target: 'browser',
+      transformObjectKeys: false,
+      unicodeEscapeSequence: false
+    };
+  }
+};
+
+let javaScriptObfuscatorPromise = null;
+
+const loadJavaScriptObfuscatorBrowserBundle = () => {
+  if (javaScriptObfuscatorPromise) {
+    return javaScriptObfuscatorPromise;
+  }
+
+  javaScriptObfuscatorPromise = new Promise((resolve, reject) => {
+    const globalObject = typeof globalThis !== 'undefined' ? globalThis : window;
+    if (globalObject.JavaScriptObfuscator && typeof globalObject.JavaScriptObfuscator.obfuscate === 'function') {
+      resolve(globalObject.JavaScriptObfuscator);
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = javaScriptObfuscatorBrowserURL;
+    script.onload = () => {
+      if (globalObject.JavaScriptObfuscator && typeof globalObject.JavaScriptObfuscator.obfuscate === 'function') {
+        resolve(globalObject.JavaScriptObfuscator);
+      } else {
+        reject(new Error('Failed to initialize javascript-obfuscator browser bundle'));
+      }
+    };
+    script.onerror = () => {
+      reject(new Error('Failed to load javascript-obfuscator browser bundle'));
+    };
+    document.head.appendChild(script);
+  });
+
+  return javaScriptObfuscatorPromise;
+};
 
 export const getJSZip = async () => (await import(/* webpackChunkName: "jszip" */ '@turbowarp/jszip')).default;
 
@@ -1439,7 +1573,11 @@ For detailed setup instructions, refer to the Cordova documentation.`;
             warpTimer: this.options.compiler.warpTimer
           });
 
-          return await vm.compileProjectFromJSON(projectJSON, projectArchive);
+          const compiledProject = await vm.compileProjectFromJSON(projectJSON, projectArchive);
+          if (this.options.compiler.obfuscateCompiledProject) {
+            return await this.obfuscateCompiledProject(compiledProject);
+          }
+          return compiledProject;
         } finally {
           if (videoProvider && typeof videoProvider.disableVideo === 'function') {
             videoProvider.disableVideo();
@@ -1461,6 +1599,80 @@ For detailed setup instructions, refer to the Cordova documentation.`;
     }
 
     return this._compiledProjectPromise;
+  }
+
+  async obfuscateCompiledProject (compiledProject) {
+    if (!compiledProject || !compiledProject.compiledTargets) {
+      return compiledProject;
+    }
+
+    const JavaScriptObfuscator = await loadJavaScriptObfuscatorBrowserBundle();
+    if (!JavaScriptObfuscator || typeof JavaScriptObfuscator.obfuscate !== 'function') {
+      throw new Error('Could not load precompiled JavaScript obfuscator.');
+    }
+
+    const workItems = [];
+    for (const targetData of Object.values(compiledProject.compiledTargets)) {
+      if (targetData && targetData.scripts) {
+        for (const scriptData of Object.values(targetData.scripts)) {
+          if (scriptData && typeof scriptData.factorySource === 'string') {
+            workItems.push(scriptData);
+          }
+        }
+      }
+      if (targetData && targetData.procedures) {
+        for (const procedureData of Object.values(targetData.procedures)) {
+          if (procedureData && typeof procedureData.factorySource === 'string') {
+            workItems.push(procedureData);
+          }
+        }
+      }
+    }
+
+    const level = this.options.compiler.obfuscateCompiledProjectLevel || 'balanced';
+    const obfuscationOptions = getCompiledProjectObfuscationOptions(level);
+    const dispatchProgress = (progress, current = 0, total = workItems.length) => this.dispatchEvent(new CustomEvent('obfuscating-compiled-project', {
+      detail: {
+        progress,
+        current,
+        total,
+        level
+      }
+    }));
+
+    if (workItems.length === 0) {
+      dispatchProgress(1, 0, 0);
+      return compiledProject;
+    }
+
+    dispatchProgress(0, 0, workItems.length);
+    await yieldToBrowser();
+
+    for (let i = 0; i < workItems.length; i++) {
+      const item = workItems[i];
+      const result = JavaScriptObfuscator.obfuscate(
+        wrapCompiledFactorySourceForObfuscation(item.factorySource),
+        obfuscationOptions
+      );
+      const obfuscatedCode = result && typeof result.getObfuscatedCode === 'function'
+        ? result.getObfuscatedCode()
+        : '';
+      if (!obfuscatedCode) {
+        throw new Error('Precompiled JavaScript obfuscation returned empty output.');
+      }
+      item.factorySource = stringifyCompiledFactoryEval(obfuscatedCode);
+      delete item.factoryEncoding;
+      dispatchProgress((i + 1) / workItems.length, i + 1, workItems.length);
+      await yieldToBrowser();
+    }
+
+    compiledProject.obfuscation = {
+      mode: 'javascript-obfuscator',
+      version: 2,
+      level
+    };
+
+    return compiledProject;
   }
 
   async getCompiledProjectArchiveData () {
@@ -2453,7 +2665,9 @@ Packager.DEFAULT_OPTIONS = () => ({
   compiler: {
     enabled: true,
     warpTimer: false,
-    compiledProject: false
+    compiledProject: false,
+    obfuscateCompiledProject: false,
+    obfuscateCompiledProjectLevel: 'balanced'
   },
   packagedRuntime: true,
   target: 'html',

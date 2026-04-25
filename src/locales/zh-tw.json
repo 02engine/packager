@@ -83,6 +83,11 @@
         "username": "用戶名稱（以「#」代表一個隨機數）",
         "warpTimer": "防卡死",
         "compiledProject": "將腳本預編譯進作品包（實驗性）",
+        "obfuscateCompiledProject": "對預編譯 JavaScript 進行混淆（封裝會更慢）",
+        "obfuscateCompiledProjectLevel": "混淆強度",
+        "obfuscationLevelLight": "輕量",
+        "obfuscationLevelBalanced": "均衡",
+        "obfuscationLevelStrong": "高強",
         "newIn300Title": "v3.0.0 新功能",
         "newIn300Description": "02Engine Packager 現在加入了實驗性的預編譯打包模式，可以在打包時預編譯腳本，並從打包產物中移除一般積木原始碼。",
         "jumpToCompiledProject": "跳轉到此選項",
@@ -110,7 +115,8 @@
         "loadingLargeAsset": "下載中{thing}",
         "loadingProjectData": "作品數據下載中",
         "loadingScripts": "腳本下載中",
-        "packagingProject": "封裝專案中……"
+        "packagingProject": "封裝專案中……",
+        "obfuscatingCompiledScripts": "正在混淆預編譯腳本（{current}/{total}，{level}）"
     },
     "reset": {
         "confirm": "你確定要重設這些設定嗎？這不能被撤銷。",

@@ -142,6 +142,11 @@
         "versionHelp": "更新作品版本是完全可选的，不会影响作品的。根据环境的不同，它可能会出现在关于页面等地方。格式应该像 X.Y.Z 这样",
         "warpTimer": "循环计时器",
         "compiledProject": "将脚本预编译进作品包（实验性）",
+        "obfuscateCompiledProject": "对预编译 JavaScript 进行混淆（打包会更慢）",
+        "obfuscateCompiledProjectLevel": "混淆强度",
+        "obfuscationLevelLight": "轻量",
+        "obfuscationLevelBalanced": "均衡",
+        "obfuscationLevelStrong": "高强",
         "newIn300Title": "v3.0.0 新功能",
         "newIn300Description": "02Engine Packager 现已加入实验性的预编译打包模式，可以在打包时预编译脚本，并从打包产物中移除普通积木源码。",
         "jumpToCompiledProject": "跳转到此选项",
@@ -186,7 +191,8 @@
         "loadingProjectData": "下载作品数据中",
         "loadingProjectMetadata": "下载作品元数据中",
         "loadingScripts": "加载脚本中",
-        "packagingProject": "打包作品中"
+        "packagingProject": "打包作品中",
+        "obfuscatingCompiledScripts": "正在混淆预编译脚本（{current}/{total}，{level}）"
     },
     "reset": {
         "confirm": "该操作不可撤销，确定要重置吗？",

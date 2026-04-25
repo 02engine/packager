@@ -54,6 +54,10 @@
     if (typeof i === 'object' && i) return i.url || '';
     return i;
   });
+  if (!$options.compiler.obfuscateCompiledProjectLevel) {
+    $options.compiler.obfuscateCompiledProjectLevel = defaultOptions.compiler.obfuscateCompiledProjectLevel;
+    $options = $options;
+  }
 
   const hasMagicComment = (magic) => projectData.project.analysis.stageComments.find(
     (text) => text.split('\n').find((line) => line.endsWith(magic))
@@ -107,6 +111,8 @@
     $options.compiler.enabled !== defaultOptions.compiler.enabled ||
     $options.compiler.warpTimer !== defaultOptions.compiler.warpTimer ||
     $options.compiler.compiledProject !== defaultOptions.compiler.compiledProject ||
+    $options.compiler.obfuscateCompiledProject !== defaultOptions.compiler.obfuscateCompiledProject ||
+    $options.compiler.obfuscateCompiledProjectLevel !== defaultOptions.compiler.obfuscateCompiledProjectLevel ||
     $options.extensions.length !== 0 ||
     $options.bakeExtensions !== defaultOptions.bakeExtensions ||
     $options.custom.css !== '' ||
@@ -162,10 +168,25 @@
 
     task.setProgressText($_('progress.loadingScripts'));
 
-    packager.addEventListener('fetch-extensions', ({detail}) => {
-      task.setProgressText($_('progress.downloadingExtensions'));
-      task.setProgress(detail.progress);
-    });
+  packager.addEventListener('fetch-extensions', ({detail}) => {
+    task.setProgressText($_('progress.downloadingExtensions'));
+    task.setProgress(detail.progress);
+  });
+  const getObfuscationLevelLabel = (level) => {
+    if (level === 'light') return $_('options.obfuscationLevelLight');
+    if (level === 'strong') return $_('options.obfuscationLevelStrong');
+    return $_('options.obfuscationLevelBalanced');
+  };
+  packager.addEventListener('obfuscating-compiled-project', ({detail}) => {
+    const current = typeof detail.current === 'number' ? detail.current : 0;
+    const total = typeof detail.total === 'number' ? detail.total : 0;
+    const progressText = $_('progress.obfuscatingCompiledScripts')
+      .replace('{current}', current)
+      .replace('{total}', total)
+      .replace('{level}', getObfuscationLevelLabel(detail.level));
+    task.setProgressText(progressText);
+    task.setProgress(typeof detail.progress === 'number' ? detail.progress : 0);
+  });
     packager.addEventListener('large-asset-fetch', ({detail}) => {
       let thing;
       if (detail.asset.startsWith('nwjs-')) {
@@ -1130,7 +1151,7 @@
         </label>
         <LearnMore slug="warp-timer" />
       </div>
-        <div class="option" id="compiled-project-option">
+      <div class="option" id="compiled-project-option">
           <label>
             <input
               type="checkbox"
@@ -1144,6 +1165,24 @@
           {$_('options.compiledProject')}
         </label>
       </div>
+      {#if $options.compiler.compiledProject}
+        <div class="option">
+          <label>
+            <input type="checkbox" bind:checked={$options.compiler.obfuscateCompiledProject}>
+            {$_('options.obfuscateCompiledProject')}
+          </label>
+        </div>
+        {#if $options.compiler.obfuscateCompiledProject}
+          <label class="option">
+            {$_('options.obfuscateCompiledProjectLevel')}
+            <select bind:value={$options.compiler.obfuscateCompiledProjectLevel}>
+              <option value="light">{$_('options.obfuscationLevelLight')}</option>
+              <option value="balanced">{$_('options.obfuscationLevelBalanced')}</option>
+              <option value="strong">{$_('options.obfuscationLevelStrong')}</option>
+            </select>
+          </label>
+        {/if}
+      {/if}
 
       <!-- Ignore because CustomExtensions will have a <textarea> inside it -->
       <!-- svelte-ignore a11y-label-has-associated-control -->
