@@ -444,10 +444,10 @@
       "string": "02Engine Packager v3.1.0 adds a private Scratch global option for unsandboxed extensions, along with the precompiled packaging workflow and adjustable obfuscation."
     },
     "jumpToCompiledProject": {
-      "string": "Jump to this option"
+      "string": "Scroll to this setting"
     },
     "jumpToPrivateScratchContext": {
-      "string": "Jump to private Scratch option"
+      "string": "Scroll to private Scratch setting"
     },
     "projectId": {
       "string": "Project ID"

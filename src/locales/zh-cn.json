@@ -152,13 +152,13 @@
         "obfuscationLevelStrong": "高强",
         "newIn300Title": "v3.0.0 新功能",
         "newIn300Description": "02Engine Packager 现已加入实验性的预编译打包模式，可以在打包时预编译脚本，并从打包产物中移除普通积木源码。",
-        "jumpToCompiledProject": "跳转到此选项",
+        "jumpToCompiledProject": "滚动到此选项",
         "windowControls": "窗口控制栏",
         "zip": "Zip 压缩包（适合嵌入网站）",
         "zip-one-asset": "Zip 压缩包，把所有素材打包在一个文件中（不推荐）",
         "newIn310Title": "v3.1.0 新功能",
         "newIn310Description": "02Engine Packager v3.1.0 新增了适用于非沙盒扩展的私有 Scratch 全局选项，并继续提供预编译打包与可调节强度的混淆功能。",
-        "jumpToPrivateScratchContext": "跳转到私有 Scratch 选项"
+        "jumpToPrivateScratchContext": "滚动到私有 Scratch 选项"
     },
     "p4": {
         "browserNotSupported": "不支持浏览器",
