@@ -1712,7 +1712,7 @@ For detailed setup instructions, refer to the Cordova documentation.`;
     return this._compiledProjectArchivePromise;
   }
 
-  async generateGetProjectData (hostStateProperty = null) {
+  async generateGetProjectData () {
     const result = [];
     let getProjectDataFunction = '';
     let isZip = false;
@@ -1732,7 +1732,6 @@ For detailed setup instructions, refer to the Cordova documentation.`;
         const projectData = new Uint8Array(compiledProjectArchive);
 
         result.push(`
-        <script>
         const getBase85DecodeValue = (code) => {
           if (code === 0x28) code = 0x3c;
           if (code === 0x29) code = 0x3e;
@@ -1762,8 +1761,7 @@ For detailed setup instructions, refer to the Cordova documentation.`;
           } catch (e) {
             handleError(e);
           }
-        };
-        </script>`);
+        };`);
 
         const CHUNK_SIZE = 1024 * 64;
         for (let i = 0; i < projectData.length; i += CHUNK_SIZE) {
@@ -1819,16 +1817,14 @@ For detailed setup instructions, refer to the Cordova documentation.`;
       }
 
       result.push(`
-      <script>
-        globalThis[${JSON.stringify(hostStateProperty)}].getProjectData = (function() {
-          const __o2HostState = globalThis[${JSON.stringify(hostStateProperty)}];
-          const storage = __o2HostState.scaffolding.storage;
+        const getProjectData = (function() {
+          const storage = scaffolding.storage;
           storage.onprogress = (total, loaded) => {
             setProgress(interpolate(${storageProgressStart}, ${storageProgressEnd}, loaded / total));
           };
 
           let zip;
-          __o2HostState.vm.runtime.on('PROJECT_LOADED', () => (zip = null));
+          vm.runtime.on('PROJECT_LOADED', () => (zip = null));
           const findFileInZip = (path) => zip.file(path) || zip.file(new RegExp("^([^/]*/)?" + path + "$"))[0];
 
           storage.addHelper({
@@ -1854,8 +1850,7 @@ For detailed setup instructions, refer to the Cordova documentation.`;
               assetArchive: zip
             };
           });
-        })();
-      </script>`);
+        })();`);
 
       return result;
     }
@@ -1869,7 +1864,6 @@ For detailed setup instructions, refer to the Cordova documentation.`;
 
       // keep this up-to-date with base85.js
       result.push(`
-      <script>
       const getBase85DecodeValue = (code) => {
         if (code === 0x28) code = 0x3c;
         if (code === 0x29) code = 0x3e;
@@ -1899,8 +1893,7 @@ For detailed setup instructions, refer to the Cordova documentation.`;
         } catch (e) {
           handleError(e);
         }
-      };
-      </script>`);
+      };`);
 
       // To avoid unnecessary padding, this should be a multiple of 4.
       const CHUNK_SIZE = 1024 * 64;
@@ -1953,17 +1946,15 @@ For detailed setup instructions, refer to the Cordova documentation.`;
     }
 
       result.push(`
-    <script>
-      globalThis[${JSON.stringify(hostStateProperty)}].getProjectData = (function() {
-        const __o2HostState = globalThis[${JSON.stringify(hostStateProperty)}];
-        const storage = __o2HostState.scaffolding.storage;
+      const getProjectData = (function() {
+        const storage = scaffolding.storage;
         storage.onprogress = (total, loaded) => {
           setProgress(interpolate(${storageProgressStart}, ${storageProgressEnd}, loaded / total));
         };
         ${isZip ? `
         let zip;
         // Allow zip to be GC'd after project loads
-        __o2HostState.vm.runtime.on('PROJECT_LOADED', () => (zip = null));
+        vm.runtime.on('PROJECT_LOADED', () => (zip = null));
         const findFileInZip = (path) => zip.file(path) || zip.file(new RegExp("^([^/]*/)?" + path + "$"))[0];
         storage.addHelper({
           load: (assetType, assetId, dataFormat) => {
@@ -1998,8 +1989,7 @@ For detailed setup instructions, refer to the Cordova documentation.`;
           (asset) => new URL('./assets/' + asset.assetId + '.' + asset.dataFormat, location).href
         );
         return ${getProjectDataFunction};`}
-      })();
-    </script>`);
+      })();`);
 
     return result;
   }
@@ -2084,7 +2074,6 @@ For detailed setup instructions, refer to the Cordova documentation.`;
     this.ensureNotAborted();
     await this.loadResources();
     this.ensureNotAborted();
-    const hostStateProperty = `__o2_host_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
     const html =encodeBigString `<!DOCTYPE html>
 <!-- Created with ${WEBSITE} -->
 <html>
@@ -2302,12 +2291,6 @@ For detailed setup instructions, refer to the Cordova documentation.`;
       scaffolding.appendTo(appElement);
 
       const vm = scaffolding.vm;
-      Object.defineProperty(globalThis, ${JSON.stringify(hostStateProperty)}, {
-        configurable: false,
-        enumerable: false,
-        writable: false,
-        value: {scaffolding, vm}
-      });
       ${this.options.extensionsPrivateScratchContext ? `` : `
       window.scaffolding = scaffolding;
       window.vm = scaffolding.vm;
@@ -2498,38 +2481,34 @@ For detailed setup instructions, refer to the Cordova documentation.`;
           }
         });
       }` : ''}
-    } catch (e) {
-      handleError(e);
-    }
-  `)}</script>
-  ${this.options.custom.js ? `<script>
-    try {
-      ${this.options.custom.js}
-    } catch (e) {
-      handleError(e);
-    }
-  </script>` : ''}
-  ${await this.generateGetProjectData(hostStateProperty)}
-  <script>
-    const run = async () => {
-      const __o2HostState = globalThis[${JSON.stringify(hostStateProperty)}];
-      const projectData = await __o2HostState.getProjectData();
-      await __o2HostState.scaffolding.${this.options.compiler.compiledProject ? 'loadCompiledProject' : 'loadProject'}(projectData);
+      ${this.options.custom.js ? `
+      try {
+        ${this.options.custom.js}
+      } catch (e) {
+        handleError(e);
+      }` : ''}
+      ${await this.generateGetProjectData()}
+      const run = async () => {
+      const projectData = await getProjectData();
+      await scaffolding.${this.options.compiler.compiledProject ? 'loadCompiledProject' : 'loadProject'}(projectData);
       setProgress(1);
       loadingScreen.hidden = true;
       if (${this.options.autoplay}) {
-        __o2HostState.scaffolding.start();
+        scaffolding.start();
       } else {
         launchScreen.hidden = false;
         launchScreen.addEventListener('click', () => {
           launchScreen.hidden = true;
-          __o2HostState.scaffolding.start();
+          scaffolding.start();
         });
         launchScreen.focus();
       }
     };
     run().catch(handleError);
-  </script>
+    } catch (e) {
+      handleError(e);
+    }
+  `)}</script>
 </body>
 </html>
 `;
