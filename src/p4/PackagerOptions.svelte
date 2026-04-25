@@ -58,6 +58,10 @@
     $options.compiler.obfuscateCompiledProjectLevel = defaultOptions.compiler.obfuscateCompiledProjectLevel;
     $options = $options;
   }
+  if (typeof $options.extensionsPrivateScratchContext !== 'boolean') {
+    $options.extensionsPrivateScratchContext = defaultOptions.extensionsPrivateScratchContext;
+    $options = $options;
+  }
 
   const hasMagicComment = (magic) => projectData.project.analysis.stageComments.find(
     (text) => text.split('\n').find((line) => line.endsWith(magic))
@@ -114,6 +118,7 @@
     $options.compiler.obfuscateCompiledProject !== defaultOptions.compiler.obfuscateCompiledProject ||
     $options.compiler.obfuscateCompiledProjectLevel !== defaultOptions.compiler.obfuscateCompiledProjectLevel ||
     $options.extensions.length !== 0 ||
+    $options.extensionsPrivateScratchContext !== defaultOptions.extensionsPrivateScratchContext ||
     $options.bakeExtensions !== defaultOptions.bakeExtensions ||
     $options.custom.css !== '' ||
     $options.custom.js !== '' ||
@@ -127,6 +132,18 @@
     advancedOptionsOpen = true;
     await tick();
     const option = document.getElementById('compiled-project-option');
+    if (option) {
+      option.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    }
+  };
+
+  const scrollToPrivateScratchOption = async () => {
+    advancedOptionsOpen = true;
+    await tick();
+    const option = document.getElementById('private-scratch-context-option');
     if (option) {
       option.scrollIntoView({
         behavior: 'smooth',
@@ -725,16 +742,23 @@
   .feature-notice p {
     margin: 0;
   }
+  .feature-notice-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+  }
 </style>
 
 <Section accent="#4C97FF">
   <div class="feature-notice">
     <div class="feature-notice-copy">
-      <h2>{$_('options.newIn300Title')}</h2>
-      <p>{$_('options.newIn300Description')}</p>
+      <h2>{$_('options.newIn310Title')}</h2>
+      <p>{$_('options.newIn310Description')}</p>
     </div>
-    <div>
+    <div class="feature-notice-actions">
       <Button on:click={scrollToCompiledProjectOption} secondary text={$_('options.jumpToCompiledProject')} />
+      <Button on:click={scrollToPrivateScratchOption} secondary text={$_('options.jumpToPrivateScratchContext')} />
     </div>
   </div>
 </Section>
@@ -1125,6 +1149,7 @@
     resetOptions([
       'compiler',
       'extensions',
+      'extensionsPrivateScratchContext',
       'bakeExtensions',
       'custom',
       'projectId',
@@ -1193,6 +1218,19 @@
         <CustomExtensions bind:extensions={$options.extensions} />
         <p class="warning">{$_('options.customExtensionsSecurity')}</p>
       </label>
+
+        <div class="option" id="private-scratch-context-option">
+          <label>
+            <input type="checkbox" bind:checked={$options.extensionsPrivateScratchContext}>
+            {$_('options.extensionsPrivateScratchContext')}
+        </label>
+      </div>
+      {#if $options.extensionsPrivateScratchContext}
+        <p>{$_('options.extensionsPrivateScratchContextHelp')}</p>
+        {#if !$options.bakeExtensions}
+          <p class="warning">{$_('options.extensionsPrivateScratchContextBakingWarning')}</p>
+        {/if}
+      {/if}
 
       <label class="option">
         <input type="checkbox" bind:checked={$options.bakeExtensions}>

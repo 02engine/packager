@@ -51,6 +51,9 @@
         "customCursor": "自定义指针",
         "customExtensions": "自定义扩展（每行一个 URL）",
         "customExtensionsSecurity": "自定义扩展总是在打包程序中未被隔离地运行。根据您打包的环境，这将授予扩展对计算机的完全控制权，包括安装病毒的能力。不要使用不信任的扩展。",
+        "extensionsPrivateScratchContext": "为非沙盒扩展使用私有 Scratch 全局对象",
+        "extensionsPrivateScratchContextHelp": "开启后，扩展仍然可以使用 Scratch、window.Scratch 以及页面 DOM，但打包作品的宿主页不会再把 Scratch、vm 和 scaffolding 长期暴露在 window 上。",
+        "extensionsPrivateScratchContextBakingWarning": "此模式需要在打包时获取扩展源码，强烈建议保持“嵌入扩展副本”开启。",
         "customJS": "自定义 JS (如果你不确定你在做什么，别动它)",
         "customUsernameWarning": "如果您修改了默认用户名，请小心，因为它可能造成与默认云变量服务器的连接被阻止。只有默认用户名是确保可用的。",
         "defaultControls": "默认",
@@ -152,7 +155,10 @@
         "jumpToCompiledProject": "跳转到此选项",
         "windowControls": "窗口控制栏",
         "zip": "Zip 压缩包（适合嵌入网站）",
-        "zip-one-asset": "Zip 压缩包，把所有素材打包在一个文件中（不推荐）"
+        "zip-one-asset": "Zip 压缩包，把所有素材打包在一个文件中（不推荐）",
+        "newIn310Title": "v3.1.0 新功能",
+        "newIn310Description": "02Engine Packager v3.1.0 新增了适用于非沙盒扩展的私有 Scratch 全局选项，并继续提供预编译打包与可调节强度的混淆功能。",
+        "jumpToPrivateScratchContext": "跳转到私有 Scratch 选项"
     },
     "p4": {
         "browserNotSupported": "不支持浏览器",

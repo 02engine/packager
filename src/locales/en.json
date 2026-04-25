@@ -437,14 +437,17 @@
     "obfuscationLevelStrong": {
       "string": "Strong"
     },
-    "newIn300Title": {
-      "string": "New in v3.0.0"
+    "newIn310Title": {
+      "string": "New in v3.1.0"
     },
-    "newIn300Description": {
-      "string": "02Engine Packager now includes the experimental precompiled packaging mode, which can compile scripts into the package and strip normal block source from packaged output."
+    "newIn310Description": {
+      "string": "02Engine Packager v3.1.0 adds a private Scratch global option for unsandboxed extensions, along with the precompiled packaging workflow and adjustable obfuscation."
     },
     "jumpToCompiledProject": {
       "string": "Jump to this option"
+    },
+    "jumpToPrivateScratchContext": {
+      "string": "Jump to private Scratch option"
     },
     "projectId": {
       "string": "Project ID"
@@ -460,12 +463,21 @@
       "string": "Custom extensions (one URL per line)"
     },
     "customExtensionsSecurity": {
-      "string": "Custom extensions are always run unsandboxed in the packager. Depending on the environment you're packaging for, this grants extensions full control over your computer, including the ability to install viruses. Don't use extensions you don't trust."
-    },
+        "string": "Custom extensions are always run unsandboxed in the packager. Depending on the environment you're packaging for, this grants extensions full control over your computer, including the ability to install viruses. Don't use extensions you don't trust."
+      },
+    "extensionsPrivateScratchContext": {
+        "string": "Use a private Scratch global for unsandboxed extensions"
+      },
+    "extensionsPrivateScratchContextHelp": {
+        "string": "When enabled, custom extensions still receive Scratch, window.Scratch, and page DOM access, but the host page no longer keeps Scratch, vm, and scaffolding permanently exposed on window."
+      },
+    "extensionsPrivateScratchContextBakingWarning": {
+        "string": "This mode needs extension source code during packaging. Keeping embedded extension copies enabled is strongly recommended."
+      },
     "bakeExtensions": {
-      "string": "Try to embed cached copy of custom extensions instead of downloading them each time the project is run",
-      "developer_comment": "Option that tries to store "
-    },
+        "string": "Try to embed cached copy of custom extensions instead of downloading them each time the project is run",
+        "developer_comment": "Option that tries to store "
+      },
     "customCSS": {
       "string": "Custom CSS (Don't change if you don't know what you're doing!)",
       "developer_comment": "Do not translate 'CSS'"
