@@ -11173,20 +11173,12 @@ const loadJavaScriptObfuscatorBrowserBundle = () => {
     if (globalObject.JavaScriptObfuscator && typeof globalObject.JavaScriptObfuscator.obfuscate === 'function') {
       return globalObject.JavaScriptObfuscator;
     }
-    const browserBundleModule = await __webpack_require__.e(/*! import() | javascript-obfuscator-browser-source */ "javascript-obfuscator-browser-source").then(__webpack_require__.t.bind(null, /*! raw-loader!javascript-obfuscator/dist/index.browser.js */ "./node_modules/raw-loader/index.js!./node_modules/javascript-obfuscator/dist/index.browser.js", 7));
-    const browserBundleSource = browserBundleModule.default || browserBundleModule;
-    if (typeof browserBundleSource !== 'string' || browserBundleSource.length === 0) {
-      throw new Error('Failed to load javascript-obfuscator browser source');
-    }
-    const script = document.createElement('script');
-    script.text = browserBundleSource;
-    document.head.appendChild(script);
-    script.remove();
-    const JavaScriptObfuscator = globalObject.JavaScriptObfuscator;
+    const browserBundleModule = await __webpack_require__.e(/*! import() | javascript-obfuscator-browser */ "javascript-obfuscator-browser").then(__webpack_require__.t.bind(null, /*! javascript-obfuscator */ "./node_modules/javascript-obfuscator/dist/index.browser.js", 7));
+    const JavaScriptObfuscator = browserBundleModule.default || browserBundleModule.JavaScriptObfuscator || browserBundleModule;
     if (JavaScriptObfuscator && typeof JavaScriptObfuscator.obfuscate === 'function') {
       return JavaScriptObfuscator;
     }
-    throw new Error('Failed to initialize javascript-obfuscator browser bundle');
+    throw new Error('Failed to initialize javascript-obfuscator module');
   };
   return javaScriptObfuscatorPromise;
 };
