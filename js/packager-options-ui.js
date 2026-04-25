@@ -11173,21 +11173,18 @@ const loadJavaScriptObfuscatorBrowserBundle = () => {
     if (globalObject.JavaScriptObfuscator && typeof globalObject.JavaScriptObfuscator.obfuscate === 'function') {
       return globalObject.JavaScriptObfuscator;
     }
-    const {
-      default: javaScriptObfuscatorBrowserURL
-    } = await __webpack_require__.e(/*! import() | javascript-obfuscator-browser-url */ "javascript-obfuscator-browser-url").then(__webpack_require__.bind(null, /*! file-loader?name=assets/[name].[contenthash].[ext]!javascript-obfuscator/dist/index.browser.js */ "./node_modules/file-loader/dist/cjs.js?name=assets/[name].[contenthash].[ext]!./node_modules/javascript-obfuscator/dist/index.browser.js"));
-    await new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.async = true;
-      script.src = javaScriptObfuscatorBrowserURL;
-      script.onload = resolve;
-      script.onerror = () => {
-        reject(new Error('Failed to load javascript-obfuscator browser bundle'));
-      };
-      document.head.appendChild(script);
-    });
-    if (globalObject.JavaScriptObfuscator && typeof globalObject.JavaScriptObfuscator.obfuscate === 'function') {
-      return globalObject.JavaScriptObfuscator;
+    const browserBundleModule = await __webpack_require__.e(/*! import() | javascript-obfuscator-browser-source */ "javascript-obfuscator-browser-source").then(__webpack_require__.t.bind(null, /*! raw-loader!javascript-obfuscator/dist/index.browser.js */ "./node_modules/raw-loader/index.js!./node_modules/javascript-obfuscator/dist/index.browser.js", 7));
+    const browserBundleSource = browserBundleModule.default || browserBundleModule;
+    if (typeof browserBundleSource !== 'string' || browserBundleSource.length === 0) {
+      throw new Error('Failed to load javascript-obfuscator browser source');
+    }
+    const script = document.createElement('script');
+    script.text = browserBundleSource;
+    document.head.appendChild(script);
+    script.remove();
+    const JavaScriptObfuscator = globalObject.JavaScriptObfuscator;
+    if (JavaScriptObfuscator && typeof JavaScriptObfuscator.obfuscate === 'function') {
+      return JavaScriptObfuscator;
     }
     throw new Error('Failed to initialize javascript-obfuscator browser bundle');
   };

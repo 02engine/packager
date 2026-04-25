@@ -43,7 +43,7 @@
 /******/
 /******/ 	// script path function
 /******/ 	function jsonpScriptSrc(chunkId) {
-/******/ 		return __webpack_require__.p + "js/" + ({"vendors~downloader~packager-options-ui":"vendors~downloader~packager-options-ui","downloader":"downloader","packager-options-ui":"packager-options-ui","javascript-obfuscator-browser-url":"javascript-obfuscator-browser-url","vendors~icns~scratch-vm-compiler~sha256":"vendors~icns~scratch-vm-compiler~sha256","sha256":"sha256","vendors~icns~scratch-vm-compiler":"vendors~icns~scratch-vm-compiler","icns":"icns","vendors~jszip~scratch-vm-compiler":"vendors~jszip~scratch-vm-compiler","scratch-vm-compiler":"scratch-vm-compiler","iframe-extension-worker":"iframe-extension-worker"}[chunkId]||chunkId) + ".js"
+/******/ 		return __webpack_require__.p + "js/" + ({"vendors~downloader~packager-options-ui":"vendors~downloader~packager-options-ui","downloader":"downloader","packager-options-ui":"packager-options-ui","javascript-obfuscator-browser-source":"javascript-obfuscator-browser-source","vendors~icns~scratch-vm-compiler~sha256":"vendors~icns~scratch-vm-compiler~sha256","sha256":"sha256","vendors~icns~scratch-vm-compiler":"vendors~icns~scratch-vm-compiler","icns":"icns","vendors~jszip~scratch-vm-compiler":"vendors~jszip~scratch-vm-compiler","scratch-vm-compiler":"scratch-vm-compiler","iframe-extension-worker":"iframe-extension-worker"}[chunkId]||chunkId) + ".js"
 /******/ 	}
 /******/
 /******/ 	// The require function
