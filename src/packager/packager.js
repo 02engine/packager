@@ -12,8 +12,6 @@ import {OutdatedPackagerError} from '../common/errors';
 import {darken} from './colors';
 import {Adapter} from './adapter';
 import encodeBigString from './encode-big-string';
-import javaScriptObfuscatorBrowserURL from 'file-loader?name=assets/[name].[contenthash].[ext]!javascript-obfuscator/dist/index.browser.js';
-
         function compile(code) /* The "Compilation" */
         {
             // 注意：encodeURIComponent对应的解码函数应该是decodeURIComponent
@@ -146,27 +144,33 @@ const loadJavaScriptObfuscatorBrowserBundle = () => {
     return javaScriptObfuscatorPromise;
   }
 
-  javaScriptObfuscatorPromise = new Promise((resolve, reject) => {
+  javaScriptObfuscatorPromise = (async () => {
     const globalObject = typeof globalThis !== 'undefined' ? globalThis : window;
     if (globalObject.JavaScriptObfuscator && typeof globalObject.JavaScriptObfuscator.obfuscate === 'function') {
-      resolve(globalObject.JavaScriptObfuscator);
-      return;
+      return globalObject.JavaScriptObfuscator;
     }
 
-    const script = document.createElement('script');
-    script.async = true;
-    script.src = javaScriptObfuscatorBrowserURL;
-    script.onload = () => {
-      if (globalObject.JavaScriptObfuscator && typeof globalObject.JavaScriptObfuscator.obfuscate === 'function') {
-        resolve(globalObject.JavaScriptObfuscator);
-      } else {
-        reject(new Error('Failed to initialize javascript-obfuscator browser bundle'));
-      }
-    };
-    script.onerror = () => {
-      reject(new Error('Failed to load javascript-obfuscator browser bundle'));
-    };
-    document.head.appendChild(script);
+    const {default: javaScriptObfuscatorBrowserURL} = await import(
+      /* webpackChunkName: "javascript-obfuscator-browser-url" */
+      'file-loader?name=assets/[name].[contenthash].[ext]!javascript-obfuscator/dist/index.browser.js'
+    );
+
+    await new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = javaScriptObfuscatorBrowserURL;
+      script.onload = resolve;
+      script.onerror = () => {
+        reject(new Error('Failed to load javascript-obfuscator browser bundle'));
+      };
+      document.head.appendChild(script);
+    });
+
+    if (globalObject.JavaScriptObfuscator && typeof globalObject.JavaScriptObfuscator.obfuscate === 'function') {
+      return globalObject.JavaScriptObfuscator;
+    }
+
+    throw new Error('Failed to initialize javascript-obfuscator browser bundle');
   });
 
   return javaScriptObfuscatorPromise;
