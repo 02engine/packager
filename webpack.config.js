@@ -197,6 +197,8 @@ const makeWebsite = () => ({
       'process.env.ENABLE_SERVICE_WORKER': JSON.stringify(process.env.ENABLE_SERVICE_WORKER),
       'process.env.STANDALONE': JSON.stringify(isStandalone ? true : false),
       'process.env.VERSION': JSON.stringify(version),
+      'process.env.PACKAGER_GITHUB_USER': JSON.stringify(process.env.PACKAGER_GITHUB_USER || ''),
+      'process.env.PACKAGER_GITHUB_TOKEN': JSON.stringify(process.env.PACKAGER_GITHUB_TOKEN || ''),
     }),
     new HtmlWebpackPlugin({
       filename: 'index.html',

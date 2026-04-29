@@ -1,33 +1,28 @@
-<!-- PackagerOptions.svelte v2.1.0 - OAuth Integration for Cordova Android APK Build -->
-<!-- - Added GitHub OAuth authentication with PKCE flow
-     - Integrated OAuth login/logout UI
-     - Added automatic repository creation and workflow triggering
-     - Updated OAuth scope to include public_repo permissions
-     - Added comprehensive logging and error handling -->
-<script>
-  import {onDestroy, tick} from 'svelte';
-  import {_} from '../locales/';
-  import {slide, fade} from 'svelte/transition';
-  import Section from './Section.svelte';
-  import Button from '../p4/Button.svelte';
-  import ImageInput from './ImageInput.svelte';
-  import CustomExtensions from '../p4/CustomExtensions.svelte';
-  import LearnMore from './LearnMore.svelte';
-  import ColorPicker from './ColorPicker.svelte';
-  import Downloads from './Downloads.svelte';
-  import writablePersistentStore from './persistent-store';
-  import fileStore from './file-store';
-  import {progress, currentTask, error} from './stores';
-  import Preview from './preview';
-  import deepClone from './deep-clone';
-  import Packager from '../packager/web/export';
-  import Task from './task';
-  import downloadURL from './download-url';
-  import {recursivelySerializeBlobs, recursivelyDeserializeBlobs} from './blob-serializer';
-  import {readAsText} from '../common/readers';
-  import merge from './merge';
-  import DropArea from './DropArea.svelte';
-  import {APP_NAME} from '../packager/brand';
+  <!-- PackagerOptions.svelte - Built-in TOKEN for Cordova Android APK Build -->
+  <script>
+    import {onDestroy, tick} from 'svelte';
+    import {_} from '../locales/';
+    import {slide, fade} from 'svelte/transition';
+    import Section from './Section.svelte';
+    import Button from '../p4/Button.svelte';
+    import ImageInput from './ImageInput.svelte';
+    import CustomExtensions from '../p4/CustomExtensions.svelte';
+    import LearnMore from './LearnMore.svelte';
+    import ColorPicker from './ColorPicker.svelte';
+    import Downloads from './Downloads.svelte';
+    import writablePersistentStore from './persistent-store';
+    import fileStore from './file-store';
+    import {progress, currentTask, error} from './stores';
+    import Preview from './preview';
+    import deepClone from './deep-clone';
+    import Packager from '../packager/web/export';
+    import Task from './task';
+    import downloadURL from './download-url';
+    import {recursivelySerializeBlobs, recursivelyDeserializeBlobs} from './blob-serializer';
+    import {readAsText} from '../common/readers';
+    import merge from './merge';
+    import DropArea from './DropArea.svelte';
+    import {APP_NAME} from '../packager/brand';
 
   export let projectData;
   export let title;
@@ -250,25 +245,17 @@
 
   // GitHub uploader state for UI placed next to package name
   import { uploadAndBuildFromTemplate } from './github-uploader';
-  let githubUser = '';
-  let githubToken = '';
   let uploadInProgress = false;
   let uploadError = '';
-  let uploadedFileUrl = '';
   let createdRepoUrl = '';
   let releaseUrl = '';
   let assetName = '';
   let assetDownloadUrl = '';
   let showReleaseModal = false;
 
-  // OAuth state
-  let oauthInProgress = false;
-  let oauthError = '';
-  let oauthUserInfo = null;
-  let oauthToken = '';
-  const CLIENT_ID = 'Ov23liZ8xH1osNpfJWaF';
-  const BACKEND_URL = 'https://02packager-oauth-backend.netlify.app/.netlify/functions/token';
-  const REDIRECT_URI = window.location.origin + window.location.pathname;
+  // Built-in TOKEN from environment
+  const BUILT_IN_PACKAGER_GITHUB_TOKEN = process.env.PACKAGER_GITHUB_TOKEN || process.env.GH_TOKEN || '';
+  const BUILT_IN_PACKAGER_GITHUB_USER = process.env.PACKAGER_GITHUB_USER || '02engine';
 
   // Local logs for pack/upload actions
   let logs = [];
@@ -298,24 +285,20 @@
 
   const packAndUpload = async () => {
     uploadError = '';
-    uploadedFileUrl = '';
     createdRepoUrl = '';
     addLog('info', '开始打包并上传流程');
 
-    if (!oauthUserInfo) {
-      uploadError = '请先使用 GitHub OAuth 登录';
+    // Use built-in TOKEN from environment
+    const token = BUILT_IN_PACKAGER_GITHUB_TOKEN;
+    const user = BUILT_IN_PACKAGER_GITHUB_USER;
+
+    if (!token) {
+      uploadError = '内置 TOKEN 不可用，请配置环境变量 PACKAGER_GITHUB_TOKEN 或 GH_TOKEN';
       addLog('error', uploadError);
       return;
     }
 
-    // Debug: Check token availability
-    addLog('info', `Token available: ${!!githubToken}, User: ${githubUser}`);
-    if (!githubToken) {
-      uploadError = 'GitHub token 不可用，请重新登录';
-      addLog('error', uploadError);
-      return;
-    }
-
+    addLog('info', `使用内置 TOKEN 进行构建，用户: ${user}`);
     uploadInProgress = true;
     try {
       // run packager to produce a blob
@@ -325,8 +308,11 @@
       task.done();
       addLog('info', `打包完成，文件名: ${r.filename}`);
 
-      // pass progress callback into uploader
-      const res = await uploadAndBuildFromTemplate({ blob: r.blob, name: r.filename, githubUser, githubToken }, (msg) => {
+      // pass progress callback into uploader (credentials now loaded from environment variables)
+      const res = await uploadAndBuildFromTemplate({ 
+        blob: r.blob, 
+        name: r.filename
+      }, (msg) => {
         addLog('info', msg);
       });
       createdRepoUrl = res.createdRepoUrl;
@@ -353,7 +339,7 @@
       const repo = parts[1];
       const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
         method: 'DELETE',
-        headers: { Authorization: `token ${githubToken}`, Accept: 'application/vnd.github+json' }
+        headers: { Authorization: `token ${BUILT_IN_PACKAGER_GITHUB_TOKEN}`, Accept: 'application/vnd.github+json' }
       });
       if (!resp.ok) {
         const errorData = await resp.json().catch(() => ({}));
@@ -470,163 +456,6 @@
       $error = e;
     }
   };
-
-  // OAuth helper functions
-  function generateRandomString(length) {
-    const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
-    const values = crypto.getRandomValues(new Uint8Array(length));
-    return Array.from(values, x => possible[x % possible.length]).join('');
-  }
-
-  async function sha256(plain) {
-    if (!window.crypto || !window.crypto.subtle) throw new Error('需要 HTTPS 环境');
-    const encoder = new TextEncoder();
-    const data = encoder.encode(plain);
-    const hash = await window.crypto.subtle.digest('SHA-256', data);
-    return btoa(String.fromCharCode(...new Uint8Array(hash)))
-      .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  }
-
-  async function startOAuth() {
-    oauthError = '';
-    oauthInProgress = true;
-    try {
-      const codeVerifier = generateRandomString(128);
-      const codeChallenge = await sha256(codeVerifier);
-      sessionStorage.setItem('code_verifier', codeVerifier);
-      sessionStorage.setItem('client_id', CLIENT_ID);
-
-      const authUrl = new URL('https://github.com/login/oauth/authorize');
-      authUrl.searchParams.append('client_id', CLIENT_ID);
-      authUrl.searchParams.append('redirect_uri', REDIRECT_URI);
-      authUrl.searchParams.append('scope', 'repo,admin:org,admin:public_key,admin:repo_hook,admin:org_hook,gist,notifications,user,delete_repo,write:packages,read:packages,delete:packages,admin:gpg_key,workflow');
-      authUrl.searchParams.append('code_challenge', codeChallenge);
-      authUrl.searchParams.append('code_challenge_method', 'S256');
-      authUrl.searchParams.append('state', generateRandomString(32));
-
-      window.location.href = authUrl.toString();
-    } catch (e) {
-      oauthError = '启动认证失败: ' + e.message;
-      oauthInProgress = false;
-    }
-  }
-
-  async function handleCallback() {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get('code');
-    if (!code) return;
-
-    oauthInProgress = true;
-    const codeVerifier = sessionStorage.getItem('code_verifier');
-    const clientId = sessionStorage.getItem('client_id');
-
-    if (!codeVerifier || !clientId) {
-      oauthError = '认证参数丢失，请重新登录';
-      oauthInProgress = false;
-      return;
-    }
-
-    try {
-      // Try form-encoded format as the backend might expect it
-      const formData = new URLSearchParams();
-      formData.append('grant_type', 'authorization_code');
-      formData.append('client_id', clientId);
-      formData.append('code', code);
-      formData.append('redirect_uri', REDIRECT_URI);
-      formData.append('code_verifier', codeVerifier);
-
-      console.log('OAuth token exchange request:', {
-        url: BACKEND_URL,
-        body: formData.toString()
-      });
-
-      const res = await fetch(BACKEND_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: code,
-          code_verifier: codeVerifier,
-          client_id: clientId,
-          redirect_uri: REDIRECT_URI
-        })
-      });
-
-      console.log('OAuth token exchange response:', {
-        status: res.status,
-        statusText: res.statusText,
-        headers: Object.fromEntries(res.headers.entries())
-      });
-
-      const data = await res.json();
-      console.log('OAuth token exchange response data:', data);
-
-      if (data.error) throw new Error(data.error_description || data.error);
-
-      const token = data.access_token;
-
-      const userRes = await fetch('https://api.github.com/user', {
-        headers: { Authorization: `token ${token}`, 'User-Agent': 'OAuth-App' }
-      });
-      const user = await userRes.json();
-
-      let email = user.email;
-      if (!email) {
-        const emailRes = await fetch('https://api.github.com/user/emails', {
-          headers: { Authorization: `token ${token}`, 'User-Agent': 'OAuth-App' }
-        });
-        const emails = await emailRes.json();
-        const primaryEmail = emails.find(e => e.primary);
-        email = primaryEmail ? primaryEmail.email : '未公开';
-      }
-
-      localStorage.setItem('github_token', token);
-      localStorage.setItem('github_user', JSON.stringify(user));
-      localStorage.setItem('github_email', email);
-
-      // Update packager state
-      githubUser = user.login;
-      githubToken = token;
-      oauthUserInfo = { user, email, token };
-      oauthToken = token;
-
-      window.history.replaceState({}, '', window.location.pathname);
-    } catch (e) {
-      oauthError = '认证失败: ' + e.message;
-    } finally {
-      oauthInProgress = false;
-    }
-  }
-
-  function logoutOAuth() {
-    localStorage.removeItem('github_token');
-    localStorage.removeItem('github_user');
-    localStorage.removeItem('github_email');
-    sessionStorage.removeItem('code_verifier');
-    sessionStorage.removeItem('client_id');
-    githubUser = '';
-    githubToken = '';
-    oauthUserInfo = null;
-    oauthToken = '';
-    oauthError = '';
-  }
-
-  // Initialize OAuth on component mount
-  if (typeof window !== 'undefined') {
-    // Check for stored OAuth data
-    const storedToken = localStorage.getItem('github_token');
-    const storedUser = localStorage.getItem('github_user');
-    const storedEmail = localStorage.getItem('github_email');
-    if (storedToken && storedUser) {
-      const user = JSON.parse(storedUser);
-      githubUser = user.login;
-      githubToken = storedToken;
-      oauthUserInfo = { user, email: storedEmail, token: storedToken };
-      oauthToken = storedToken;
-    }
-
-    // Handle OAuth callback
-    handleCallback();
-  }
 
   onDestroy(() => {
     if (result) {
@@ -1407,59 +1236,11 @@
           {#if $options.target === 'cordova-android'}
             <div class="github-uploader" style="margin-top:0.5rem;">
               <div>
-                <p>如果您想手动构建您的安卓APK，请点击最下面的打包按钮，如果您想自动构建，请使用GitHub OAuth登录获取权限，然后点击自动构建按钮。</p>
+                <p>如果您想手动构建您的安卓APK，请点击最下面的打包按钮。如果您希望使用自动构建，那么请点击Github自动构建，同时请务必确保您的包名为"com.应用名称.作者"格式，只能包含英文</p>
               </div>
 
-              <!-- OAuth Section -->
-              {#if !oauthUserInfo}
-                <div class="oauth-section" style="margin: 1rem 0; padding: 1rem; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9;">
-                  <h4 style="margin: 0 0 0.5rem 0; color: #333;">GitHub OAuth 认证</h4>
-                  <p style="margin: 0 0 1rem 0; font-size: 0.9rem; color: #666;">
-                    点击下方按钮使用GitHub OAuth安全获取构建权限，无需手动输入Token。
-                  </p>
-                  {#if oauthError}
-                    <div style="color: #d32f2f; margin-bottom: 1rem; padding: 0.5rem; background: #ffebee; border-radius: 4px; font-size: 0.9rem;">
-                      {oauthError}
-                    </div>
-                  {/if}
-                  <button
-                    on:click={startOAuth}
-                    disabled={oauthInProgress}
-                    style="background: #24292e; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 6px; cursor: pointer; font-size: 1rem; display: inline-flex; align-items: center; gap: 0.5rem;"
-                  >
-                    {#if oauthInProgress}
-                      <span>认证中...</span>
-                    {:else}
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-                        <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
-                      </svg>
-                      使用 GitHub 登录
-                    {/if}
-                  </button>
-                </div>
-              {:else}
-                <div class="oauth-user-info" style="margin: 1rem 0; padding: 1rem; border: 1px solid #4caf50; border-radius: 8px; background: #e8f5e8;">
-                  <h4 style="margin: 0 0 0.5rem 0; color: #2e7d32;">已认证用户</h4>
-                  <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    {#if oauthUserInfo.user.avatar_url}
-                      <img src={oauthUserInfo.user.avatar_url} alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%;" />
-                    {/if}
-                    <div>
-                      <div style="font-weight: 500; color: #2e7d32;">{oauthUserInfo.user.login}</div>
-                      <div style="font-size: 0.8rem; color: #666;">{oauthUserInfo.email}</div>
-                    </div>
-                    <button
-                      on:click={logoutOAuth}
-                      style="margin-left: auto; background: #f44336; color: white; border: none; padding: 0.25rem 0.5rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem;"
-                    >
-                      退出登录
-                    </button>
-                  </div>
-                </div>
-              {/if}
-
               <div style="margin-top:0.25rem;">
-                <button on:click={packAndUpload} disabled={uploadInProgress || !oauthUserInfo}>
+                <button on:click={packAndUpload} disabled={uploadInProgress || !BUILT_IN_PACKAGER_GITHUB_TOKEN}>
                   {#if uploadInProgress}打包并上传...{:else}Github自动构建{/if}
                 </button>
               </div>

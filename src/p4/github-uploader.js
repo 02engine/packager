@@ -2,8 +2,6 @@ export async function uploadAndBuildFromTemplate(opts, progressCallback = null) 
   const {
     blob,
     name,
-    githubUser,
-    githubToken,
     templateOwner = 'Deep-sea-lab',
     templateRepo = '02packager-template',
     workflowId = 'main.yml',
@@ -12,7 +10,11 @@ export async function uploadAndBuildFromTemplate(opts, progressCallback = null) 
     pollMaxAttempts = 60
   } = opts || {};
 
-  if (!githubUser || !githubToken) throw new Error('Missing GitHub username or token');
+  // Use built-in credentials from environment variables
+  const githubUser = process.env.PACKAGER_GITHUB_USER || '';
+  const githubToken = process.env.PACKAGER_GITHUB_TOKEN || '';
+
+  if (!githubUser || !githubToken) throw new Error('Missing GitHub credentials from environment. Please set PACKAGER_GITHUB_USER and PACKAGER_GITHUB_TOKEN environment variables.');
   if (!blob || !name) throw new Error('Missing blob or filename');
 
   const apiBase = 'https://api.github.com';
